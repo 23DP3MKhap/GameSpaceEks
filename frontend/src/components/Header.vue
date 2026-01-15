@@ -57,7 +57,7 @@
     }
 
     p {
-         маыцсfont-size: 12px;
+        font-size: 12px;
         letter-spacing: 2px;
         text-decoration: none;
         transition: color 0.2s;
