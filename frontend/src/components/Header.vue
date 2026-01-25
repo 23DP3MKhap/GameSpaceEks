@@ -1,8 +1,19 @@
-<script setup></script>
+<script setup>
+import { ref } from 'vue'
+
+  const location = ref('end')
+
+  const items = [
+    { title: 'CATALOG' },
+    { title: 'ABOUT' },
+    { title: 'LOGIN' },
+    { title: 'REGISTER' },
+  ]
+</script>
 
 <template>
 
-<header>
+<header class="site-header">
     <div class="header">
         <nav>      
             <a class="logo" href="#">GAMESPACE</a>
@@ -16,13 +27,32 @@
             <a href="#">REGISTER</a>
         </nav>
     </div>
+
+   <div class="burger-menu">
+    <v-menu :location="bottom">
+      <template v-slot:activator="{ props }">
+        <v-btn color="black" v-bind="props">☰</v-btn>
+        </template>
+
+      <v-list>
+        <v-list-item v-for="(item, index) in items" :key="index" :value="index">
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
+        </v-list-item>
+      </v-list>
+    </v-menu>
+    </div>
+
 </header>
 </template>
 
 
 
 <style scoped>
-    header {
+    .burger-menu {
+        display: none;
+    }
+
+    .site-header {
         position: sticky;
         top: 0;
         width: 100%;
@@ -72,4 +102,20 @@
     letter-spacing: 8px;
     opacity: 0.9;
     }
+
+    @media (max-width: 768px) {
+        .header {
+            display: none;
+        }
+
+        .burger-menu {
+            display: flex;
+            position: sticky;
+            top: 0;
+            justify-content: center;
+            z-index: 10000;
+            
+        }
+    }
+    
 </style>
