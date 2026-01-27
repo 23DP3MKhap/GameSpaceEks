@@ -55,10 +55,10 @@ onMounted(async () => {
 
 <style scoped>
 .main-text {
-  color: white;
-  margin-top: 50px;
-  padding: 30px;
-  text-align: center;
+color: white;
+margin-top: 50px;
+padding: 30px;
+text-align: center;
 }
 
 .main-text h1 {
@@ -109,14 +109,13 @@ onMounted(async () => {
 
 .card-register, .card-login {
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background-color: rgb(255, 255, 255);
-  color: black;
-  transition: background-color 0.3s ease;
+  border: 1px solid rgb(255, 255, 255);
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .card-register:hover, .card-login:hover {
-  background-color: rgb(156, 155, 155);
+  border-color: rgba(255, 255, 255, 0.476);
+  color: rgba(255, 255, 255, 0.476)
 }
 
 @media (max-width: 1200px) {
@@ -135,12 +134,13 @@ onMounted(async () => {
 
   .card-login, .card-register {
     font-size: 10px;
+
   }
 }
 
 @media (max-width: 900px) {
   .main-text {
-    padding: 24px 20px;
+  padding: 24px 20px;
   }
 
   .main-text h1 {
