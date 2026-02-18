@@ -5,7 +5,7 @@ const apiStatus = ref(null)
 
 onMounted(async () => {
   try {
-    const response = await fetch('http://localhost:8000/')
+    const response = await fetch('http://localhost:8000/api/ping')
     apiStatus.value = response.ok
   } catch (error) {
     apiStatus.value = false
