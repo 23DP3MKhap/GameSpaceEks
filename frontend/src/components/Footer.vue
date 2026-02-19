@@ -1,7 +1,7 @@
 <script setup></script>
 
 <template>
-<v-footer class="footer" border>MikhailKhapilov©</v-footer>
+<v-footer class="footer">MikhailKhapilov©</v-footer>
 </template>
 
 <style scoped>
