@@ -4,10 +4,11 @@ import { ref } from 'vue'
   const location = ref('end')
 
   const items = [
-    { title: 'CATALOG' },
-    { title: 'ABOUT' },
-    { title: 'LOGIN' },
-    { title: 'REGISTER' },
+    { title: 'MAIN', to: '/' },
+    { title: 'CATALOG', to: '/catalog' },
+    { title: 'ABOUT', to: '/about' },
+    { title: 'LOGIN', to: '/login' },
+    { title: 'REGISTER', to: '/register' },
   ]
 </script>
 
@@ -16,15 +17,15 @@ import { ref } from 'vue'
 <header class="site-header">
     <div class="header">
         <nav>      
-            <a class="logo" href="#">GAMESPACE</a>
+            <router-link to="/"><a class="logo" href="#">GAMESPACE</a></router-link>
             <a href="#">CATALOG</a>
             <a href="#">ABOUT</a>  
         </nav>
 
         <nav>
-            <a href="#">LOG IN</a>
+            <router-link to="/login"><a href="#">LOG IN</a></router-link>
             <p >|</p>
-            <a href="#">REGISTER</a>
+            <router-link to="/register"><a href="#">REGISTER</a></router-link>
         </nav>
     </div>
 
@@ -35,7 +36,7 @@ import { ref } from 'vue'
         </template>
 
       <v-list>
-        <v-list-item v-for="(item, index) in items" :key="index" :value="index">
+        <v-list-item v-for="(item, index) in items" :key="index" :to="item.to" link >
           <v-list-item-title>{{ item.title }}</v-list-item-title>
         </v-list-item>
       </v-list>

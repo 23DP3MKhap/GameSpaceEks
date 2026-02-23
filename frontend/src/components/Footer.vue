@@ -11,7 +11,7 @@
     color: rgb(168, 166, 166);
     justify-content: center;
     padding: 0px;
-    height: 10px;
+    max-height: 30px;
     font-size: 11px;
     border: 1px solid rgba(255, 255, 255, 0.14);
 }

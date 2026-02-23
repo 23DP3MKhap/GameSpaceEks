@@ -15,7 +15,7 @@ onMounted(async () => {
 
 
 <template>
-    
+    <div class="background"><img src="/backgrounds/home-background.jpg"></div>
     <div class="main-text">
 
         <h1>DISCOVER GAMES WITHOUT LIMITS</h1>
@@ -30,10 +30,10 @@ onMounted(async () => {
               <v-card-text class="about-text">
                 Start your adventure by logging into your account
               </v-card-text>
-              <v-card-actions>
-                <v-btn class="card-register">REGISTER</v-btn>
+              <v-card-actions class="card-actions">
+                <router-link to="/Register" class="router-link"><v-btn class="card-register">REGISTER</v-btn></router-link>
                 <span class="separator">|</span>
-                <v-btn class="card-login">LOG IN</v-btn>
+                <router-link to="/Login" class="router-link"><v-btn class="card-login">LOG IN</v-btn></router-link>
               </v-card-actions>
             </v-card>
         </div>
@@ -53,12 +53,24 @@ onMounted(async () => {
 </template>
 
 
+
+
+
 <style scoped>
+.background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
 .main-text {
-color: white;
-margin-top: 50px;
-padding: 30px;
-text-align: center;
+  color: white;
+  margin-top: 50px;
+  padding: 30px;
+  text-align: center;
 }
 
 .main-text h1 {
@@ -78,6 +90,11 @@ text-align: center;
   gap: 32px;
   display: flex;
   justify-content: center;
+}
+
+.router-link{
+  text-decoration: none;
+  color: white;
 }
 
 .about, .api-status {
@@ -108,14 +125,15 @@ text-align: center;
 }
 
 .card-register, .card-login {
-  border-radius: 12px;
-  border: 1px solid rgb(255, 255, 255);
-  transition: border-color 0.2s ease, color 0.2s ease;
+  padding: 0px;
 }
 
 .card-register:hover, .card-login:hover {
-  border-color: rgba(255, 255, 255, 0.476);
   color: rgba(255, 255, 255, 0.476)
+}
+
+.card-actions {
+  padding: 0px;
 }
 
 @media (max-width: 1200px) {
