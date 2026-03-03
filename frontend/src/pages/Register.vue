@@ -1,5 +1,20 @@
 <script setup>
+  import { ref } from 'vue'
 
+  const email = ref("")
+  const username = ref("")
+  const password = ref("")
+  const valid = ref(false)
+  async function register() {
+    if (valid.value === true){
+      await fetch("http://localhost:8000/api/register", {method: "POST", headers: {"Content-Type": "application/json"}, 
+      body: JSON.stringify({email: email.value, username: username.value, password: password.value})})
+      console.log("Success")
+    }
+    else (
+      alert("Error")
+    )
+  }
 </script>
 
 <script>
@@ -10,22 +25,32 @@
         usernameRules: [
             value => {
             if (value) return true
-    
             return 'Username is required.'
             },
+
             value => {
             if (value?.length <= 10) return true
-    
             return 'Username must be less than 10 characters.'
             },
+
+            async value => {
+              const response = await (await fetch("http://localhost:8000/api/usernamecheck", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username: value})})).json()
+              if (response.exists === true){
+                return "Username already in use."
+              }
+              return true
+            }
         ],
       password: '',
       passwordRules: [
         value => {
           if (value) return true
-
           return 'Password is required.'
         },
+        value => {
+            if (value?.length >= 8) return true
+            return 'Password must be at least 8 characters.'
+          },
       ],
       email: '',
       emailRules: [
@@ -39,6 +64,13 @@
 
           return 'E-mail must be valid.'
         },
+        async value => {
+              const response = await (await fetch("http://localhost:8000/api/emailcheck", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({email: value})})).json()
+              if (response.exists === true){
+                return "Email already in use."
+              }
+              return true
+        }
       ],
       
     }),
@@ -49,7 +81,7 @@
     <div class="background"><img src="/backgrounds/register-background.png"></div>
     <div class="page-wrapper">
         <div class="register-form">
-            <v-form v-model="valid">
+            <v-form v-model="valid" @submit.prevent="register">
                 <v-container>
                     <h1>Register</h1>
 
@@ -82,7 +114,7 @@
                       ></v-text-field>
                     </v-col>
 
-                    <v-btn :disabled="!valid" class="register-button">CREATE ACCOUNT</v-btn>
+                    <v-btn type="submit" :disabled="!valid" class="register-button">CREATE ACCOUNT</v-btn>
                 </v-container>
             </v-form>
         </div>

@@ -30,7 +30,7 @@ import { ref } from 'vue'
     </div>
 
    <div class="burger-menu">
-    <v-menu :location="bottom">
+    <v-menu>
       <template v-slot:activator="{ props }">
         <v-btn color="black" v-bind="props">☰</v-btn>
         </template>
