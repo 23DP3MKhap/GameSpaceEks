@@ -1,12 +1,23 @@
 <script setup>
-
+  import { ref } from 'vue'
+  import axios from '../plugins/axios'
+  const email = ref("")
+  const password = ref("")
+  const valid = ref(false)
+  async function login(){
+    if (valid.value === false){
+      return alert("Error")
+    }
+    await axios.get('/sanctum/csrf-cookie')
+    const loginstatus = await axios.post("/login", {email: email.value, password: password.value})
+    return console.log(loginstatus.data.message)
+  }
 </script>
 
 <script>
   export default {
     data: () => ({
       valid: false,
-      firstname: '',
       password: '',
       passwordRules: [
         value => {
@@ -36,7 +47,7 @@
     <div class="background"><img src="/backgrounds/login-background.png"></div>
     <div class="page-wrapper">
         <div class="login-form">
-            <v-form v-model="valid">
+            <v-form v-model="valid" @submit.prevent="login()">
                 <v-container>
                     <h1>Log in</h1>
 
@@ -59,7 +70,7 @@
                       ></v-text-field>
                     </v-col>
 
-                    <v-btn :disabled="!valid" class="login-button">LOG IN</v-btn>
+                    <v-btn :disabled="!valid" type = "submit" class="login-button">LOG IN</v-btn>
                 </v-container>
             </v-form>
         </div>

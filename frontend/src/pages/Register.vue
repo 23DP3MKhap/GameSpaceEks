@@ -1,15 +1,18 @@
 <script setup>
   import { ref } from 'vue'
-
+  import axios from '../plugins/axios'
   const email = ref("")
   const username = ref("")
   const password = ref("")
   const valid = ref(false)
   async function register() {
     if (valid.value === true){
-      await fetch("http://localhost:8000/api/register", {method: "POST", headers: {"Content-Type": "application/json"}, 
-      body: JSON.stringify({email: email.value, username: username.value, password: password.value})})
+      await axios.get('/sanctum/csrf-cookie')
+      await axios.post("/api/register", {email: email.value, username: username.value, password: password.value})
       console.log("Success")
+      username.value = ''
+      email.value = ''
+      password.value = ''
     }
     else (
       alert("Error")
@@ -34,8 +37,9 @@
             },
 
             async value => {
-              const response = await (await fetch("http://localhost:8000/api/usernamecheck", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username: value})})).json()
-              if (response.exists === true){
+              await axios.get('/sanctum/csrf-cookie')
+              const response = await axios.post("/api/usernamecheck", {username: value})
+              if (response.data.exists === true){
                 return "Username already in use."
               }
               return true
@@ -65,8 +69,9 @@
           return 'E-mail must be valid.'
         },
         async value => {
-              const response = await (await fetch("http://localhost:8000/api/emailcheck", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({email: value})})).json()
-              if (response.exists === true){
+              await axios.get('/sanctum/csrf-cookie') 
+              const response = await axios.post("/api/emailcheck", {email: value})
+              if (response.data.exists === true){
                 return "Email already in use."
               }
               return true

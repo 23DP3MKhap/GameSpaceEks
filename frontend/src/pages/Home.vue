@@ -1,6 +1,5 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-
 const apiStatus = ref(null) 
 
 onMounted(async () => {
