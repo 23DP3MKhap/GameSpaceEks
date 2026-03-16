@@ -1,15 +1,34 @@
 <script setup>
-import { ref } from 'vue'
+    import { ref, onMounted } from 'vue'
+    import { auth } from '../plugins/userinfo'
+    import axios from '../plugins/axios'
 
-  const location = ref('end')
+    const dialog = ref(false)
+    const items = [
+        { title: 'MAIN', to: '/' },
+        { title: 'CATALOG', to: '/catalog' },
+        { title: 'ABOUT', to: '/about' },
+        { title: 'LOGIN', to: '/login' },
+        { title: 'REGISTER', to: '/register' },
+    ]
+    const itemsregistered = [
+        { title: 'MAIN', to: '/' },
+        { title: 'CATALOG', to: '/catalog' },
+        { title: 'ABOUT', to: '/about' },
+        { title: 'LOG OUT', action: 'logout' },
+    ]
 
-  const items = [
-    { title: 'MAIN', to: '/' },
-    { title: 'CATALOG', to: '/catalog' },
-    { title: 'ABOUT', to: '/about' },
-    { title: 'LOGIN', to: '/login' },
-    { title: 'REGISTER', to: '/register' },
-  ]
+    async function logout(){
+        try {
+            await axios.get('/sanctum/csrf-cookie')
+            await axios.post("/logout")
+            auth.user = null
+            dialog.value = true
+            return console.log("logged out")
+    } catch (error) {
+        return console.log("error")
+    }}
+
 </script>
 
 <template>
@@ -22,11 +41,20 @@ import { ref } from 'vue'
             <a href="#">ABOUT</a>  
         </nav>
 
-        <nav>
-            <router-link to="/login"><a href="#">LOG IN</a></router-link>
-            <p >|</p>
-            <router-link to="/register"><a href="#">REGISTER</a></router-link>
-        </nav>
+            <div v-if="auth.user">
+                <nav>
+                <router-link to="/login"><a href="#">{{auth.user.name}}</a></router-link>
+                <p>|---|</p>
+                <a href="#" @click.prevent="logout">LOG OUT</a>
+                </nav>
+            </div>
+            <div v-if="!auth.user">
+                <nav>
+                <router-link to="/login"><a href="#">LOG IN</a></router-link>
+                <p>|</p>
+                <router-link to="/register"><a href="#">REGISTER</a></router-link>
+                </nav>
+            </div>
     </div>
 
    <div class="burger-menu">
@@ -36,12 +64,38 @@ import { ref } from 'vue'
         </template>
 
       <v-list>
+        <div v-if="auth.user">
+            <v-list-item v-for="(item, index) in itemsregistered" :key="index" :to="item.to" link @click="item.action === 'logout' && logout()">
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+            </v-list-item>
+        </div>
+
+        <div v-if="!auth.user">
         <v-list-item v-for="(item, index) in items" :key="index" :to="item.to" link >
           <v-list-item-title>{{ item.title }}</v-list-item-title>
         </v-list-item>
+        </div>
       </v-list>
     </v-menu>
     </div>
+
+    <v-dialog max-width="500" v-model="dialog">
+        <v-card>
+        <v-card-title class="v-card-title">Logout</v-card-title>
+          <v-card-text class="v-card-text">
+            Successfully logged out!
+          </v-card-text>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+
+            <v-btn
+              class="v-dialog-button"
+              @click="dialog = false"
+            ><p class="v-btn-text">Close</p></v-btn>
+          </v-card-actions>
+        </v-card>
+    </v-dialog>
 
 </header>
 </template>
@@ -49,6 +103,23 @@ import { ref } from 'vue'
 
 
 <style scoped>
+
+    .v-card-title, .v-card-text {
+        color: white;
+        }
+
+    .v-btn-text {
+        color:white;
+        font-size: 10px;
+    }
+
+    .dialog, .v-dialog-button{
+        background-color: rgb(0, 0, 0);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+
     .burger-menu {
         display: none;
     }

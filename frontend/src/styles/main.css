@@ -1,3 +1,6 @@
-.v-application {
-    background-color: transparent;
+#app,
+.v-application,
+.v-application__wrap,
+.v-main {
+  background: transparent !important;
 }

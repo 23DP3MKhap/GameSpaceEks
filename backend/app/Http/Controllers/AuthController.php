@@ -8,16 +8,21 @@ use Illuminate\Support\Facades\Auth;
 class AuthController extends Controller
 {   
     public function register(Request $request){
-        $email = $request->email;
-        $password = $request->password;
-        $username = $request->username;
+        $userdata = $request->validate([
+            'email' => ['required', 'email', 'unique:users,email'],
+            'username' => ['required', 'unique:users,name', 'max:10'],
+            'password' => ['required', 'min:8'],
+        ]);
 
         $user = new User();
-        $user->email = $request->email;
-        $user->name = $request->username;
-        $user->password = $request->password;
+        $user->email = $userdata['email'];
+        $user->name = $userdata['username'];
+        $user->password = $userdata['password'];
         $user->save();
+
+        return response()->json(["message" => "true"]);
     }
+
 
     public function login(Request $request){
         $credentials = $request->validate(['email' => ['required'], 'password' => ['required']]);
@@ -30,6 +35,20 @@ class AuthController extends Controller
         $request->session()->regenerate();
         return response()->json(["message" => "true"]);
         }
+
+
+    public function logout(Request $request){
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return ["message" => "logged out"];
+    }
+    
+
+
+
+
 
     public function emailcheck(Request $request){
         $exists = User::where('email', $request->email)->exists();

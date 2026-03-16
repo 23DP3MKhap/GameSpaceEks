@@ -1,17 +1,27 @@
 <script setup>
   import { ref } from 'vue'
   import axios from '../plugins/axios'
+  import { auth } from '../plugins/userinfo'
+  import router from '@/router';
   const email = ref("")
   const password = ref("")
   const valid = ref(false)
+  const dialog = ref(false)
+  const dialogerror = ref(false)
+
   async function login(){
-    if (valid.value === false){
-      return alert("Error")
-    }
+    try{
     await axios.get('/sanctum/csrf-cookie')
-    const loginstatus = await axios.post("/login", {email: email.value, password: password.value})
-    return console.log(loginstatus.data.message)
-  }
+    await axios.post("/login", {email: email.value, password: password.value})
+    auth.user = (await axios.get("/api/user")).data
+    email.value = ""
+    password.value = ""
+    dialog.value = true
+    router.push("/")
+  }catch (error) {
+    dialogerror.value = true
+    return console.log("Error")
+  }}
 </script>
 
 <script>
@@ -44,6 +54,7 @@
 </script>
 
 <template>
+  <div class="page">
     <div class="background"><img src="/backgrounds/login-background.png"></div>
     <div class="page-wrapper">
         <div class="login-form">
@@ -62,6 +73,7 @@
                    
                     <v-col class="login-row" cols="12" >
                       <v-text-field
+                        type="password"
                         v-model="password"
                         :counter="10"
                         :rules="passwordRules"
@@ -75,9 +87,65 @@
             </v-form>
         </div>
     </div>
+
+    <v-dialog max-width="500" v-model="dialog">
+        <v-card>
+          <v-card-title class="v-card-title">Login</v-card-title>
+          <v-card-text class="v-card-text">
+            Successfully logged in!
+          </v-card-text>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+
+            <v-btn
+              class="v-dialog-button"
+              @click="dialog = false"
+            >
+              <p class="v-btn-text">Close</p>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+    </v-dialog>
+
+    <v-dialog max-width="500" v-model="dialogerror">
+        <v-card>
+          <v-card-title class="v-card-title">Login Error</v-card-title>
+          <v-card-text class="v-card-text">
+            Please check your email and password and try again.
+          </v-card-text>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+
+            <v-btn
+              class="v-dialog-button"
+              @click="dialogerror = false"
+            >
+              <p class="v-btn-text">Close</p>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+    </v-dialog>
+    </div>  
 </template>
 
 <style scoped>
+
+      .v-card-title, .v-card-text {
+        color: white;
+      }
+
+      .v-btn-text {
+        color:white;
+        font-size: 10px;
+      }
+      .dialog, .v-dialog-button{
+        background-color: rgb(0, 0, 0);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
 
     h1{
         color:white;

@@ -1,19 +1,34 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-const apiStatus = ref(null) 
+  import { ref, onMounted } from 'vue'
+  import axios from '../plugins/axios'
+  import { auth } from '../plugins/userinfo'
+  const apiStatus = ref(null) 
+  const dialog = ref(false)
+  onMounted(async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/ping')
+      apiStatus.value = response.ok
+    } catch (error) {
+      apiStatus.value = false
+    }})
 
-onMounted(async () => {
-  try {
-    const response = await fetch('http://localhost:8000/api/ping')
-    apiStatus.value = response.ok
-  } catch (error) {
-    apiStatus.value = false
-  }
-})
+  async function logout(){
+        try {
+            await axios.get('/sanctum/csrf-cookie')
+            await axios.post("/logout")
+            auth.user = null
+            dialog.value = true
+            return console.log("logged out")
+
+    } catch {
+        return console.log("error")
+    }}
+
 </script>
 
 
 <template>
+  <div class="page">
     <div class="background"><img src="/backgrounds/home-background.jpg"></div>
     <div class="main-text">
 
@@ -24,17 +39,33 @@ onMounted(async () => {
     <div class="main-cards">
         
         <div class="about">
+          <div v-if="auth.user">
             <v-card class="v-about" variant="outlined">
-              <v-card-title class="about-title">HOW TO START</v-card-title>
-              <v-card-text class="about-text">
-                Start your adventure by logging into your account
-              </v-card-text>
-              <v-card-actions class="card-actions">
-                <router-link to="/Register" class="router-link"><v-btn class="card-register">REGISTER</v-btn></router-link>
-                <span class="separator">|</span>
-                <router-link to="/Login" class="router-link"><v-btn class="card-login">LOG IN</v-btn></router-link>
-              </v-card-actions>
+                <v-card-title class="about-title">WELCOME BACK!</v-card-title>
+                <v-card-text class="about-text">
+                  Hello, {{ auth.user.name }}!
+                </v-card-text>
+                <v-card-actions class="card-actions">
+                  <router-link to="/Catalog" class="router-link"><v-btn class="card-register">CATALOG</v-btn></router-link>
+                  <span class="separator">|</span>
+                  <v-btn class="card-login" @click="logout">LOG OUT</v-btn>
+                </v-card-actions>
+              </v-card>
+          </div>
+
+          <div v-if="!auth.user">
+              <v-card class="v-about" variant="outlined">
+                <v-card-title class="about-title">HOW TO START</v-card-title>
+                <v-card-text class="about-text">
+                  Start your adventure by logging into your account
+                </v-card-text>
+                <v-card-actions class="card-actions">
+                  <router-link to="/Register" class="router-link"><v-btn class="card-register">REGISTER</v-btn></router-link>
+                  <span class="separator">|</span>
+                  <router-link to="/Login" class="router-link"><v-btn class="card-login">LOG IN</v-btn></router-link>
+                </v-card-actions>
             </v-card>
+          </div>
         </div>
 
         <div class="api-status">
@@ -47,8 +78,27 @@ onMounted(async () => {
               </v-card-text>
             </v-card>
         </div>
-    </div>
+      </div>
+    
 
+
+  <v-dialog max-width="500" v-model="dialog">
+    <v-card class=dialog>
+      <v-card-title class="v-card-title">Logout</v-card-title>
+      <v-card-text class="v-card-text">
+        Successfully logged out!
+      </v-card-text>
+
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn
+          class="v-dialog-button"
+          @click="dialog = false" 
+        ><p class="v-btn-text">Close</p></v-btn>
+      </v-card-actions>
+    </v-card>
+</v-dialog>
+</div>
 </template>
 
 
@@ -56,6 +106,22 @@ onMounted(async () => {
 
 
 <style scoped>
+.v-card-title, .v-card-text {
+  color: white;
+}
+
+.v-btn-text {
+  color:white;
+  font-size: 10px;
+}
+
+.dialog, .v-dialog-button{
+  background-color: rgb(0, 0, 0);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+
 .background {
   position: fixed;
   top: 0;
@@ -134,6 +200,7 @@ onMounted(async () => {
 .card-actions {
   padding: 0px;
 }
+
 
 @media (max-width: 1200px) {
   .main-cards {
