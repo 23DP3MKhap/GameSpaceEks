@@ -2,7 +2,7 @@
     import { ref, onMounted } from 'vue'
     import { auth } from '../plugins/userinfo'
     import axios from '../plugins/axios'
-
+    import { computed } from 'vue'
     const dialog = ref(false)
     const items = [
         { title: 'MAIN', to: '/' },
@@ -11,12 +11,30 @@
         { title: 'LOGIN', to: '/login' },
         { title: 'REGISTER', to: '/register' },
     ]
-    const itemsregistered = [
+
+
+
+    const itemsregistered = computed(() => {
+      const items = [
         { title: 'MAIN', to: '/' },
         { title: 'CATALOG', to: '/catalog' },
         { title: 'ABOUT', to: '/about' },
-        { title: 'LOG OUT', action: 'logout' },
-    ]
+      ]
+    
+      if (auth.user) {
+        items.unshift({
+          title: auth.user.name,
+          to: `/User/${auth.user.id}/Profile`
+        })
+    
+        items.push({
+          title: 'LOG OUT',
+          action: 'logout'
+        })
+      }
+  
+      return items
+    })
 
     async function logout(){
         try {
@@ -36,23 +54,23 @@
 <header class="site-header">
     <div class="header">
         <nav>      
-            <router-link to="/"><a class="logo" href="#">GAMESPACE</a></router-link>
-            <a href="#">CATALOG</a>
-            <a href="#">ABOUT</a>  
+            <router-link to="/"><a class="logo">GAMESPACE</a></router-link>
+            <a>CATALOG</a>
+            <a>ABOUT</a>  
         </nav>
 
             <div v-if="auth.user">
                 <nav>
-                <router-link to="/login"><a href="#">{{auth.user.name}}</a></router-link>
-                <p>|---|</p>
-                <a href="#" @click.prevent="logout">LOG OUT</a>
+                <router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link"><a>{{auth.user.name}}</a></router-link>
+                <p>|</p>
+                <a @click.prevent="logout">LOG OUT</a>
                 </nav>
             </div>
             <div v-if="!auth.user">
                 <nav>
-                <router-link to="/login"><a href="#">LOG IN</a></router-link>
+                <router-link to="/login"><a>LOG IN</a></router-link>
                 <p>|</p>
-                <router-link to="/register"><a href="#">REGISTER</a></router-link>
+                <router-link to="/register"><a>REGISTER</a></router-link>
                 </nav>
             </div>
     </div>
@@ -80,7 +98,7 @@
     </div>
 
     <v-dialog max-width="500" v-model="dialog">
-        <v-card>
+        <v-card class="v-card" color="black">
         <v-card-title class="v-card-title">Logout</v-card-title>
           <v-card-text class="v-card-text">
             Successfully logged out!
@@ -103,6 +121,15 @@
 
 
 <style scoped>
+
+    a {
+        cursor: pointer;
+    }
+
+    .v-card{
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.587);
+    }
 
     .v-card-title, .v-card-text {
         color: white;

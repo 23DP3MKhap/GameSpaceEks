@@ -22,3 +22,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     }
 });
 
+Route::get("/user/email", [AuthController::class, 'getemail']);
+
+Route::get("/user/username", [AuthController::class, 'getusername']);
+
+Route::get("/user/id", [AuthController::class, 'getid']);
+

@@ -42,9 +42,7 @@
           <div v-if="auth.user">
             <v-card class="v-about" variant="outlined">
                 <v-card-title class="about-title">WELCOME BACK!</v-card-title>
-                <v-card-text class="about-text">
-                  Hello, {{ auth.user.name }}!
-                </v-card-text>
+                <v-card-text class="about-text"><router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link">Hello, {{ auth.user.name }}!</router-link></v-card-text>
                 <v-card-actions class="card-actions">
                   <router-link to="/Catalog" class="router-link"><v-btn class="card-register">CATALOG</v-btn></router-link>
                   <span class="separator">|</span>
@@ -83,7 +81,7 @@
 
 
   <v-dialog max-width="500" v-model="dialog">
-    <v-card class=dialog>
+    <v-card class="v-card" color="black">
       <v-card-title class="v-card-title">Logout</v-card-title>
       <v-card-text class="v-card-text">
         Successfully logged out!
@@ -106,6 +104,11 @@
 
 
 <style scoped>
+.v-card{
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.587);
+      }
+
 .v-card-title, .v-card-text {
   color: white;
 }

@@ -44,10 +44,6 @@ class AuthController extends Controller
 
         return ["message" => "logged out"];
     }
-    
-
-
-
 
 
     public function emailcheck(Request $request){
@@ -59,4 +55,18 @@ class AuthController extends Controller
         $exists = User::where('name', $request->username)->exists();
         return ["exists" => $exists];
     }
+
+
+    public function getemail(Request $request){
+        return User::where("id", $request->id)->value("email");
+    }
+
+    public function getusername(Request $request){
+        return User::where("id", $request->id)->value("name");
+    }
+
+    public function getid(Request $request){
+        return User::where("id", $request->id)->value("id");
+    }
+
 }

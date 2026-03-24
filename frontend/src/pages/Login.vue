@@ -3,6 +3,7 @@
   import axios from '../plugins/axios'
   import { auth } from '../plugins/userinfo'
   import router from '@/router';
+  
   const email = ref("")
   const password = ref("")
   const valid = ref(false)
@@ -89,7 +90,7 @@
     </div>
 
     <v-dialog max-width="500" v-model="dialog">
-        <v-card>
+        <v-card class="v-card" color="black">
           <v-card-title class="v-card-title">Login</v-card-title>
           <v-card-text class="v-card-text">
             Successfully logged in!
@@ -109,7 +110,7 @@
     </v-dialog>
 
     <v-dialog max-width="500" v-model="dialogerror">
-        <v-card>
+        <v-card class="v-card" color="black">
           <v-card-title class="v-card-title">Login Error</v-card-title>
           <v-card-text class="v-card-text">
             Please check your email and password and try again.
@@ -131,7 +132,6 @@
 </template>
 
 <style scoped>
-
       .v-card-title, .v-card-text {
         color: white;
       }
@@ -146,6 +146,10 @@
         border: 1px solid rgba(255, 255, 255, 0.14);
       }
 
+      .v-card{
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.587);
+      }
 
     h1{
         color:white;
