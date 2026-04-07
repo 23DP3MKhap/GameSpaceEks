@@ -4,12 +4,17 @@
   import { auth } from '../plugins/userinfo'
   const apiStatus = ref(null) 
   const dialog = ref(false)
+  const igdb_expires = ref(null)
   onMounted(async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/ping')
-      apiStatus.value = response.ok
+        const response = await fetch('http://localhost:8000/api/ping')
+        await axios.get('/sanctum/csrf-cookie')
+        igdb_expires.value = (await axios.get('/api/igdb/client')).data
+        const igdb_games = await axios.get('/api/igdb/games') // TEMP ---------------------
+        console.log(igdb_games.data)
+        apiStatus.value = response.ok
     } catch (error) {
-      apiStatus.value = false
+        apiStatus.value = false
     }})
 
   async function logout(){
@@ -71,7 +76,13 @@
               <v-card-title class="api-status-title">API Status</v-card-title>
               <v-card-text class="api-text">
                 <div v-if="apiStatus === null">Checking API status...</div>
-                <div v-else-if="apiStatus === true" style="color: lightgreen;">API is online</div>
+                <div v-else-if="apiStatus === true" > 
+                    <p style="color: lightgreen;" >API is online</p>
+
+                    <!-- idk why it gave random value everytime :p gonna delete this probably -->
+                    <p>Expires in: {{ Math.round(igdb_expires/60/60/24)}} days</p>
+
+                </div>
                 <div v-else style="color: red;">API is offline</div>
               </v-card-text>
             </v-card>

@@ -22,7 +22,7 @@
 
     </div>
 </template>
-
+    
 <style scoped>
 
     .main-card-wrapper {

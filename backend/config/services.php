@@ -14,6 +14,11 @@ return [
     |
     */
 
+    'twitch' => [
+        'igdbclientid' => env('IGDBCLIENTID'),
+        'igdbclientsecret' => env('IGDBCLIENTSECRET')
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

@@ -1,24 +1,25 @@
 <script setup>
-    import { ref, onMounted } from 'vue'
-    import { auth } from '../plugins/userinfo'
-    import axios from '../plugins/axios'
-    import { computed } from 'vue'
+    import { ref, computed } from "vue"
+    import { auth } from "../plugins/userinfo"
+    import axios from "../plugins/axios"
+
+
     const dialog = ref(false)
     const items = [
-        { title: 'MAIN', to: '/' },
-        { title: 'CATALOG', to: '/catalog' },
-        { title: 'ABOUT', to: '/about' },
-        { title: 'LOGIN', to: '/login' },
-        { title: 'REGISTER', to: '/register' },
+        { title: "MAIN", to: "/" },
+        { title: "CATALOG", to: "/catalog" },
+        { title: "ABOUT", to: "/about" },
+        { title: "LOGIN", to: "/login" },
+        { title: "REGISTER", to: "/register" },
     ]
 
 
 
     const itemsregistered = computed(() => {
       const items = [
-        { title: 'MAIN', to: '/' },
-        { title: 'CATALOG', to: '/catalog' },
-        { title: 'ABOUT', to: '/about' },
+        { title: "MAIN", to: "/" },
+        { title: "CATALOG", to: "/catalog" },
+        { title: "ABOUT", to: "/about" },
       ]
     
       if (auth.user) {
@@ -28,8 +29,8 @@
         })
     
         items.push({
-          title: 'LOG OUT',
-          action: 'logout'
+          title: "LOG OUT",
+          action: "logout"
         })
       }
   
@@ -38,7 +39,7 @@
 
     async function logout(){
         try {
-            await axios.get('/sanctum/csrf-cookie')
+            await axios.get("/sanctum/csrf-cookie")
             await axios.post("/logout")
             auth.user = null
             dialog.value = true
@@ -47,6 +48,7 @@
         return console.log("error")
     }}
 
+    
 </script>
 
 <template>
@@ -55,7 +57,7 @@
     <div class="header">
         <nav>      
             <router-link to="/"><a class="logo">GAMESPACE</a></router-link>
-            <a>CATALOG</a>
+            <router-link to="/Catalog" class="router-link"><a>CATALOG</a></router-link>
             <a>ABOUT</a>  
         </nav>
 
