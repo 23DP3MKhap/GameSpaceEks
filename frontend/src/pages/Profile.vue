@@ -6,7 +6,7 @@
     const profileusername = ref("")
 
     onMounted(async function userusername(){
-        profileusername.value = (await axios.get("/api/user/username", { params: { id: route.params.id }})).data
+        profileusername.value = (await axios.get("/api/user/username", {params: {id: route.params.id}})).data
     })
 
 </script>

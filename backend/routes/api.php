@@ -37,7 +37,7 @@ Route::get("/user/id", [AuthController::class, 'getid']);
 // IGDB API
 
 Route::get("/igdb/client", [GameController::class, 'getclient']);
-Route::get("/igdb/games", [GameController::class, 'getgames']);  // temporary route
 
+Route::get("/igdb/games", [GameController::class, 'getgames']);  
 
-
+Route::post("/igdb/searchbyname", [GameController::class, 'getgamesbyname']);

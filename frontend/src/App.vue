@@ -1,9 +1,14 @@
 <script setup>
   import { auth } from './plugins/userinfo'
-  import { onMounted } from 'vue'
+  import { onMounted, ref } from 'vue'
   import Header from './components/Header.vue'
   import Footer from './components/Footer.vue'
   import axios from './plugins/axios'
+  import Catalogheader from './components/Catalogheader.vue'
+
+  const searchBar = ref("")
+
+  const onSearch = (value) => {searchBar.value = value}
 
   onMounted(async () => {
   try {
@@ -18,13 +23,21 @@
 </script>
 <template>
   <v-app>
-    <Header></Header>
+    <Header v-if="!$route.meta.hideHeader"></Header>
+    <Catalogheader v-if="$route.meta.hideHeader" @update-search="onSearch"></Catalogheader>
     <v-main>
-      <RouterView v-slot="{ Component, route }">
+      <RouterView v-if="!$route.meta.hideHeader" v-slot="{ Component, route }">
         <Transition name="page" mode="out-in">
           <component :is="Component" :key="route.fullPath" />
         </Transition>
       </RouterView>
+
+      <RouterView v-if="$route.meta.hideHeader" v-slot="{ Component, route }">
+        <Transition name="page" mode="out-in">
+          <component :search-query="searchBar" :is="Component" :key="route.fullPath" />
+        </Transition>
+      </RouterView>
+
     </v-main>
     <Footer></Footer>
   </v-app>

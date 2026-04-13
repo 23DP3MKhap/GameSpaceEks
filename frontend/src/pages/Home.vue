@@ -10,11 +10,12 @@
         const response = await fetch('http://localhost:8000/api/ping')
         await axios.get('/sanctum/csrf-cookie')
         igdb_expires.value = (await axios.get('/api/igdb/client')).data
-        const igdb_games = await axios.get('/api/igdb/games') // TEMP ---------------------
-        console.log(igdb_games.data)
+        
+        console.log(igdb_expires.value)
         apiStatus.value = response.ok
     } catch (error) {
         apiStatus.value = false
+        console.log(error)
     }})
 
   async function logout(){
@@ -49,7 +50,7 @@
                 <v-card-title class="about-title">WELCOME BACK!</v-card-title>
                 <v-card-text class="about-text"><router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link">Hello, {{ auth.user.name }}!</router-link></v-card-text>
                 <v-card-actions class="card-actions">
-                  <router-link to="/Catalog" class="router-link"><v-btn class="card-register">CATALOG</v-btn></router-link>
+                  <router-link to="/Catalog/1" class="router-link"><v-btn class="card-register">CATALOG</v-btn></router-link>
                   <span class="separator">|</span>
                   <v-btn class="card-login" @click="logout">LOG OUT</v-btn>
                 </v-card-actions>

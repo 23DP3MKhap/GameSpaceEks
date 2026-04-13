@@ -3,8 +3,10 @@
     import { auth } from "../plugins/userinfo"
     import axios from "../plugins/axios"
 
+    const search = ref("")
+    defineEmits(["update-search"])
 
-    const dialog = ref(false)
+    const dialog = ref(false)  
     const items = [
         { title: "MAIN", to: "/" },
         { title: "CATALOG", to: "/catalog" },
@@ -60,6 +62,18 @@
             <router-link to="/Catalog/1" class="router-link"><a>CATALOG</a></router-link>
             <a>ABOUT</a>  
         </nav>
+
+
+
+        <div class="header-center">
+            <input
+                v-model="search"
+                type="text"
+                placeholder="Search games..."
+                class="search-input"
+                @input = "$emit('update-search', search)"
+            />
+        </div>
 
             <div v-if="auth.user">
                 <nav>
@@ -124,6 +138,26 @@
 
 <style scoped>
 
+.search-input {
+    min-width: 40vw;
+    background: #111;
+    border: 1px solid #1f1f1f;
+    border-radius: 10px;
+    padding: 8px 12px;
+    color: white;
+    font-size: 12px;
+    font-weight: 300;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: #666;
+}
+
+.search-input:focus {
+    border-color: #333;
+}
+
     a {
         cursor: pointer;
     }
@@ -154,7 +188,6 @@
     }
 
     .site-header {
-        position: sticky;
         top: 0;
         width: 100%;
         z-index: 10000;

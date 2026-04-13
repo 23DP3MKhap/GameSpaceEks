@@ -11,7 +11,7 @@ const routes =[
     {path: "/Register", component: Register},
     {path: "/Login", component: Login},
     {path: "/User/:id/Profile", component: Profile},
-    {path: "/Catalog", component: Catalog, name: "catalog"}
+    { path: "/Catalog/:page", component: Catalog, name: "catalog", meta: { hideHeader: true } }
 ]
 
 const router = createRouter({
