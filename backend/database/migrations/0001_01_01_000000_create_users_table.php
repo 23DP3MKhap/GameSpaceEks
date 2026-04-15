@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('avatar')->nullable();
             $table->string('bio')->nullable();
             $table->boolean("isPrivate")->default(false);
+            $table->enum('role', ['user', 'admin'])->default('user');
+            
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

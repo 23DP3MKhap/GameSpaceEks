@@ -14,6 +14,11 @@
 
     watch(() => props.searchQuery, (newVal) => {
     clearTimeout(timeout);
+    if (!newVal || newVal.trim() === "") {
+        standartGameLoader();
+        return
+    }
+    
     timeout = setTimeout(() => {
         searchData(newVal);
     }, 500);
@@ -36,8 +41,11 @@
     }
     
     onMounted(async () => {
-        if (!props.searchQuery){
-        const igdb_games = await axios.get('/api/igdb/games')
+            await standartGameLoader()
+        })
+
+    async function standartGameLoader() {
+         const igdb_games = await axios.get('/api/igdb/games')
 
         games.value = igdb_games.data.map(game => ({
             id: game.id,
@@ -48,11 +56,10 @@
             genre: game.genres?.length
                 ? game.genres.map(g => g.name).join(', ')
                 : 'Unknown'
-        }))}
+        }))
+    }
+    
 
-    })
-
-   
 
     function openGameModal(game) {
         selectedGame.value = game
@@ -98,27 +105,62 @@
             </section>
         </main>
 
-        <v-dialog max-width="500" v-model="dialog">
-            <v-card class="v-card" color="black">
-                <v-card-title class="v-card-title">
-                    {{ selectedGame.name }}
-                </v-card-title>
-
-                <v-card-text class="v-card-text">
-                    <p><span class="modal-label">Genre:</span> {{ selectedGame.genre }}</p>
-                    <p><span class="modal-label">ID:</span> {{ selectedGame.id }}</p>
-                </v-card-text>
-
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-
-                    <v-btn
-                        class="v-dialog-button"
-                        @click="dialog = false"
-                    >
-                        <p class="v-btn-text">Close</p>
-                    </v-btn>
-                </v-card-actions>
+        <v-dialog max-width="850" v-model="dialog" transition="dialog-bottom-transition">
+            <v-card class="game-modal" v-if="selectedGame">
+                <div class="modal-body">
+                    <div class="modal-aside">
+                        <img :src="selectedGame.image" :alt="selectedGame.name" class="modal-image" />
+                        <div class="modal-main-info">
+                            <v-btn class="btn-add-collection" block>
+                                Add to Collection
+                            </v-btn>
+                            <div class="modal-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Rating</span>
+                                    <span class="stat-value">N/A</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Genre</span>
+                                    <span class="stat-value">{{ selectedGame.genre }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="modal-content-area">
+                        <v-card-title class="modal-title">
+                            {{ selectedGame.name }}
+                            <v-btn icon="mdi-close" variant="text" size="small" @click="dialog = false" class="close-btn"></v-btn>
+                        </v-card-title>
+                    
+                        <div class="reviews-section">
+                            <h3 class="section-title">Reviews</h3>
+                            
+                            <div class="reviews-list">
+                                <div class="review-item placeholder">
+                                    <div class="review-avatar"></div>
+                                    <div class="review-details">
+                                        <div class="review-author">User123 <span class="review-rating">9</span></div>
+                                        <div class="review-text">Loer ipsum dolor sit amet, consectetur adipiscing elit.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        
+                            <div class="review-form">
+                                <textarea placeholder="Write your thoughts..." class="custom-textarea"></textarea>
+                                <div class="form-actions">
+                                    <div class="rating-picker">
+                                        <span>Score:</span>
+                                        <select class="custom-select">
+                                            <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
+                                        </select>
+                                    </div>
+                                    <v-btn class="btn-send" size="small">Post Review</v-btn>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </v-card>
         </v-dialog>
     </div>
@@ -126,6 +168,190 @@
 
 
 <style scoped>
+.game-modal {
+    background: #0d0d0d ;
+    border: 1px solid #1f1f1f ;
+    border-radius: 16px ;
+    overflow: hidden;
+    color: #fff;
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: row;
+    min-height: 500px;
+}
+
+@media (max-width: 600px) {
+    .modal-body { flex-direction: column; }
+}
+
+.modal-aside {
+    width: 300px;
+    background: #111;
+    border-right: 1px solid #1f1f1f;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-image {
+    width: 100%;
+    height: 380px;
+    object-fit: cover;
+}
+
+.modal-main-info {
+    padding: 20px;
+}
+
+.btn-add-collection {
+    background: #fff ;
+    color: #000 ;
+    text-transform: none;
+    font-weight: 600;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.modal-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.stat-label { color: #666; }
+.stat-value { color: #eee; }
+
+.modal-content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    position: relative;
+}
+
+.modal-title {
+    font-size: 28px ;
+    font-weight: 700 ;
+    padding: 0 0 20px 0 ;
+    line-height: 1.2;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.close-btn { color: #555; }
+
+.reviews-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-title {
+    font-size: 14px;
+    text-transform: uppercase;
+    color: #444;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+}
+
+.reviews-list {
+    flex: 1;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.review-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: #161616;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.review-avatar {
+    width: 32px;
+    height: 32px;
+    background: #333;
+    border-radius: 50%;
+}
+
+.review-author {
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.review-rating {
+    color: #38ef7d;
+    margin-left: 8px;
+}
+
+.review-text {
+    font-size: 13px;
+    color: #aaa;
+}
+
+.review-form {
+    background: #111;
+    border: 1px solid #1f1f1f;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.custom-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    min-height: 60px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #1f1f1f;
+}
+
+.rating-picker {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-select {
+    background: #1a1a1a;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+.btn-send {
+    background: #333 ;
+    color: #fff ;
+    text-transform: none;
+    font-size: 12px ;
+}
+
 .catalog-page {
     display: grid;
     grid-template-columns: 180px 1fr;
@@ -252,7 +478,7 @@
 }
 
 .v-card {
-    background: #050505 !important;
+    background: #050505 ;
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.14);
     color: white;
