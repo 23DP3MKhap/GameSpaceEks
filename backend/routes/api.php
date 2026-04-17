@@ -1,6 +1,7 @@
 <?php
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\DatabaseController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -41,3 +42,8 @@ Route::get("/igdb/client", [GameController::class, 'getclient']);
 Route::get("/igdb/games", [GameController::class, 'getgames']);  
 
 Route::post("/igdb/searchbyname", [GameController::class, 'getgamesbyname']);
+
+// DATABASE
+
+Route::middleware('auth:sanctum')->post("/database/addgame", [DatabaseController::class, 'addGame']);
+Route::middleware('auth:sanctum')->post("/database/addreview", [DatabaseController::class, 'addReview']);

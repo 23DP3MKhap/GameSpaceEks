@@ -1,16 +1,34 @@
 <script setup>
     import { ref, onMounted, watchEffect, watch } from 'vue'
     import axios from '../plugins/axios'
-
+    import { auth } from '../plugins/userinfo'
     const games = ref([])
     const dialog = ref(false)
     const selectedGame = ref(null)
+    const reviewTitle = ref("")
+    const reviewText = ref("")
+    const reviewRating = ref(1)
+    const reviewdialog = ref(false)
     let timeout = null
 
     const props = defineProps({
         searchQuery: String
     })
 
+    async function postReview(game){
+        await axios.get('/sanctum/csrf-cookie')
+        await axios.post("/api/database/addgame", {igdb_id: game.id})
+        await axios.post("/api/database/addreview", {user_id: auth.user.id, game_id: game.id, title: reviewTitle.value, content: reviewText.value, rating: reviewRating.value})
+        reviewTitle.value = ""
+        reviewText.value = ""
+        reviewRating.value = 1
+        reviewdialog.value = true
+        return console.log("Review posted")
+        // reviewTitle
+        // reviewText
+        // reviewRating
+
+    }
 
     watch(() => props.searchQuery, (newVal) => {
     clearTimeout(timeout);
@@ -18,7 +36,7 @@
         standartGameLoader();
         return
     }
-    
+
     timeout = setTimeout(() => {
         searchData(newVal);
     }, 500);
@@ -135,27 +153,40 @@
                     
                         <div class="reviews-section">
                             <h3 class="section-title">Reviews</h3>
-                            
+                                                
                             <div class="reviews-list">
                                 <div class="review-item placeholder">
                                     <div class="review-avatar"></div>
                                     <div class="review-details">
                                         <div class="review-author">User123 <span class="review-rating">9</span></div>
+                                        <div class="review-title-display">Amazing Gameplay!</div> 
                                         <div class="review-text">Loer ipsum dolor sit amet, consectetur adipiscing elit.</div>
                                     </div>
                                 </div>
                             </div>
                         
                             <div class="review-form">
-                                <textarea placeholder="Write your thoughts..." class="custom-textarea"></textarea>
+                                <input 
+                                    type="text" 
+                                    placeholder="Review Title (e.g. Awesome game!)" 
+                                    class="custom-input-title"
+                                    v-model="reviewTitle" 
+                                />
+
+                                <textarea 
+                                    placeholder="Write your thoughts..." 
+                                    class="custom-textarea"
+                                    v-model="reviewText"
+                                ></textarea>
+                            
                                 <div class="form-actions">
                                     <div class="rating-picker">
                                         <span>Score:</span>
-                                        <select class="custom-select">
+                                        <select class="custom-select" v-model="reviewRating">
                                             <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
                                         </select>
                                     </div>
-                                    <v-btn class="btn-send" size="small">Post Review</v-btn>
+                                    <v-btn class="btn-send" size="small" @click="postReview(selectedGame)">Post Review</v-btn>
                                 </div>
                             </div>
                         </div>
@@ -163,11 +194,74 @@
                 </div>
             </v-card>
         </v-dialog>
+
+        <v-dialog max-width="500" v-model="reviewdialog">
+            <v-card class="v-card" color="black">
+              <v-card-title class="v-card-title">Review published</v-card-title>
+              <v-card-text class="v-card-text">
+                Successfully publish review!
+              </v-card-text>
+
+              <v-card-actions>
+                <v-spacer></v-spacer>
+
+                <v-btn
+                  class="v-dialog-button"
+                  @click="reviewdialog = false"
+                >
+                  <p class="v-btn-text">Close</p>
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
+
 </template>
 
 
 <style scoped>
+
+.v-card-title, .v-card-text {
+      color: white;
+    }
+    .v-btn-text {
+      color:white;
+      font-size: 10px;
+    }
+    .dialog, .v-dialog-button{
+      background-color: rgb(0, 0, 0);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .v-card{
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.587);
+    }
+
+.custom-input-title {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05); 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: white;
+    margin-bottom: 10px; 
+    font-weight: bold;
+    outline: none;
+}
+
+.custom-input-title:focus {
+    border-color: #646cff; 
+}
+
+
+.review-title-display {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin: 4px 0;
+    color: #fff;
+}
+
 .game-modal {
     background: #0d0d0d ;
     border: 1px solid #1f1f1f ;

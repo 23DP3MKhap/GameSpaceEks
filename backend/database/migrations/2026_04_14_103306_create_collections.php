@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('game_id')->constrained()->onDelete('cascade');
             $table->enum('status', ['playing', 'completed', 'planned', 'dropped'])->default('planned');
-            $table->integer('user_score')->nullable(); // Личная оценка
+            $table->integer('user_score')->nullable(); 
             $table->text('notes')->nullable();
             $table->timestamps();
 

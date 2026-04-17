@@ -11,14 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('games', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('igdb_id')->unique(); // for igdb game id reference so i can check if this game already in database in the future
+        Schema::create('games', function (Blueprint $table) {  
+            $table->unsignedBigInteger('id')->primary(); 
             $table->string('name');
-            $table->string('cover_url')->nullable();
             $table->string('developer')->nullable();
+            $table->string('publisher')->nullable();
             $table->date('release_date')->nullable();
+            $table->longText('description')->nullable();
+            $table->string('cover_url')->nullable();
+            $table->FLOAT('rating', 10, 2)->nullable();
             $table->timestamps();
+
         });
     }
 

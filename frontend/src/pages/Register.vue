@@ -1,6 +1,7 @@
 <script setup>
   import { ref } from 'vue'
   import axios from '../plugins/axios'
+  import router from '@/router';
   const email = ref("")
   const username = ref("")
   const password = ref("")
@@ -14,11 +15,13 @@
       await axios.post("/api/register", {email: email.value, username: username.value, password: password.value})
       console.log("Success")
       dialog.value = true
-
+    
       username.value = ''
       email.value = ''
       password.value = ''
       passwordConfirmation.value = ''
+      router.push("/Login")
+      
     }
     else {
       console.log("Error")
