@@ -46,4 +46,7 @@ Route::post("/igdb/searchbyname", [GameController::class, 'getgamesbyname']);
 // DATABASE
 
 Route::middleware('auth:sanctum')->post("/database/addgame", [DatabaseController::class, 'addGame']);
+
 Route::middleware('auth:sanctum')->post("/database/addreview", [DatabaseController::class, 'addReview']);
+
+Route::get("/database/getreviews", [DatabaseController::class, 'getReviews']);

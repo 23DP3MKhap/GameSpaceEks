@@ -8,6 +8,9 @@ use App\Models\Review;
 
 class DatabaseController extends Controller
 {
+
+    // Create metodes 
+
     public function addGame(Request $request){
         $validated = $request->validate([
         'igdb_id' => 'required|integer'
@@ -102,5 +105,14 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
         ]
         );  
         
+    }
+
+
+    // Get metodes
+
+    public function getReviews(Request $request){
+        $request->validate(['game_id' => 'required|integer']);
+        $reviews = Review::where('game_id', $request->game_id)->with('user')->latest()->get();
+        return response()->json($reviews);
     }
 }

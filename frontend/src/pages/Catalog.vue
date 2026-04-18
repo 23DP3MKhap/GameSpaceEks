@@ -9,11 +9,17 @@
     const reviewText = ref("")
     const reviewRating = ref(1)
     const reviewdialog = ref(false)
+    const reviews = ref([])
     let timeout = null
 
     const props = defineProps({
         searchQuery: String
     })
+
+    async function getReviews(gameId){
+        const response = await axios.get("/api/database/getreviews", {params: {game_id: gameId}})
+        reviews.value = response.data
+    }
 
     async function postReview(game){
         await axios.get('/sanctum/csrf-cookie')
@@ -23,6 +29,7 @@
         reviewText.value = ""
         reviewRating.value = 1
         reviewdialog.value = true
+        getReviews(game.id)
         return console.log("Review posted")
         // reviewTitle
         // reviewText
@@ -82,6 +89,7 @@
     function openGameModal(game) {
         selectedGame.value = game
         dialog.value = true
+        getReviews(game.id)
     }
 </script>
 
@@ -92,15 +100,9 @@
             <div class="logo">Filters</div>
             <nav class="menu">
                 <h3>Platforms</h3>
-                <a href="#">X</a>
-                <a href="#">X</a>
-                <a href="#">X</a>
-                <a href="#">X</a>
-
+                <a href="#">X</a><a href="#">X</a><a href="#">X</a>
                 <h3>Genres</h3>
-                <a href="#">X</a>
-                <a href="#">X</a>
-                <a href="#">X</a>
+                <a href="#">X</a><a href="#">X</a>
             </nav>
         </aside>
 
@@ -113,7 +115,6 @@
             <section class="games-grid">
                 <div class="game-card" v-for="game in games" :key="game.id" @click="openGameModal(game)">
                     <img :src="game.image" :alt="game.name" class="game-image" />
-
                     <div class="game-info">
                         <h2>{{ game.name }}</h2>
                         <div class="genre">{{ game.genre }}</div>
@@ -129,9 +130,7 @@
                     <div class="modal-aside">
                         <img :src="selectedGame.image" :alt="selectedGame.name" class="modal-image" />
                         <div class="modal-main-info">
-                            <v-btn class="btn-add-collection" block>
-                                Add to Collection
-                            </v-btn>
+                            <v-btn class="btn-add-collection" block>Add to Collection</v-btn>
                             <div class="modal-stats">
                                 <div class="stat-item">
                                     <span class="stat-label">Rating</span>
@@ -152,33 +151,34 @@
                         </v-card-title>
                     
                         <div class="reviews-section">
-                            <h3 class="section-title">Reviews</h3>
-                                                
+                            <h3 class="section-title">Reviews ({{ reviews.length }})</h3>
+                                                            
                             <div class="reviews-list">
-                                <div class="review-item placeholder">
-                                    <div class="review-avatar"></div>
+                                <div v-for="review in reviews" :key="review.id" class="review-item">
+                                    <div class="review-avatar">{{ review.user?.name ? review.user.name[0] : 'U' }}</div>
+                                    
                                     <div class="review-details">
-                                        <div class="review-author">User123 <span class="review-rating">9</span></div>
-                                        <div class="review-title-display">Amazing Gameplay!</div> 
-                                        <div class="review-text">Loer ipsum dolor sit amet, consectetur adipiscing elit.</div>
+                                        <div class="review-author">
+                                            {{ review.user?.name || 'Anonymous' }} 
+                                            <span class="review-rating">{{ review.rating }}</span>
+                                        </div>
+                                        <div class="review-title-display">{{ review.title }}</div> 
+                                        <div class="review-text">{{ review.content }}</div>
+                                        
+                                        <div class="review-date" style="font-size: 0.8rem; color: gray;">
+                                            {{ new Date(review.created_at).toLocaleDateString() }}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        
-                            <div class="review-form">
-                                <input 
-                                    type="text" 
-                                    placeholder="Review Title (e.g. Awesome game!)" 
-                                    class="custom-input-title"
-                                    v-model="reviewTitle" 
-                                />
-
-                                <textarea 
-                                    placeholder="Write your thoughts..." 
-                                    class="custom-textarea"
-                                    v-model="reviewText"
-                                ></textarea>
                             
+                                <div v-if="reviews.length === 0" class="no-reviews">
+                                    <p>No reviews yet. Be the first to write one!</p>
+                                </div>
+                            </div>
+                            
+                            <div class="review-form">
+                                <input type="text" placeholder="Review Title" class="custom-input-title" v-model="reviewTitle" />
+                                <textarea placeholder="Write your thoughts..." class="custom-textarea" v-model="reviewText"></textarea>
                                 <div class="form-actions">
                                     <div class="rating-picker">
                                         <span>Score:</span>
@@ -195,27 +195,19 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog max-width="500" v-model="reviewdialog">
-            <v-card class="v-card" color="black">
-              <v-card-title class="v-card-title">Review published</v-card-title>
-              <v-card-text class="v-card-text">
-                Successfully publish review!
-              </v-card-text>
-
-              <v-card-actions>
-                <v-spacer></v-spacer>
-
-                <v-btn
-                  class="v-dialog-button"
-                  @click="reviewdialog = false"
-                >
-                  <p class="v-btn-text">Close</p>
-                </v-btn>
-              </v-card-actions>
+        <v-dialog v-model="reviewdialog" max-width="400">
+            <v-card class="dialog">
+                <v-card-title>Review published</v-card-title>
+                <v-card-text>Successfully published review!</v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="reviewdialog = false">
+                        <span class="v-btn-text">Close</span>
+                    </v-btn>
+                </v-card-actions>
             </v-card>
         </v-dialog>
     </div>
-
 </template>
 
 
