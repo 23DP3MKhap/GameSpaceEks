@@ -50,3 +50,5 @@ Route::middleware('auth:sanctum')->post("/database/addgame", [DatabaseController
 Route::middleware('auth:sanctum')->post("/database/addreview", [DatabaseController::class, 'addReview']);
 
 Route::get("/database/getreviews", [DatabaseController::class, 'getReviews']);
+
+Route::middleware('auth:sanctum')->post("/database/addtocollection", [DatabaseController::class, 'addToCollection']);

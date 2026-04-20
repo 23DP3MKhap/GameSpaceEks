@@ -31,10 +31,6 @@
         reviewdialog.value = true
         getReviews(game.id)
         return console.log("Review posted")
-        // reviewTitle
-        // reviewText
-        // reviewRating
-
     }
 
     watch(() => props.searchQuery, (newVal) => {
@@ -48,8 +44,6 @@
         searchData(newVal);
     }, 500);
     });
-
-    //loading by search
 
     async function searchData(query){
         const igdb_games = await axios.post("/api/igdb/searchbyname", {search: query })
@@ -85,12 +79,20 @@
     }
     
 
-
     function openGameModal(game) {
         selectedGame.value = game
         dialog.value = true
         getReviews(game.id)
     }
+
+    async function addToCollection(gameId) {
+        await axios.get('/sanctum/csrf-cookie')
+        await axios.post("/api/database/addgame", {igdb_id: gameId})
+        await axios.post("/api/database/addtocollection", {game_id: gameId, status: "planned", user_score: reviewRating.value, notes: null})
+        return console.log("Game added to collection")
+    }
+
+
 </script>
 
 
@@ -130,7 +132,7 @@
                     <div class="modal-aside">
                         <img :src="selectedGame.image" :alt="selectedGame.name" class="modal-image" />
                         <div class="modal-main-info">
-                            <v-btn class="btn-add-collection" block>Add to Collection</v-btn>
+                            <v-btn class="btn-add-collection" block @click="addToCollection(selectedGame.id)">Add to Collection</v-btn>
                             <div class="modal-stats">
                                 <div class="stat-item">
                                     <span class="stat-label">Rating</span>

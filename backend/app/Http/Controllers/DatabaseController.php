@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use App\Models\Game;
 use App\Models\Review;
+use App\Models\Collection;
 
 class DatabaseController extends Controller
 {
@@ -106,6 +107,31 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
         );  
         
     }
+
+    public function deleteReview(Request $request){
+        // TODO
+    }
+
+    public function addToCollection(Request $request){
+        $validated = $request->validate([
+        'game_id'    => 'required|integer',
+        'status'     => 'required|in:playing,completed,planned,dropped',
+        'user_score' => 'nullable|integer|min:1|max:10',
+        'notes'      => 'nullable|string|max:1000',
+    ]);
+
+    $collectionItem = Collection::updateOrCreate(
+        [
+            'user_id' => $request->user()->id, 
+            'game_id' => $validated['game_id']
+        ],
+        [
+            'status'     => $validated['status'],
+            'user_score' => $validated['user_score'] ?? null,
+            'notes'      => $validated['notes'] ?? null,
+        ]);
+    }
+    
 
 
     // Get metodes

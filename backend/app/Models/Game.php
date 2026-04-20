@@ -23,10 +23,7 @@ class Game extends Model
         return $this->belongsToMany(Platform::class, 'game_platform');
     }
 
-    public function reviews()
-{
+    public function reviews(){
     return $this->hasMany(Review::class, 'game_id', 'id');
-}
-
-    
+    }  
 }
