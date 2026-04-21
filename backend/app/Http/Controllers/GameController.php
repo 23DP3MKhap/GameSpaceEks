@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 
-// config('services.twitch.igdb');
 
 
 class GameController extends Controller
@@ -17,9 +16,8 @@ class GameController extends Controller
 ]))->json();
         return $response['expires_in'];
     }
-    // btq5tl9mt5ydurj0ws7nfrdqu317al
     
-    public function getgames(){
+    public function getgames(Request $request){
         $client = (Http::post("https://id.twitch.tv/oauth2/token", 
         ["client_id" => config('services.twitch.igdbclientid'), 
         "client_secret" => config('services.twitch.igdbclientsecret'),
@@ -27,34 +25,36 @@ class GameController extends Controller
         
         $token = $client['access_token'];
 
-        $gameresponse = (Http::withBody("fields id, name, cover.url, genres.name; limit 21;")->withHeaders([
+        $httpBody = "fields id, name, cover.url, genres.name; limit 24;";
+        $rules = [];
+        $search = $request->search;
+        $genres = $request->genres;
+        $platforms = $request->platforms;
+
+        if ($search) {
+            $rules[] = "name ~ *\"$search\"*";
+        }
+
+        if (!empty($genres) && is_array($genres)) {
+            $rules[] = "genres = (" . implode(',', $genres) . ")";
+        }
+
+        if (!empty($platforms) && is_array($platforms)) {
+            $rules[] = "platforms = (" . implode(',', $platforms) . ")";
+        }
+
+        if (!empty($rules)) {
+            $httpBody .= " where " . implode(' & ', $rules) . ";";
+        }
+
+        $gameresponse = (Http::withBody($httpBody)->withHeaders([
         "Client-ID" => config('services.twitch.igdbclientid'),
         "Authorization" => "Bearer "  . $token])->post("https://api.igdb.com/v4/games"))->json();
 
         return $gameresponse;
         }
 
-
-    public function getgamesbyname(Request $request){
-        $client = (Http::post("https://id.twitch.tv/oauth2/token", 
-        ["client_id" => config('services.twitch.igdbclientid'), 
-        "client_secret" => config('services.twitch.igdbclientsecret'),
-        "grant_type" => 'client_credentials']))->json();
-        
-        $token = $client['access_token'];
-
-        $gameresponse = (Http::withBody("search \"$request->search\"; fields id, name, cover.url, genres.name; limit 21;")->withHeaders([
-        "Client-ID" => config('services.twitch.igdbclientid'),
-        "Authorization" => "Bearer "  . $token])->post("https://api.igdb.com/v4/games"))->json();
-
-        return $gameresponse;
-    }
 }
 
-
-    
-
-// "Client-ID" => config('services.twitch.igdbclientid'),
-//          "Authorization" =>  "Bearer " . $token
 
 

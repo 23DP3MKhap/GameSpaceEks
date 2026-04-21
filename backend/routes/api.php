@@ -52,3 +52,7 @@ Route::middleware('auth:sanctum')->post("/database/addreview", [DatabaseControll
 Route::get("/database/getreviews", [DatabaseController::class, 'getReviews']);
 
 Route::middleware('auth:sanctum')->post("/database/addtocollection", [DatabaseController::class, 'addToCollection']);
+
+Route::get("/database/getgenres", [DatabaseController::class, 'getGenres']);
+
+Route::get("/database/getplatforms", [DatabaseController::class, 'getPlatforms']);

@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Game;
 use App\Models\Review;
 use App\Models\Collection;
+use App\Models\Genre;
+use App\Models\Platform;
 
 class DatabaseController extends Controller
 {
@@ -140,5 +142,17 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
         $request->validate(['game_id' => 'required|integer']);
         $reviews = Review::where('game_id', $request->game_id)->with('user')->latest()->get();
         return response()->json($reviews);
+    }
+
+    public function getGenres(){
+        $genres = Genre::orderBy("name", "asc")->get();
+
+        return response()->json($genres);
+    }
+
+    public function getPlatforms(){
+        $platforms = Platform::orderBy("name", "asc")->get();
+
+        return response()->json($platforms);
     }
 }

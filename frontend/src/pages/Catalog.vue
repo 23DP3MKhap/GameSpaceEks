@@ -2,6 +2,10 @@
     import { ref, onMounted, watchEffect, watch } from 'vue'
     import axios from '../plugins/axios'
     import { auth } from '../plugins/userinfo'
+    const genresList = ref([])
+    const platformsList = ref([])
+    const selectedGenres = ref([])
+    const selectedPlatforms = ref([])
     const games = ref([])
     const dialog = ref(false)
     const selectedGame = ref(null)
@@ -16,10 +20,39 @@
         searchQuery: String
     })
 
+    function toggleAllGenres(e) {
+        if (e.target.checked) {
+          selectedGenres.value = genresList.value.map(g => g.id)
+        } else {
+          selectedGenres.value = []
+        }
+    }
+
+    function toggleAllPlatforms(e) {
+        if (e.target.checked) {
+          selectedPlatforms.value = platformsList.value.map(g => g.id)
+        } else {
+          selectedPlatforms.value = []
+        }
+    }
+
+
+
+
     async function getReviews(gameId){
         const response = await axios.get("/api/database/getreviews", {params: {game_id: gameId}})
         reviews.value = response.data
     }
+
+    async function getGenres() {
+        const response = await axios.get('/api/database/getgenres')
+        genresList.value = response.data
+    }
+
+    async function getPlatforms() {
+        const response = await axios.get('/api/database/getplatforms')
+        platformsList.value = response.data
+    }  
 
     async function postReview(game){
         await axios.get('/sanctum/csrf-cookie')
@@ -36,35 +69,27 @@
     watch(() => props.searchQuery, (newVal) => {
     clearTimeout(timeout);
     if (!newVal || newVal.trim() === "") {
-        standartGameLoader();
+        gameLoader();
         return
     }
-
     timeout = setTimeout(() => {
-        searchData(newVal);
+        gameLoader(newVal);
     }, 500);
     });
 
-    async function searchData(query){
-        const igdb_games = await axios.post("/api/igdb/searchbyname", {search: query })
-        games.value = igdb_games.data.map(game => ({
-            id: game.id,
-            name: game.name || 'Unknown',
-            image: game.cover
-                ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big')
-                : 'https://placehold.co/600x400',
-            genre: game.genres?.length
-                ? game.genres.map(g => g.name).join(', ')
-                : 'Unknown'
-        }))
-    }
+    watch([selectedGenres, selectedPlatforms], () => {
+        gameLoader()
+    });
+
     
     onMounted(async () => {
-            await standartGameLoader()
+            await gameLoader()
+            await getGenres()
+            await getPlatforms()
         })
 
-    async function standartGameLoader() {
-         const igdb_games = await axios.get('/api/igdb/games')
+    async function gameLoader() {
+        const igdb_games = await axios.get('/api/igdb/games', {params: {search: props.searchQuery, genres: selectedGenres.value, platforms: selectedPlatforms.value}})
 
         games.value = igdb_games.data.map(game => ({
             id: game.id,
@@ -98,20 +123,41 @@
 
 <template>
     <div class="catalog-page">
-        <aside class="sidebar">
-            <div class="logo">Filters</div>
-            <nav class="menu">
-                <h3>Platforms</h3>
-                <a href="#">X</a><a href="#">X</a><a href="#">X</a>
-                <h3>Genres</h3>
-                <a href="#">X</a><a href="#">X</a>
-            </nav>
-        </aside>
-
         <main class="content">
             <section class="hero">
-                <h1>Catalog</h1>
-                <p>Game list</p>
+                <h1>Filters</h1>
+                <p>shift + scroll to scroll list</p>
+
+                <div style="padding: 1rem 0;">
+                  <div class="track-row">
+                    <span class="track-label">Genres: </span>
+                    <div class="track-scroll">
+                        <div class="cb-item">
+                            <input type="checkbox" id="g-all" :checked="selectedGenres.length === genresList.length" @change="toggleAllGenres">
+                            <label for="g-all">| ALL |</label>
+                        </div>
+                        <div class="cb-item" v-for="genre in genresList" :key="genre.id">
+                            <input type="checkbox" :id="'g-' + genre.id" :value="genre.id" v-model="selectedGenres">
+                            <label :for="'g-' + genre.id">{{ genre.name }}</label>
+                        </div>
+                    </div>
+                  </div>
+              
+                  <div class="track-row">
+                    <span class="track-label">Platforms: </span>
+                    <div class="track-scroll">
+                        <div class="cb-item">
+                            <input type="checkbox" id="p-all" :checked="selectedPlatforms.length === platformsList.length" @change="toggleAllPlatforms">
+                            <label for="p-all">| ALL |</label>
+                        </div>
+                        <div class="cb-item" v-for="platform in platformsList" :key="platform.id">
+                            <input type="checkbox" :id="'p-' + platform.id" :value="platform.id" v-model="selectedPlatforms">
+                            <label :for="'p-' + platform.id">{{ platform.name }}</label>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+                
             </section>
 
             <section class="games-grid">
@@ -214,6 +260,76 @@
 
 
 <style scoped>
+
+.track-row {
+    display: flex;
+    align-items: center;
+    margin: 0 0 0.75rem;
+}
+
+.track-label {
+    flex: 0 0 auto;
+    font-size: 14px;
+    color: #ffffff;
+    white-space: nowrap;
+    padding-right: 14px;
+    min-width: 80px;
+    padding-bottom: 4px;
+}
+
+.track-scroll {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    min-width: 0;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+
+.track-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.cb-item {
+    display: inline-block;
+    flex: 0 0 auto;
+}
+
+.cb-item input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.cb-item label {
+    display: block;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    color: #888;
+    transition: color 0.15s, background 0.15s;
+    user-select: none;
+}
+
+.cb-item label:hover {
+    color: #fff;
+}
+
+.cb-item input:checked + label {
+    color: #fff;
+    background: #1f1f1f;
+    font-weight: 500;
+}
+
+
+
+
 
 .v-card-title, .v-card-text {
       color: white;
@@ -441,52 +557,9 @@
 }
 
 .catalog-page {
-    display: grid;
-    grid-template-columns: 180px 1fr;
     min-height: 100vh;
     background: #0a0a0a;
     color: #e8e8e8;
-}
-
-.sidebar {
-    padding: 20px 16px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    background: #0d0d0d;
-    border-right: 1px solid #181818;
-}
-
-.logo {
-    font-size: 16px;
-    font-weight: 500;
-    margin-bottom: 24px;
-    color: #f2f2f2;
-    letter-spacing: 0.4px;
-}
-
-.menu h3 {
-    font-size: 11px;
-    font-weight: 500;
-    margin: 18px 0 10px;
-    color: #8a8a8a;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-}
-
-.menu a {
-    display: block;
-    color: #9a9a9a;
-    text-decoration: none;
-    margin-bottom: 8px;
-    font-size: 12px;
-    font-weight: 300;
-    transition: 0.15s;
-}
-
-.menu a:hover {
-    color: #e2e2e2;
 }
 
 .content {
