@@ -2,11 +2,14 @@
     import { ref, onMounted, watchEffect, watch } from 'vue'
     import axios from '../plugins/axios'
     import { auth } from '../plugins/userinfo'
+
     const genresList = ref([])
     const platformsList = ref([])
     const selectedGenres = ref([])
     const selectedPlatforms = ref([])
     const games = ref([])
+    const dbgames = ref([])
+    const apigames = ref([])
     const dialog = ref(false)
     const selectedGame = ref(null)
     const reviewTitle = ref("")
@@ -14,33 +17,39 @@
     const reviewRating = ref(1)
     const reviewdialog = ref(false)
     const reviews = ref([])
+    const collectionExists = ref(false)
+    const collectionStatus = ref('planned')
+    const collectionScore = ref(5)
+    const collectionNotes = ref('')
+    const showCollectionForm = ref(false)
+    const statusOptions = [
+        { value: 'planned', label: 'Planned' },
+        { value: 'playing', label: 'Playing' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'dropped', label: 'Dropped' },
+    ]
     let timeout = null
 
-    const props = defineProps({
-        searchQuery: String
-    })
+    const props = defineProps({ searchQuery: String })
 
     function toggleAllGenres(e) {
         if (e.target.checked) {
-          selectedGenres.value = genresList.value.map(g => g.id)
+            selectedGenres.value = genresList.value.map(g => g.id)
         } else {
-          selectedGenres.value = []
+            selectedGenres.value = []
         }
     }
 
     function toggleAllPlatforms(e) {
         if (e.target.checked) {
-          selectedPlatforms.value = platformsList.value.map(g => g.id)
+            selectedPlatforms.value = platformsList.value.map(g => g.id)
         } else {
-          selectedPlatforms.value = []
+            selectedPlatforms.value = []
         }
     }
 
-
-
-
-    async function getReviews(gameId){
-        const response = await axios.get("/api/database/getreviews", {params: {game_id: gameId}})
+    async function getReviews(gameId) {
+        const response = await axios.get("/api/database/getreviews", { params: { game_id: gameId } })
         reviews.value = response.data
     }
 
@@ -52,12 +61,18 @@
     async function getPlatforms() {
         const response = await axios.get('/api/database/getplatforms')
         platformsList.value = response.data
-    }  
+    }
 
-    async function postReview(game){
+    async function postReview(game) {
         await axios.get('/sanctum/csrf-cookie')
-        await axios.post("/api/database/addgame", {igdb_id: game.id})
-        await axios.post("/api/database/addreview", {user_id: auth.user.id, game_id: game.id, title: reviewTitle.value, content: reviewText.value, rating: reviewRating.value})
+        await axios.post("/api/database/addgame", { igdb_id: game.id })
+        await axios.post("/api/database/addreview", {
+            user_id: auth.user.id,
+            game_id: game.id,
+            title: reviewTitle.value,
+            content: reviewText.value,
+            rating: reviewRating.value
+        })
         reviewTitle.value = ""
         reviewText.value = ""
         reviewRating.value = 1
@@ -67,32 +82,44 @@
     }
 
     watch(() => props.searchQuery, (newVal) => {
-    clearTimeout(timeout);
-    if (!newVal || newVal.trim() === "") {
-        gameLoader();
-        return
-    }
-    timeout = setTimeout(() => {
-        gameLoader(newVal);
-    }, 500);
+        clearTimeout(timeout);
+        if (!newVal || newVal.trim() === "") {
+            gameLoader();
+            return
+        }
+        timeout = setTimeout(() => {
+            gameLoader(newVal);
+        }, 500);
     });
 
     watch([selectedGenres, selectedPlatforms], () => {
         gameLoader()
     });
 
-    
+    watch(dialog, (newVal) => {
+        if (!newVal) {
+            collectionExists.value = false
+        }
+    })
+
     onMounted(async () => {
-            await gameLoader()
-            await getGenres()
-            await getPlatforms()
-        })
+        await gameLoader()
+        await getGenres()
+        await getPlatforms()
+    })
 
     async function gameLoader() {
-        const igdb_games = await axios.get('/api/igdb/games', {params: {search: props.searchQuery, genres: selectedGenres.value, platforms: selectedPlatforms.value}})
+        const database_games = await axios.get('/api/database/getgames', {
+            params: {
+                search: props.searchQuery,
+                genres: selectedGenres.value,
+                platforms: selectedPlatforms.value
+            }
+        })
 
-        games.value = igdb_games.data.map(game => ({
+        dbgames.value = database_games.data.map(game => ({
             id: game.id,
+            source: 'database',
             name: game.name || 'Unknown',
             image: game.cover
                 ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big')
@@ -101,23 +128,70 @@
                 ? game.genres.map(g => g.name).join(', ')
                 : 'Unknown'
         }))
-    }
-    
 
-    function openGameModal(game) {
+        if (dbgames.value.length < 24) {
+            const igdb_games = await axios.get('/api/igdb/games', {
+                params: {
+                    search: props.searchQuery,
+                    genres: selectedGenres.value,
+                    platforms: selectedPlatforms.value
+                }
+            })
+            apigames.value = igdb_games.data.map(game => ({
+                id: game.id,
+                name: game.name || 'Unknown',
+                image: game.cover
+                    ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big')
+                    : 'https://placehold.co/600x400',
+                genre: game.genres?.length
+                    ? game.genres.map(g => g.name).join(', ')
+                    : 'Unknown'
+            }));
+            games.value = [...dbgames.value, ...apigames.value]
+            games.value = games.value.slice(0, 24);
+        }
+        games.value = games.value.slice(0, 24);
+    }
+
+    async function openGameModal(game) {
         selectedGame.value = game
+        showCollectionForm.value = false
+        collectionStatus.value = 'planned'
+        collectionScore.value = 5
+        collectionNotes.value = ''
+
+        if (auth.user) {
+            const res = await axios.get('/api/database/checkcollection', { params: { game_id: game.id } })
+            if (res.data.exists) {
+                collectionExists.value = true
+                collectionStatus.value = res.data.status
+                collectionScore.value = res.data.user_score
+                collectionNotes.value = res.data.notes || ''
+            }
+        }
+
+        await getReviews(game.id)
         dialog.value = true
-        getReviews(game.id)
+    }
+
+    async function deleteCollection(gameId) {
+        await axios.get('/sanctum/csrf-cookie')
+        await axios.post("/api/database/removefromcollection", { game_id: gameId })
+        collectionExists.value = false
     }
 
     async function addToCollection(gameId) {
         await axios.get('/sanctum/csrf-cookie')
-        await axios.post("/api/database/addgame", {igdb_id: gameId})
-        await axios.post("/api/database/addtocollection", {game_id: gameId, status: "planned", user_score: reviewRating.value, notes: null})
-        return console.log("Game added to collection")
+        await axios.post("/api/database/addgame", { igdb_id: gameId })
+        await axios.post("/api/database/addtocollection", {
+            game_id: gameId,
+            status: collectionStatus.value,
+            user_score: collectionScore.value,
+            notes: collectionNotes.value
+        })
+        collectionExists.value = true
+        showCollectionForm.value = false
     }
-
-
 </script>
 
 
@@ -129,35 +203,34 @@
                 <p>shift + scroll to scroll list</p>
 
                 <div style="padding: 1rem 0;">
-                  <div class="track-row">
-                    <span class="track-label">Genres: </span>
-                    <div class="track-scroll">
-                        <div class="cb-item">
-                            <input type="checkbox" id="g-all" :checked="selectedGenres.length === genresList.length" @change="toggleAllGenres">
-                            <label for="g-all">| ALL |</label>
-                        </div>
-                        <div class="cb-item" v-for="genre in genresList" :key="genre.id">
-                            <input type="checkbox" :id="'g-' + genre.id" :value="genre.id" v-model="selectedGenres">
-                            <label :for="'g-' + genre.id">{{ genre.name }}</label>
-                        </div>
-                    </div>
-                  </div>
-              
-                  <div class="track-row">
-                    <span class="track-label">Platforms: </span>
-                    <div class="track-scroll">
-                        <div class="cb-item">
-                            <input type="checkbox" id="p-all" :checked="selectedPlatforms.length === platformsList.length" @change="toggleAllPlatforms">
-                            <label for="p-all">| ALL |</label>
-                        </div>
-                        <div class="cb-item" v-for="platform in platformsList" :key="platform.id">
-                            <input type="checkbox" :id="'p-' + platform.id" :value="platform.id" v-model="selectedPlatforms">
-                            <label :for="'p-' + platform.id">{{ platform.name }}</label>
+                    <div class="track-row">
+                        <span class="track-label">Genres: </span>
+                        <div class="track-scroll">
+                            <div class="cb-item">
+                                <input type="checkbox" id="g-all" :checked="selectedGenres.length === genresList.length" @change="toggleAllGenres">
+                                <label for="g-all">| ALL |</label>
+                            </div>
+                            <div class="cb-item" v-for="genre in genresList" :key="genre.id">
+                                <input type="checkbox" :id="'g-' + genre.id" :value="genre.id" v-model="selectedGenres">
+                                <label :for="'g-' + genre.id">{{ genre.name }}</label>
+                            </div>
                         </div>
                     </div>
-                  </div>
+
+                    <div class="track-row">
+                        <span class="track-label">Platforms: </span>
+                        <div class="track-scroll">
+                            <div class="cb-item">
+                                <input type="checkbox" id="p-all" :checked="selectedPlatforms.length === platformsList.length" @change="toggleAllPlatforms">
+                                <label for="p-all">| ALL |</label>
+                            </div>
+                            <div class="cb-item" v-for="platform in platformsList" :key="platform.id">
+                                <input type="checkbox" :id="'p-' + platform.id" :value="platform.id" v-model="selectedPlatforms">
+                                <label :for="'p-' + platform.id">{{ platform.name }}</label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
             </section>
 
             <section class="games-grid">
@@ -166,7 +239,7 @@
                     <div class="game-info">
                         <h2>{{ game.name }}</h2>
                         <div class="genre">{{ game.genre }}</div>
-                        <div class="meta">id: {{ game.id }}</div>
+                        <div class="meta">id: {{ game.id }} {{ game.source }}</div>
                     </div>
                 </div>
             </section>
@@ -175,55 +248,123 @@
         <v-dialog max-width="850" v-model="dialog" transition="dialog-bottom-transition">
             <v-card class="game-modal" v-if="selectedGame">
                 <div class="modal-body">
-                    <div class="modal-aside">
-                        <img :src="selectedGame.image" :alt="selectedGame.name" class="modal-image" />
-                        <div class="modal-main-info">
-                            <v-btn class="btn-add-collection" block @click="addToCollection(selectedGame.id)">Add to Collection</v-btn>
-                            <div class="modal-stats">
-                                <div class="stat-item">
-                                    <span class="stat-label">Rating</span>
-                                    <span class="stat-value">N/A</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Genre</span>
-                                    <span class="stat-value">{{ selectedGame.genre }}</span>
-                                </div>
+                    <div class="modal-main-info">
+                        <template v-if="auth.user">
+                            <v-btn
+                                v-if="!collectionExists"
+                                class="btn-add-collection"
+                                block
+                                @click="showCollectionForm = !showCollectionForm">
+                                Add to Collection
+                            </v-btn>
+
+                            <template v-if="collectionExists">
+                                <v-btn
+                                    class="btn-add-collection"
+                                    block
+                                    @click="showCollectionForm = !showCollectionForm"
+                                    style="margin-bottom: 8px"
+>
+                                    Edit Collection
+                                </v-btn>
+                                <v-btn
+                                    class="btn-remove-collection"
+                                    block
+                                    @click="deleteCollection(selectedGame.id)"
+                                >
+                                    Remove
+                                </v-btn>
+                            </template>
+                        </template>
+
+                        <div v-if="showCollectionForm" class="collection-form">
+                            <div class="collection-field">
+                                <label class="collection-label">Status</label>
+                                <select class="custom-select full-width" v-model="collectionStatus">
+                                    <option v-for="s in statusOptions" :key="s.value" :value="s.value">
+                                        {{ s.label }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="collection-field">
+                                <label class="collection-label">Your Score</label>
+                                <select class="custom-select full-width" v-model="collectionScore">
+                                    <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
+                                </select>
+                            </div>
+
+                            <div class="collection-field">
+                                <label class="collection-label">Notes</label>
+                                <textarea
+                                    class="collection-notes"
+                                    v-model="collectionNotes"
+                                    placeholder="Your notes..."
+                                    rows="3"
+                                ></textarea>
+                            </div>
+
+                            <v-btn
+                                class="btn-send"
+                                block
+                                size="small"
+                                @click="addToCollection(selectedGame.id)"
+                            >
+                                {{ collectionExists ? 'Save Changes' : 'Add' }}
+                            </v-btn>
+                        </div>
+
+                        <div class="modal-stats" :style="showCollectionForm ? 'margin-top: 12px' : ''">
+                            <div class="stat-item" v-if="collectionExists">
+                                <span class="stat-label">Status</span>
+                                <span class="stat-value">{{ collectionStatus }}</span>
+                            </div>
+                            <div class="stat-item" v-if="collectionExists">
+                                <span class="stat-label">Your Score</span>
+                                <span class="stat-value">{{ collectionScore }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Note</span>
+                                <span class="stat-value">{{ collectionNotes || 'N/A' }}</span>
+                            </div>
+                            <div class="stat-item" style="flex-direction: column; gap: 4px;">
+                                <span class="stat-label">Genre:</span>
+                                <span class="stat-value">{{ selectedGame.genre }}</span>
                             </div>
                         </div>
                     </div>
-                
+
                     <div class="modal-content-area">
                         <v-card-title class="modal-title">
                             {{ selectedGame.name }}
                             <v-btn icon="mdi-close" variant="text" size="small" @click="dialog = false" class="close-btn"></v-btn>
                         </v-card-title>
-                    
+
                         <div class="reviews-section">
                             <h3 class="section-title">Reviews ({{ reviews.length }})</h3>
-                                                            
+
                             <div class="reviews-list">
                                 <div v-for="review in reviews" :key="review.id" class="review-item">
                                     <div class="review-avatar">{{ review.user?.name ? review.user.name[0] : 'U' }}</div>
-                                    
+
                                     <div class="review-details">
                                         <div class="review-author">
-                                            {{ review.user?.name || 'Anonymous' }} 
+                                            {{ review.user?.name || 'Anonymous' }}
                                             <span class="review-rating">{{ review.rating }}</span>
                                         </div>
-                                        <div class="review-title-display">{{ review.title }}</div> 
+                                        <div class="review-title-display">{{ review.title }}</div>
                                         <div class="review-text">{{ review.content }}</div>
-                                        
                                         <div class="review-date" style="font-size: 0.8rem; color: gray;">
                                             {{ new Date(review.created_at).toLocaleDateString() }}
                                         </div>
                                     </div>
                                 </div>
-                            
+
                                 <div v-if="reviews.length === 0" class="no-reviews">
                                     <p>No reviews yet. Be the first to write one!</p>
                                 </div>
                             </div>
-                            
+
                             <div class="review-form">
                                 <input type="text" placeholder="Review Title" class="custom-input-title" v-model="reviewTitle" />
                                 <textarea placeholder="Write your thoughts..." class="custom-textarea" v-model="reviewText"></textarea>
@@ -260,6 +401,62 @@
 
 
 <style scoped>
+
+.btn-remove-collection {
+    background: transparent;
+    color: #ff5555;
+    border: 1px solid #ff555533;
+    text-transform: none;
+    font-weight: 500;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.collection-form {
+    background: #0d0d0d;
+    border: 1px solid #1f1f1f;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.collection-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.collection-label {
+    font-size: 11px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.full-width {
+    width: 100%;
+    padding: 5px 8px;
+}
+
+.collection-notes {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid #1f1f1f;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 12px;
+    padding: 8px;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+}
+
+.collection-notes:focus {
+    border-color: #444;
+}
 
 .track-row {
     display: flex;
@@ -327,43 +524,41 @@
     font-weight: 500;
 }
 
-
-
-
-
 .v-card-title, .v-card-text {
-      color: white;
-    }
-    .v-btn-text {
-      color:white;
-      font-size: 10px;
-    }
-    .dialog, .v-dialog-button{
-      background-color: rgb(0, 0, 0);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-    }
-    .v-card{
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.587);
-    }
+    color: white;
+}
+
+.v-btn-text {
+    color: white;
+    font-size: 10px;
+}
+
+.dialog, .v-dialog-button {
+    background-color: rgb(0, 0, 0);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.v-card {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.587);
+}
 
 .custom-input-title {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05); 
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     padding: 8px 12px;
     color: white;
-    margin-bottom: 10px; 
+    margin-bottom: 10px;
     font-weight: bold;
     outline: none;
 }
 
 .custom-input-title:focus {
-    border-color: #646cff; 
+    border-color: #646cff;
 }
-
 
 .review-title-display {
     font-weight: bold;
@@ -373,9 +568,9 @@
 }
 
 .game-modal {
-    background: #0d0d0d ;
-    border: 1px solid #1f1f1f ;
-    border-radius: 16px ;
+    background: #0d0d0d;
+    border: 1px solid #1f1f1f;
+    border-radius: 16px;
     overflow: hidden;
     color: #fff;
 }
@@ -409,8 +604,8 @@
 }
 
 .btn-add-collection {
-    background: #fff ;
-    color: #000 ;
+    background: #fff;
+    color: #000;
     text-transform: none;
     font-weight: 600;
     border-radius: 8px;
@@ -441,9 +636,9 @@
 }
 
 .modal-title {
-    font-size: 28px ;
-    font-weight: 700 ;
-    padding: 0 0 20px 0 ;
+    font-size: 28px;
+    font-weight: 700;
+    padding: 0 0 20px 0;
     line-height: 1.2;
     display: flex;
     justify-content: space-between;
@@ -550,10 +745,10 @@
 }
 
 .btn-send {
-    background: #333 ;
-    color: #fff ;
+    background: #333;
+    color: #fff;
     text-transform: none;
-    font-size: 12px ;
+    font-size: 12px;
 }
 
 .catalog-page {
@@ -639,7 +834,7 @@
 }
 
 .v-card {
-    background: #050505 ;
+    background: #050505;
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.14);
     color: white;
@@ -681,4 +876,5 @@
     font-size: 10px;
     margin: 0;
 }
+
 </style>

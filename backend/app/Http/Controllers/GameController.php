@@ -25,7 +25,7 @@ class GameController extends Controller
         
         $token = $client['access_token'];
 
-        $httpBody = "fields id, name, cover.url, genres.name; limit 24;";
+        $httpBody = "fields id, name, cover.url, genres.name; sort popularity desc; limit 24;";
         $rules = [];
         $search = $request->search;
         $genres = $request->genres;

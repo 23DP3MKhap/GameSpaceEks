@@ -56,3 +56,13 @@ Route::middleware('auth:sanctum')->post("/database/addtocollection", [DatabaseCo
 Route::get("/database/getgenres", [DatabaseController::class, 'getGenres']);
 
 Route::get("/database/getplatforms", [DatabaseController::class, 'getPlatforms']);
+
+Route::get("/database/getgames", [DatabaseController::class, 'getGames']);
+
+Route::get("/database/getgame", [DatabaseController::class, 'getGame']);
+
+Route::get("/user/collection", [DatabaseController::class, 'getCollection']);
+
+Route::middleware('auth:sanctum')->get("/database/checkcollection", [DatabaseController::class, 'checkCollection']);
+
+Route::middleware('auth:sanctum')->post("/database/removefromcollection", [DatabaseController::class, 'removeFromCollection']);

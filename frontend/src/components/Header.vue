@@ -7,7 +7,7 @@
     const dialog = ref(false)
     const items = [
         { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/catalog" },
+        { title: "CATALOG", to: "/catalog/1" },
         { title: "ABOUT", to: "/about" },
         { title: "LOGIN", to: "/login" },
         { title: "REGISTER", to: "/register" },
@@ -18,7 +18,7 @@
     const itemsregistered = computed(() => {
       const items = [
         { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/catalog" },
+        { title: "CATALOG", to: "/catalog/1" },
         { title: "ABOUT", to: "/about" },
       ]
     
@@ -154,7 +154,6 @@
     }
 
     .site-header {
-        position: sticky;
         top: 0;
         width: 100%;
         z-index: 10000;

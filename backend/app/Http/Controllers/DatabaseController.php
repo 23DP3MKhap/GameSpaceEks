@@ -155,4 +155,89 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
 
         return response()->json($platforms);
     }
+
+    public function getGames(Request $request)
+    {
+        $search    = $request->search;
+        $genres    = $request->genres;
+        $platforms = $request->platforms;
+
+        $query = Game::with(['genres', 'platforms']);
+
+        if ($search) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        if (!empty($genres) && is_array($genres)) {
+            $query->whereHas('genres', function ($q) use ($genres) {
+                $q->whereIn('genre_id', $genres);
+            });
+        }
+
+        if (!empty($platforms) && is_array($platforms)) {
+        $query->whereHas('platforms', function ($q) use ($platforms) {
+            $q->whereIn('platform_id', $platforms);
+        });
+        }
+        $games = $query->take(24)->get();
+        return $games->map(function ($game) {
+        return [
+            'id'        => $game->id,
+            'name'      => $game->name,
+            'cover'     => ['url' => $game->cover_url],
+            'genres'    => $game->genres->map(fn($g) => ['name' => $g->name]),
+            'platforms' => $game->platforms->map(fn($p) => ['name' => $p->name]),
+        ];
+        });
+    }
+
+    public function getCollection(Request $request){
+    $request->validate(['user_id' => 'required|integer']);
+
+    $collection = Collection::where('user_id', $request->user_id)
+        ->with('game')
+        ->get();
+
+    return response()->json(
+        $collection->map(function ($item) {
+            return [
+                'id'         => $item->id,
+                'game'       => [
+                    'id'    => $item->game->id,
+                    'name'  => $item->game->name,
+                    'image' => $item->game->cover_url
+                        ? 'https:' . str_replace('t_thumb', 't_cover_big', $item->game->cover_url)
+                        : 'https://placehold.co/60x80/111/444?text=' . urlencode($item->game->name),
+                ],
+                'status'     => $item->status,
+                'user_score' => $item->user_score,
+                'notes'      => $item->notes ?? '',
+            ];
+        })
+    );
+    }
+
+    
+
+    public function checkCollection(Request $request){
+    $collection = Collection::where('user_id', auth()->id())
+        ->where('game_id', $request->game_id)
+        ->first();
+
+    return [
+        'exists' => $collection,
+        'status' => $collection?->status,
+        'user_score' => $collection?->user_score,
+        'notes' => $collection?->notes,
+    ];
+}
+
+
+    public function removeFromCollection(Request $request){
+        $request->validate(['game_id' => 'required|integer']);
+        $userId = auth()->id();
+        Collection::where('game_id', $request->game_id)->where('user_id', $userId)->delete();
+    }
+
+
 }
