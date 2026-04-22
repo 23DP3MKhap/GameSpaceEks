@@ -60,8 +60,8 @@ class DatabaseController extends Controller
         'id'      => $externalData['id'],
         'name'         => $externalData['name'],
         'description'  => $externalData['summary'] ?? null,
-        'developer'    => $dev,
-        'publisher'    => $pub,
+        'developer'    => $dev ?? null,
+        'publisher'    => $pub ?? null,
         'release_date' => isset($externalData['first_release_date']) ? date('Y-m-d', $externalData['first_release_date']) : null,
         'cover_url'    => isset($externalData['cover']) ? str_replace('t_thumb', 't_cover_big', $externalData['cover']['url']) : null,
         'rating'       => $externalData['aggregated_rating'] ?? null,
@@ -111,7 +111,9 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
     }
 
     public function deleteReview(Request $request){
-        // TODO
+        $request->validate(['game_id' => 'required|integer']);
+        $userId = auth()->id();
+        Review::where('game_id', $request->game_id)->where('user_id', $userId)->delete();
     }
 
     public function addToCollection(Request $request){
@@ -132,6 +134,41 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
             'user_score' => $validated['user_score'] ?? null,
             'notes'      => $validated['notes'] ?? null,
         ]);
+    }
+
+    public function removeFromCollection(Request $request){
+        $request->validate(['game_id' => 'required|integer']);
+        $userId = auth()->id();
+        Collection::where('game_id', $request->game_id)->where('user_id', $userId)->delete();
+    }
+
+    public function updateUser(Request $request){
+        $user = $request->user(); 
+
+        $validated = $request->validate([
+            'username'   => 'sometimes|string|max:255|unique:users,name,' . $user->id,
+            'bio'        => 'sometimes|nullable|string|max:500',
+            'avatar_url' => 'sometimes|nullable|url|max:2048',
+            'password'   => 'sometimes|nullable|string|min:8|max:255',
+        ]);
+
+        if (isset($validated['username'])) {
+            $user->name = $validated['username'];
+        }
+
+        if (array_key_exists('bio', $validated)) {
+            $user->bio = $validated['bio'];
+        }
+
+        if (array_key_exists('avatar_url', $validated)) {
+            $user->avatar = $validated['avatar_url'];
+        }
+
+        if (!empty($validated['password'])) {
+            $user->password = $validated['password'];
+        }
+
+        $user->save();
     }
     
 
@@ -233,11 +270,5 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
 }
 
 
-    public function removeFromCollection(Request $request){
-        $request->validate(['game_id' => 'required|integer']);
-        $userId = auth()->id();
-        Collection::where('game_id', $request->game_id)->where('user_id', $userId)->delete();
-    }
-
-
+    
 }

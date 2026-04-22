@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, onMounted, watchEffect, watch } from 'vue'
+    import { ref, onMounted, watch , computed} from 'vue'
     import axios from '../plugins/axios'
     import { auth } from '../plugins/userinfo'
 
@@ -22,6 +22,16 @@
     const collectionScore = ref(5)
     const collectionNotes = ref('')
     const showCollectionForm = ref(false)
+
+    const userReview = computed(() => reviews.value.find(r => r.user?.id === auth.user?.id) || null)
+    
+    const sortedReviews = computed(() => {
+    if (!auth.user) return reviews.value
+    return [
+        ...reviews.value.filter(r => r.user?.id === auth.user.id),
+        ...reviews.value.filter(r => r.user?.id !== auth.user.id),
+    ]
+})
     const statusOptions = [
         { value: 'planned', label: 'Planned' },
         { value: 'playing', label: 'Playing' },
@@ -91,6 +101,18 @@
             gameLoader(newVal);
         }, 500);
     });
+
+    watch(userReview, (review) => {
+    if (review) {
+        reviewTitle.value = review.title
+        reviewText.value = review.content
+        reviewRating.value = review.rating
+    } else {
+        reviewTitle.value = ''
+        reviewText.value = ''
+        reviewRating.value = 1
+    }
+})
 
     watch([selectedGenres, selectedPlatforms], () => {
         gameLoader()
@@ -192,6 +214,14 @@
         collectionExists.value = true
         showCollectionForm.value = false
     }
+
+
+    async function deleteReview(gameId) {
+        await axios.get('/sanctum/csrf-cookie')
+        await axios.post("/api/database/deletereview", { game_id: gameId })
+        getReviews(gameId)
+    }
+    
 </script>
 
 
@@ -344,28 +374,45 @@
                             <h3 class="section-title">Reviews ({{ reviews.length }})</h3>
 
                             <div class="reviews-list">
-                                <div v-for="review in reviews" :key="review.id" class="review-item">
-                                    <div class="review-avatar">{{ review.user?.name ? review.user.name[0] : 'U' }}</div>
-
+                                <div v-for="review in sortedReviews" :key="review.id" class="review-item">
+                                    <div class="review-avatar-wrap">
+                                        <img
+                                            v-if="review.user?.avatar"
+                                            :src="review.user.avatar"
+                                            class="review-avatar-img"
+                                        />
+                                        <div v-else class="review-avatar-placeholder">
+                                            {{ review.user?.name ? review.user.name[0].toUpperCase() : 'U' }}
+                                        </div>
+                                    </div>
+                                
                                     <div class="review-details">
                                         <div class="review-author">
                                             {{ review.user?.name || 'Anonymous' }}
-                                            <span class="review-rating">{{ review.rating }}</span>
+                                            <span class="review-badge-you" v-if="review.user?.id === auth.user?.id">you</span>
+                                            <span class="review-rating">{{ review.rating }}/10</span>
                                         </div>
                                         <div class="review-title-display">{{ review.title }}</div>
                                         <div class="review-text">{{ review.content }}</div>
-                                        <div class="review-date" style="font-size: 0.8rem; color: gray;">
-                                            {{ new Date(review.created_at).toLocaleDateString() }}
+                                        <div class="review-footer">
+                                            <span class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</span>
+                                            <button
+                                                v-if="review.user?.id === auth.user?.id"
+                                                class="btn-delete-review"
+                                                @click="deleteReview(selectedGame.id)"
+                                            >
+                                                Delete
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-
+                            
                                 <div v-if="reviews.length === 0" class="no-reviews">
                                     <p>No reviews yet. Be the first to write one!</p>
                                 </div>
                             </div>
-
-                            <div class="review-form">
+                        
+                            <div class="review-form" v-if="auth.user">
                                 <input type="text" placeholder="Review Title" class="custom-input-title" v-model="reviewTitle" />
                                 <textarea placeholder="Write your thoughts..." class="custom-textarea" v-model="reviewText"></textarea>
                                 <div class="form-actions">
@@ -375,7 +422,19 @@
                                             <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
                                         </select>
                                     </div>
-                                    <v-btn class="btn-send" size="small" @click="postReview(selectedGame)">Post Review</v-btn>
+                                    <div style="display: flex; gap: 8px;">
+                                        <v-btn
+                                            v-if="userReview"
+                                            class="btn-delete-review-form"
+                                            size="small"
+                                            @click="deleteReview(selectedGame.id)"
+                                        >
+                                            Delete
+                                        </v-btn>
+                                        <v-btn class="btn-send" size="small" @click="postReview(selectedGame)">
+                                            {{ userReview ? 'Update Review' : 'Post Review' }}
+                                        </v-btn>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -401,6 +460,76 @@
 
 
 <style scoped>
+
+.review-avatar-wrap {
+    flex: 0 0 auto;
+}
+
+.review-avatar-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.review-avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+}
+
+.review-badge-you {
+    font-size: 10px;
+    color: #4a9eff;
+    border: 1px solid rgba(74, 158, 255, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.review-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.review-date {
+    font-size: 0.8rem;
+    color: gray;
+}
+
+.btn-delete-review {
+    background: transparent;
+    border: none;
+    color: #ff5f5f;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+
+.btn-delete-review:hover {
+    opacity: 1;
+}
+
+.btn-delete-review-form {
+    background: transparent;
+    color: #ff5f5f;
+    border: 1px solid rgba(255, 95, 95, 0.3);
+    text-transform: none;
+    font-size: 12px;
+}
+
 
 .btn-remove-collection {
     background: transparent;

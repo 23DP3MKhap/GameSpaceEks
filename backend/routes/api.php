@@ -63,6 +63,12 @@ Route::get("/database/getgame", [DatabaseController::class, 'getGame']);
 
 Route::get("/user/collection", [DatabaseController::class, 'getCollection']);
 
+Route::get("/getuser", [AuthController::class, 'getuser']);
+
 Route::middleware('auth:sanctum')->get("/database/checkcollection", [DatabaseController::class, 'checkCollection']);
 
 Route::middleware('auth:sanctum')->post("/database/removefromcollection", [DatabaseController::class, 'removeFromCollection']);
+
+Route::middleware('auth:sanctum')->post("/user/update", [DatabaseController::class, 'updateUser']);
+
+Route::middleware('auth:sanctum')->post("/database/deletereview", [DatabaseController::class, 'deleteReview']);

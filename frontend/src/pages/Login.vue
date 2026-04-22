@@ -76,7 +76,6 @@
                       <v-text-field
                         type="password"
                         v-model="password"
-                        :counter="10"
                         :rules="passwordRules"
                         label="Password"
                         required

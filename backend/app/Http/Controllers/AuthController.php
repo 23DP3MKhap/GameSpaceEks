@@ -69,4 +69,8 @@ class AuthController extends Controller
         return User::where("id", $request->id)->value("id");
     }
 
+    public function getuser(Request $request){
+        return User::where("id", $request->id)->select("name", "avatar", "bio", "isPrivate", "role")->first(); 
+    }
+
 }
