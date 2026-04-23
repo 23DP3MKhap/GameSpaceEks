@@ -13,8 +13,6 @@
     const selectedGenres = ref([])
     const selectedPlatforms = ref([])
     const games = ref([])
-    const dbgames = ref([])
-    const apigames = ref([])
     const dialog = ref(false)
     const selectedGame = ref(null)
     const reviewTitle = ref("")
@@ -30,7 +28,7 @@
     const loadingOffset = ref(0)
     const scrollTrigger = ref(null)
     const isLoading = ref(false)
-
+    let scrollTriggerBlock = ref(true)
     const userReview = computed(() => reviews.value.find(r => r.user?.id === auth.user?.id) || null)
     
     const sortedReviews = computed(() => {
@@ -59,7 +57,7 @@
         await gameLoader()
 
         const observer = new IntersectionObserver(async (entries) => {
-        if (entries[0].isIntersecting) {
+        if (entries[0].isIntersecting && !scrollTriggerBlock) {
             loadingOffset.value += 24
             await gameLoader()
         }
@@ -70,30 +68,27 @@
 
     // watchers
 
-    watch(() => props.searchQuery, (newVal) => {
-        clearTimeout(timeout);
+    watch(() => props.searchQuery, () => {
+        clearTimeout(timeout)
         games.value = []
         loadingOffset.value = 0
-        if (!newVal || newVal.trim() === "") {
-            gameLoader();
-            return
-        }
+        scrollTriggerBlock = true
         timeout = setTimeout(() => {
-            gameLoader(newVal);
-        }, 500);
-    });
+        gameLoader()
+        }, 500)
+    })
 
     watch(userReview, (review) => {
-    if (review) {
-        reviewTitle.value = review.title
-        reviewText.value = review.content
-        reviewRating.value = review.rating
-    } else {
-        reviewTitle.value = ''
-        reviewText.value = ''
-        reviewRating.value = 1
-    }
-})
+        if (review) {
+            reviewTitle.value = review.title
+            reviewText.value = review.content
+            reviewRating.value = review.rating
+        } else {
+            reviewTitle.value = ''
+            reviewText.value = ''
+            reviewRating.value = 1
+        }
+    })
 
     watch([selectedGenres, selectedPlatforms], () => {
         games.value = []
@@ -163,9 +158,8 @@
 
 
     async function gameLoader() {
+        scrollTriggerBlock = true
         isLoading.value = true
-        dbgames.value = []
-        apigames.value = []
         
         const database_games = await axios.get('/api/database/getgames', {
             params: {
@@ -176,7 +170,7 @@
             }
         })
 
-        dbgames.value = database_games.data.map(game => ({
+        const dbgames = database_games.data.map(game => ({
             id: game.id,
             source: 'database',
             name: game.name || 'Unknown',
@@ -188,20 +182,20 @@
                 : 'Unknown'
         }))
 
-        let newGames = [...dbgames.value]
+        let newGames = [...dbgames]
 
-        if (dbgames.value.length < 24) {
+        if (dbgames.length < 24) {
             const igdb_games = await axios.get('/api/igdb/games', {
                 params: {
                     search: props.searchQuery,
                     genres: selectedGenres.value,
                     platforms: selectedPlatforms.value,
-                    dbgamesquantity: dbgames.value.length,
-                    dbgamesids: dbgames.value.map(g => g.id).join(',') || null,
+                    dbgamesquantity: dbgames.length,
+                    dbgamesids: dbgames.map(g => g.id).join(',') || null,
                     offset: loadingOffset.value
                 }
             })
-            apigames.value = igdb_games.data.map(game => ({
+            const apigames = igdb_games.data.map(game => ({
                 id: game.id,
                 name: game.name || 'Unknown',
                 image: game.cover
@@ -211,13 +205,14 @@
                     ? game.genres.map(g => g.name).join(', ')
                     : 'Unknown'
             }));
-            newGames = [...dbgames.value, ...apigames.value]
+            newGames = [...dbgames, ...apigames]
         }
 
         const existingIds = new Set(games.value.map(g => g.id))
         const uniqueNew = newGames.filter(g => !existingIds.has(g.id))
         games.value = [...games.value, ...uniqueNew]
         isLoading.value = false
+        scrollTriggerBlock = false
     }
 
     async function openGameModal(game) {

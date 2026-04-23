@@ -202,7 +202,7 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
 
         $query = Game::with(['genres', 'platforms']);
 
-        $query->skip($offset);
+
 
         if ($search) {
             $query->where('name', 'like', "%{$search}%");
@@ -221,7 +221,7 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
         });
         }
 
-        $games = $query->take(24)->get();
+        $games = $query->skip($offset)->take(24)->get();
         return $games->map(function ($game) {
         return [
             'id'        => $game->id,
