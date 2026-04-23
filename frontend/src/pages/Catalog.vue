@@ -1,8 +1,13 @@
 <script setup>
+    // Imports
+
     import { ref, onMounted, watch , computed} from 'vue'
     import axios from '../plugins/axios'
     import { auth } from '../plugins/userinfo'
 
+
+    // variables
+    
     const genresList = ref([])
     const platformsList = ref([])
     const selectedGenres = ref([])
@@ -22,6 +27,9 @@
     const collectionScore = ref(5)
     const collectionNotes = ref('')
     const showCollectionForm = ref(false)
+    const loadingOffset = ref(0)
+    const scrollTrigger = ref(null)
+    const isLoading = ref(false)
 
     const userReview = computed(() => reviews.value.find(r => r.user?.id === auth.user?.id) || null)
     
@@ -41,6 +49,68 @@
     let timeout = null
 
     const props = defineProps({ searchQuery: String })
+
+
+    // Startup
+
+    onMounted(async () => {
+        await getGenres()
+        await getPlatforms()
+        await gameLoader()
+
+        const observer = new IntersectionObserver(async (entries) => {
+        if (entries[0].isIntersecting) {
+            loadingOffset.value += 24
+            await gameLoader()
+        }
+        }, { threshold: 0.1 })
+
+        observer.observe(scrollTrigger.value)
+    })
+
+    // watchers
+
+    watch(() => props.searchQuery, (newVal) => {
+        clearTimeout(timeout);
+        games.value = []
+        loadingOffset.value = 0
+        if (!newVal || newVal.trim() === "") {
+            gameLoader();
+            return
+        }
+        timeout = setTimeout(() => {
+            gameLoader(newVal);
+        }, 500);
+    });
+
+    watch(userReview, (review) => {
+    if (review) {
+        reviewTitle.value = review.title
+        reviewText.value = review.content
+        reviewRating.value = review.rating
+    } else {
+        reviewTitle.value = ''
+        reviewText.value = ''
+        reviewRating.value = 1
+    }
+})
+
+    watch([selectedGenres, selectedPlatforms], () => {
+        games.value = []
+        loadingOffset.value = 0
+        gameLoader()
+    });
+
+    watch(dialog, (newVal) => {
+        if (!newVal) {
+            collectionExists.value = false
+        }
+    })
+
+
+    //functions
+
+
 
     function toggleAllGenres(e) {
         if (e.target.checked) {
@@ -91,51 +161,18 @@
         return console.log("Review posted")
     }
 
-    watch(() => props.searchQuery, (newVal) => {
-        clearTimeout(timeout);
-        if (!newVal || newVal.trim() === "") {
-            gameLoader();
-            return
-        }
-        timeout = setTimeout(() => {
-            gameLoader(newVal);
-        }, 500);
-    });
-
-    watch(userReview, (review) => {
-    if (review) {
-        reviewTitle.value = review.title
-        reviewText.value = review.content
-        reviewRating.value = review.rating
-    } else {
-        reviewTitle.value = ''
-        reviewText.value = ''
-        reviewRating.value = 1
-    }
-})
-
-    watch([selectedGenres, selectedPlatforms], () => {
-        gameLoader()
-    });
-
-    watch(dialog, (newVal) => {
-        if (!newVal) {
-            collectionExists.value = false
-        }
-    })
-
-    onMounted(async () => {
-        await gameLoader()
-        await getGenres()
-        await getPlatforms()
-    })
 
     async function gameLoader() {
+        isLoading.value = true
+        dbgames.value = []
+        apigames.value = []
+        
         const database_games = await axios.get('/api/database/getgames', {
             params: {
                 search: props.searchQuery,
                 genres: selectedGenres.value,
-                platforms: selectedPlatforms.value
+                platforms: selectedPlatforms.value,
+                offset: loadingOffset.value
             }
         })
 
@@ -151,12 +188,17 @@
                 : 'Unknown'
         }))
 
+        let newGames = [...dbgames.value]
+
         if (dbgames.value.length < 24) {
             const igdb_games = await axios.get('/api/igdb/games', {
                 params: {
                     search: props.searchQuery,
                     genres: selectedGenres.value,
-                    platforms: selectedPlatforms.value
+                    platforms: selectedPlatforms.value,
+                    dbgamesquantity: dbgames.value.length,
+                    dbgamesids: dbgames.value.map(g => g.id).join(',') || null,
+                    offset: loadingOffset.value
                 }
             })
             apigames.value = igdb_games.data.map(game => ({
@@ -169,10 +211,13 @@
                     ? game.genres.map(g => g.name).join(', ')
                     : 'Unknown'
             }));
-            games.value = [...dbgames.value, ...apigames.value]
-            games.value = games.value.slice(0, 24);
+            newGames = [...dbgames.value, ...apigames.value]
         }
-        games.value = games.value.slice(0, 24);
+
+        const existingIds = new Set(games.value.map(g => g.id))
+        const uniqueNew = newGames.filter(g => !existingIds.has(g.id))
+        games.value = [...games.value, ...uniqueNew]
+        isLoading.value = false
     }
 
     async function openGameModal(game) {
@@ -221,7 +266,7 @@
         await axios.post("/api/database/deletereview", { game_id: gameId })
         getReviews(gameId)
     }
-    
+
 </script>
 
 
@@ -262,7 +307,7 @@
                     </div>
                 </div>
             </section>
-
+            <v-progress-linear v-if="isLoading" indeterminate color="white"></v-progress-linear>
             <section class="games-grid">
                 <div class="game-card" v-for="game in games" :key="game.id" @click="openGameModal(game)">
                     <img :src="game.image" :alt="game.name" class="game-image" />
@@ -273,6 +318,10 @@
                     </div>
                 </div>
             </section>
+            <div class="loading-wrap" v-if="isLoading">
+                <v-progress-linear v-if="isLoading" indeterminate color="white"></v-progress-linear>
+            </div>
+            <div ref="scrollTrigger" class="scroll-trigger"></div>
         </main>
 
         <v-dialog max-width="850" v-model="dialog" transition="dialog-bottom-transition">
@@ -294,7 +343,7 @@
                                     block
                                     @click="showCollectionForm = !showCollectionForm"
                                     style="margin-bottom: 8px"
->
+                                >
                                     Edit Collection
                                 </v-btn>
                                 <v-btn
@@ -460,6 +509,17 @@
 
 
 <style scoped>
+
+.loading-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 0px 0;
+}
+
+.scroll-trigger {
+    height: 1px;
+}
+
 
 .review-avatar-wrap {
     flex: 0 0 auto;

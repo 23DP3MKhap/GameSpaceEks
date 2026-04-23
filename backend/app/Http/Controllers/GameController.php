@@ -13,7 +13,7 @@ class GameController extends Controller
             ["client_id" => config('services.twitch.igdbclientid'), 
             "client_secret" => config('services.twitch.igdbclientsecret'),
             "grant_type" => 'client_credentials'
-]))->json();
+            ]))->json();
         return $response['expires_in'];
     }
     
@@ -27,9 +27,21 @@ class GameController extends Controller
 
         $httpBody = "fields id, name, cover.url, genres.name; sort popularity desc; limit 24;";
         $rules = [];
+        $dbgamesquantity = $request->dbgamesquantity;
         $search = $request->search;
         $genres = $request->genres;
         $platforms = $request->platforms;
+        $dbgamesids = $request->dbgamesids;
+        $offset = $request->offset ?? 0;
+
+        $limit = 24 - $dbgamesquantity;
+        $igdbOffset = max(0, $offset - $dbgamesquantity);
+        $httpBody = "fields id, name, cover.url, genres.name; sort popularity desc; limit $limit; offset $igdbOffset;";
+        
+
+        if ($dbgamesids) {
+            $rules[] = "id != ($dbgamesids)";
+        }
 
         if ($search) {
             $rules[] = "name ~ *\"$search\"*";
@@ -46,7 +58,7 @@ class GameController extends Controller
         if (!empty($rules)) {
             $httpBody .= " where " . implode(' & ', $rules) . ";";
         }
-
+        \Log::info($httpBody);
         $gameresponse = (Http::withBody($httpBody)->withHeaders([
         "Client-ID" => config('services.twitch.igdbclientid'),
         "Authorization" => "Bearer "  . $token])->post("https://api.igdb.com/v4/games"))->json();

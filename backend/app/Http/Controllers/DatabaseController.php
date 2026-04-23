@@ -198,12 +198,16 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
         $search    = $request->search;
         $genres    = $request->genres;
         $platforms = $request->platforms;
+        $offset = $request->offset ?? 0;
 
         $query = Game::with(['genres', 'platforms']);
+
+        $query->skip($offset);
 
         if ($search) {
             $query->where('name', 'like', "%{$search}%");
         }
+
 
         if (!empty($genres) && is_array($genres)) {
             $query->whereHas('genres', function ($q) use ($genres) {
@@ -216,6 +220,7 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
             $q->whereIn('platform_id', $platforms);
         });
         }
+
         $games = $query->take(24)->get();
         return $games->map(function ($game) {
         return [
