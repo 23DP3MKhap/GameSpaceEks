@@ -3,13 +3,18 @@
     import { auth } from "../plugins/userinfo"
     import axios from "../plugins/axios"
 
-    const search = ref("")
-    defineEmits(["update-search"])
+    const props = defineProps({searchValue: String});
+    const emit = defineEmits(['update-search']);
+
+
+    function searchUpdate(search){
+        emit('update-search', search.target.value)
+    }
 
     const dialog = ref(false)  
     const items = [
         { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/catalog/1" },
+        { title: "CATALOG", to: "/Catalog" },
         { title: "ABOUT", to: "/about" },
         { title: "LOGIN", to: "/login" },
         { title: "REGISTER", to: "/register" },
@@ -17,10 +22,12 @@
 
 
 
+
+
     const itemsregistered = computed(() => {
       const items = [
         { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/catalog/1" },
+        { title: "CATALOG", to: "/Catalog" },
         { title: "ABOUT", to: "/about" },
       ]
     
@@ -29,6 +36,13 @@
           title: auth.user.name,
           to: `/User/${auth.user.id}/Profile`
         })
+
+        if (auth.user.role === 'admin') {
+          items.push({
+            title: "ADMIN",
+            to: "/Admin"
+          })
+        }
     
         items.push({
           title: "LOG OUT",
@@ -59,25 +73,21 @@
     <div class="header">
         <nav>      
             <router-link to="/"><a class="logo">GAMESPACE</a></router-link>
-            <router-link to="/Catalog/1" class="router-link"><a>CATALOG</a></router-link>
-            <a>ABOUT</a>  
+            <router-link to="/Catalog"><a>CATALOG</a></router-link>
+            <router-link to="/About"><a>ABOUT</a></router-link>
         </nav>
 
 
 
         <div class="header-center">
-            <input
-                v-model="search"
-                type="text"
-                placeholder="Search games..."
-                class="search-input"
-                @input = "$emit('update-search', search)"
-            />
+            <input :value="searchValue"  @input="searchUpdate" type="text" placeholder="Search games..." class="search-input">
         </div>
 
             <div v-if="auth.user">
                 <nav>
-                <router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link"><a>{{auth.user.name}}</a></router-link>
+                <router-link v-if="auth.user.role === 'admin'" :to = "{path: `/Admin`}"><a>Admin</a></router-link>
+                <p>|</p>
+                <router-link :to = "{path: `/User/${auth.user.id}/Profile`}"><a>{{auth.user.name}}</a></router-link>
                 <p>|</p>
                 <a @click.prevent="logout">LOG OUT</a>
                 </nav>
@@ -92,42 +102,40 @@
     </div>
 
    <div class="burger-menu">
-    <v-menu>
-      <template v-slot:activator="{ props }">
-        <v-btn color="black" v-bind="props">☰</v-btn>
-        </template>
-
-      <v-list>
-        <div v-if="auth.user">
-            <v-list-item v-for="(item, index) in itemsregistered" :key="index" :to="item.to" link @click="item.action === 'logout' && logout()">
-            <v-list-item-title>{{ item.title }}</v-list-item-title>
-            </v-list-item>
-        </div>
-
-        <div v-if="!auth.user">
-        <v-list-item v-for="(item, index) in items" :key="index" :to="item.to" link >
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
-        </v-list-item>
-        </div>
-      </v-list>
-    </v-menu>
+        <input :value="searchValue" @input="searchUpdate" type="text" placeholder="Search games..." class="search-input">
+        <v-menu>
+        <template v-slot:activator="{ props }">
+            <v-btn color="black" v-bind="props">☰</v-btn>
+        </template>     
+          <v-list>
+            <div v-if="auth.user">
+                <v-list-item v-for="(route) in itemsregistered" :to="route.to" link @click="route.action === 'logout' && logout()">
+                <v-list-item-title>{{ route.title }}</v-list-item-title>
+                </v-list-item>
+            </div>      
+            <div v-if="!auth.user">
+                <v-list-item v-for="(route) in items" :to="route.to" link>
+                    <v-list-item-title>{{ route.title }}</v-list-item-title>
+                </v-list-item>
+            </div>
+            </v-list>
+        </v-menu>
     </div>
 
     <v-dialog max-width="500" v-model="dialog">
         <v-card class="v-card" color="black">
         <v-card-title class="v-card-title">Logout</v-card-title>
-          <v-card-text class="v-card-text">
-            Successfully logged out!
-          </v-card-text>
+            <v-card-text class="v-card-text">
+                Successfully logged out!
+            </v-card-text>
 
-          <v-card-actions>
-            <v-spacer></v-spacer>
+            <v-card-actions>
+                <v-spacer></v-spacer>
 
-            <v-btn
-              class="v-dialog-button"
-              @click="dialog = false"
-            ><p class="v-btn-text">Close</p></v-btn>
-          </v-card-actions>
+                <v-btn class="v-dialog-button" @click="dialog = false">
+                    <p class="v-btn-text">Close</p>
+                </v-btn>
+            </v-card-actions>
         </v-card>
     </v-dialog>
 
@@ -137,6 +145,24 @@
 
 
 <style scoped>
+
+:deep(.v-list) {
+    background-color: #0d0d0d !important;
+    border: 1px solid #1f1f1f;
+    padding: 8px 0;
+}
+:deep(.v-list-item) {
+    color: #eeeeee;
+}
+
+:deep(.v-list-item:hover) {
+    background-color: #1a1a1a;
+}
+
+:deep(.v-list-item-title) {
+    font-size: 14px;
+    font-weight: 500;
+}
 
 .search-input {
     min-width: 40vw;
@@ -190,7 +216,7 @@
     .site-header {
         top: 0;
         width: 100%;
-        z-index: 10000;
+        background-color: #0d0d0d;;
     }
 
     .header {

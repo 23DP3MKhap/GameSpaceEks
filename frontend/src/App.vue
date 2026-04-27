@@ -24,18 +24,14 @@
 <template>
   <v-app>
     <Header v-if="!$route.meta.hideHeader"></Header>
-    <Catalogheader v-if="$route.meta.hideHeader" @update-search="onSearch"></Catalogheader>
+    <Catalogheader v-if="$route.meta.hideHeader" @update-search="onSearch" :search-value="searchBar"></Catalogheader>
     <v-main>
       <RouterView v-if="!$route.meta.hideHeader" v-slot="{ Component, route }">
-        <Transition name="page" mode="out-in">
           <component :is="Component" :key="route.fullPath" />
-        </Transition>
       </RouterView>
 
       <RouterView v-if="$route.meta.hideHeader" v-slot="{ Component, route }">
-        <Transition name="page" mode="out-in">
           <component :search-query="searchBar" :is="Component" :key="route.fullPath" />
-        </Transition>
       </RouterView>
 
     </v-main>
@@ -44,18 +40,10 @@
 </template>
 
 <style scoped>
-.page-enter-active,
-.page-leave-active {
-  transition: opacity 0.1s ease;
-}
 
-.page-enter-from,
-.page-leave-to {
-  opacity: 0;
-}
 
 :global(body) {
-  background-color: black;
+  background-color: #0d0d0d;
 }
 </style>
 

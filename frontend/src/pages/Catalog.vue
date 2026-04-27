@@ -4,10 +4,11 @@
     import { ref, onMounted, watch , computed} from 'vue'
     import axios from '../plugins/axios'
     import { auth } from '../plugins/userinfo'
+    import { useRouter } from 'vue-router'
 
 
     // variables
-    
+    const router = useRouter()
     const genresList = ref([])
     const platformsList = ref([])
     const selectedGenres = ref([])
@@ -28,25 +29,41 @@
     const loadingOffset = ref(0)
     const scrollTrigger = ref(null)
     const isLoading = ref(false)
-    let scrollTriggerBlock = ref(true)
-    const userReview = computed(() => reviews.value.find(r => r.user?.id === auth.user?.id) || null)
+    const scrollTriggerBlock= ref(true)
+    
+    const userReview = computed(function() {
+        if (auth.user){
+            const founded = reviews.value.find(function(review){
+                return review.user.id === auth.user.id
+            })
+            
+            if (founded){
+                return founded
+            } else {
+                return null
+            }
+
+        }
+    })
+
     
     const sortedReviews = computed(() => {
-    if (!auth.user) return reviews.value
+    if (!auth.user){return reviews.value}
     return [
-        ...reviews.value.filter(r => r.user?.id === auth.user.id),
-        ...reviews.value.filter(r => r.user?.id !== auth.user.id),
+        ...reviews.value.filter(function(review){return review.user.id === auth.user.id}),
+        ...reviews.value.filter(function(review){return review.user.id !== auth.user.id}),
     ]
 })
-    const statusOptions = [
-        { value: 'planned', label: 'Planned' },
-        { value: 'playing', label: 'Playing' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'dropped', label: 'Dropped' },
+    const statusVariants = [
+        { value: 'Plānots', label: 'Plānots' },
+        { value: 'Spēlēju', label: 'Spēlēju' },
+        { value: 'Pabeigta', label: 'Pabeigta' },
+        { value: 'Pārtraukts', label: 'Pārtraukts' },
     ]
+
     let timeout = null
 
-    const props = defineProps({ searchQuery: String })
+    const props = defineProps({ searchValue: String })
 
 
     // Startup
@@ -56,23 +73,28 @@
         await getPlatforms()
         await gameLoader()
 
-        const observer = new IntersectionObserver(async (entries) => {
-        if (entries[0].isIntersecting && !scrollTriggerBlock) {
-            loadingOffset.value += 24
-            await gameLoader()
-        }
-        }, { threshold: 0.1 })
+        if (scrollTrigger.value){
 
-        observer.observe(scrollTrigger.value)
+            const observer = new IntersectionObserver(async (elements) => {
+            if (elements[0].isIntersecting && !scrollTriggerBlock.value) {
+                loadingOffset.value += 24
+                await gameLoader()
+            }
+            }, { threshold: 0.1 })
+
+            observer.observe(scrollTrigger.value)
+        }  
     })
+
+    
 
     // watchers
 
-    watch(() => props.searchQuery, () => {
+    watch(() => props.searchValue, () => {
         clearTimeout(timeout)
         games.value = []
         loadingOffset.value = 0
-        scrollTriggerBlock = true
+        scrollTriggerBlock.value = true
         timeout = setTimeout(() => {
         gameLoader()
         }, 500)
@@ -96,8 +118,8 @@
         gameLoader()
     });
 
-    watch(dialog, (newVal) => {
-        if (!newVal) {
+    watch(dialog, (opened) => {
+        if (!opened) {
             collectionExists.value = false
         }
     })
@@ -105,11 +127,9 @@
 
     //functions
 
-
-
-    function toggleAllGenres(e) {
-        if (e.target.checked) {
-            selectedGenres.value = genresList.value.map(g => g.id)
+    function toggleAllGenres(el) {
+        if (el.target.checked) {
+            selectedGenres.value = genresList.value.map(genre => genre.id)
         } else {
             selectedGenres.value = []
         }
@@ -117,7 +137,7 @@
 
     function toggleAllPlatforms(e) {
         if (e.target.checked) {
-            selectedPlatforms.value = platformsList.value.map(g => g.id)
+            selectedPlatforms.value = platformsList.value.map(platform => platform.id)
         } else {
             selectedPlatforms.value = []
         }
@@ -158,67 +178,46 @@
 
 
     async function gameLoader() {
-        scrollTriggerBlock = true
+        let newGames = []
+
+        scrollTriggerBlock.value = true
         isLoading.value = true
         
         const database_games = await axios.get('/api/database/getgames', {
-            params: {
-                search: props.searchQuery,
-                genres: selectedGenres.value,
-                platforms: selectedPlatforms.value,
-                offset: loadingOffset.value
-            }
+            params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, offset: loadingOffset.value}
         })
 
-        const dbgames = database_games.data.map(game => ({
-            id: game.id,
-            source: 'database',
-            name: game.name || 'Unknown',
-            image: game.cover
-                ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big')
-                : 'https://placehold.co/600x400',
-            genre: game.genres?.length
-                ? game.genres.map(g => g.name).join(', ')
-                : 'Unknown'
+        const dbgames = database_games.data.map(game => ({ id: game.id, source: 'database', name: game.name || 'Unknown',
+            image: game.cover ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big') : 'https://placehold.co/600x400',
+            genre: game.genres?.length ? game.genres.map(genre => genre.name).join(', ') : 'Unknown'
         }))
 
-        let newGames = [...dbgames]
+        newGames = [...dbgames]
 
         if (dbgames.length < 24) {
             const igdb_games = await axios.get('/api/igdb/games', {
-                params: {
-                    search: props.searchQuery,
-                    genres: selectedGenres.value,
-                    platforms: selectedPlatforms.value,
-                    dbgamesquantity: dbgames.length,
-                    dbgamesids: dbgames.map(g => g.id).join(',') || null,
-                    offset: loadingOffset.value
+                params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, dbgamesquantity: dbgames.length,
+                        dbgamesids: dbgames.map(genre => genre.id).join(',') || null, offset: loadingOffset.value
                 }
             })
-            const apigames = igdb_games.data.map(game => ({
-                id: game.id,
-                name: game.name || 'Unknown',
-                image: game.cover
-                    ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big')
-                    : 'https://placehold.co/600x400',
-                genre: game.genres?.length
-                    ? game.genres.map(g => g.name).join(', ')
-                    : 'Unknown'
+            const apigames = igdb_games.data.map(game => ({ id: game.id, name: game.name || 'Unknown', 
+            image: game.cover ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big') : 'https://placehold.co/600x400',
+                genre: game.genres?.length ? game.genres.map(genre => genre.name).join(', ') : 'Unknown'
             }));
             newGames = [...dbgames, ...apigames]
         }
 
-        const existingIds = new Set(games.value.map(g => g.id))
-        const uniqueNew = newGames.filter(g => !existingIds.has(g.id))
+        const existingIds = new Set(games.value.map(genre => genre.id))
+        const uniqueNew = newGames.filter(function (genre){return !existingIds.has(genre)})
         games.value = [...games.value, ...uniqueNew]
         isLoading.value = false
-        scrollTriggerBlock = false
+        scrollTriggerBlock.value = false
     }
 
     async function openGameModal(game) {
         selectedGame.value = game
         showCollectionForm.value = false
-        collectionStatus.value = 'planned'
+        collectionStatus.value = 'Plānots'
         collectionScore.value = 5
         collectionNotes.value = ''
 
@@ -266,7 +265,7 @@
 
 
 <template>
-    <div class="catalog-page">
+    <div class="page">
         <main class="content">
             <section class="hero">
                 <h1>Filters</h1>
@@ -276,11 +275,11 @@
                     <div class="track-row">
                         <span class="track-label">Genres: </span>
                         <div class="track-scroll">
-                            <div class="cb-item">
+                            <div class="filter-item">
                                 <input type="checkbox" id="g-all" :checked="selectedGenres.length === genresList.length" @change="toggleAllGenres">
                                 <label for="g-all">| ALL |</label>
                             </div>
-                            <div class="cb-item" v-for="genre in genresList" :key="genre.id">
+                            <div class="filter-item" v-for="genre in genresList" :key="genre.id">
                                 <input type="checkbox" :id="'g-' + genre.id" :value="genre.id" v-model="selectedGenres">
                                 <label :for="'g-' + genre.id">{{ genre.name }}</label>
                             </div>
@@ -290,11 +289,11 @@
                     <div class="track-row">
                         <span class="track-label">Platforms: </span>
                         <div class="track-scroll">
-                            <div class="cb-item">
+                            <div class="filter-item">
                                 <input type="checkbox" id="p-all" :checked="selectedPlatforms.length === platformsList.length" @change="toggleAllPlatforms">
                                 <label for="p-all">| ALL |</label>
                             </div>
-                            <div class="cb-item" v-for="platform in platformsList" :key="platform.id">
+                            <div class="filter-item" v-for="platform in platformsList" :key="platform.id">
                                 <input type="checkbox" :id="'p-' + platform.id" :value="platform.id" v-model="selectedPlatforms">
                                 <label :for="'p-' + platform.id">{{ platform.name }}</label>
                             </div>
@@ -319,33 +318,20 @@
             <div ref="scrollTrigger" class="scroll-trigger"></div>
         </main>
 
-        <v-dialog max-width="850" v-model="dialog" transition="dialog-bottom-transition">
+        <v-dialog max-width="850" max-height="80vh" v-model="dialog" transition="dialog-bottom-transition">
             <v-card class="game-modal" v-if="selectedGame">
                 <div class="modal-body">
                     <div class="modal-main-info">
                         <template v-if="auth.user">
-                            <v-btn
-                                v-if="!collectionExists"
-                                class="btn-add-collection"
-                                block
-                                @click="showCollectionForm = !showCollectionForm">
+                            <v-btn v-if="!collectionExists" class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm"> 
                                 Add to Collection
                             </v-btn>
 
                             <template v-if="collectionExists">
-                                <v-btn
-                                    class="btn-add-collection"
-                                    block
-                                    @click="showCollectionForm = !showCollectionForm"
-                                    style="margin-bottom: 8px"
-                                >
+                                <v-btn class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm" style="margin-bottom: 8px">
                                     Edit Collection
                                 </v-btn>
-                                <v-btn
-                                    class="btn-remove-collection"
-                                    block
-                                    @click="deleteCollection(selectedGame.id)"
-                                >
+                                <v-btn class="btn-remove-collection" block @click="deleteCollection(selectedGame.id)">
                                     Remove
                                 </v-btn>
                             </template>
@@ -355,35 +341,24 @@
                             <div class="collection-field">
                                 <label class="collection-label">Status</label>
                                 <select class="custom-select full-width" v-model="collectionStatus">
-                                    <option v-for="s in statusOptions" :key="s.value" :value="s.value">
-                                        {{ s.label }}
+                                    <option v-for="status in statusVariants" :key="status.value" :value="status.value">
+                                        {{ status.label }}
                                     </option>
                                 </select>
                             </div>
-
+                        
                             <div class="collection-field">
                                 <label class="collection-label">Your Score</label>
                                 <select class="custom-select full-width" v-model="collectionScore">
-                                    <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
+                                    <option v-for="score in 10" :key="score" :value="score">{{ score }}</option>
                                 </select>
                             </div>
-
-                            <div class="collection-field">
-                                <label class="collection-label">Notes</label>
-                                <textarea
-                                    class="collection-notes"
-                                    v-model="collectionNotes"
-                                    placeholder="Your notes..."
-                                    rows="3"
-                                ></textarea>
-                            </div>
-
-                            <v-btn
-                                class="btn-send"
-                                block
-                                size="small"
-                                @click="addToCollection(selectedGame.id)"
-                            >
+                        
+                            <v-textarea v-model="collectionNotes" label="Notes" maxlength="50" counter variant="outlined" density="compact" 
+                            rows="3" no-resize color="white">
+                            </v-textarea>
+                        
+                            <v-btn class="btn-send" block size="small" @click="addToCollection(selectedGame.id)">
                                 {{ collectionExists ? 'Save Changes' : 'Add' }}
                             </v-btn>
                         </div>
@@ -411,7 +386,6 @@
                     <div class="modal-content-area">
                         <v-card-title class="modal-title">
                             {{ selectedGame.name }}
-                            <v-btn icon="mdi-close" variant="text" size="small" @click="dialog = false" class="close-btn"></v-btn>
                         </v-card-title>
 
                         <div class="reviews-section">
@@ -420,11 +394,7 @@
                             <div class="reviews-list">
                                 <div v-for="review in sortedReviews" :key="review.id" class="review-item">
                                     <div class="review-avatar-wrap">
-                                        <img
-                                            v-if="review.user?.avatar"
-                                            :src="review.user.avatar"
-                                            class="review-avatar-img"
-                                        />
+                                        <img v-if="review.user?.avatar" :src="review.user.avatar" class="review-avatar-img">
                                         <div v-else class="review-avatar-placeholder">
                                             {{ review.user?.name ? review.user.name[0].toUpperCase() : 'U' }}
                                         </div>
@@ -432,19 +402,17 @@
                                 
                                     <div class="review-details">
                                         <div class="review-author">
+                                            <span class="author-link" @click="router.push(`/User/${review.user?.id}/Profile`)">
                                             {{ review.user?.name || 'Anonymous' }}
-                                            <span class="review-badge-you" v-if="review.user?.id === auth.user?.id">you</span>
+                                            <span class="review-you" v-if="review.user?.id === auth.user?.id">you</span>
+                                            </span>
                                             <span class="review-rating">{{ review.rating }}/10</span>
                                         </div>
-                                        <div class="review-title-display">{{ review.title }}</div>
+                                        <div class="review-title">{{ review.title }}</div>
                                         <div class="review-text">{{ review.content }}</div>
                                         <div class="review-footer">
                                             <span class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</span>
-                                            <button
-                                                v-if="review.user?.id === auth.user?.id"
-                                                class="btn-delete-review"
-                                                @click="deleteReview(selectedGame.id)"
-                                            >
+                                            <button v-if="review.user?.id === auth.user?.id" class="btn-delete-review" @click="deleteReview(selectedGame.id)">
                                                 Delete
                                             </button>
                                         </div>
@@ -457,8 +425,12 @@
                             </div>
                         
                             <div class="review-form" v-if="auth.user">
-                                <input type="text" placeholder="Review Title" class="custom-input-title" v-model="reviewTitle" />
-                                <textarea placeholder="Write your thoughts..." class="custom-textarea" v-model="reviewText"></textarea>
+                                <v-text-field v-model="reviewTitle" label="Review Title" maxlength="20" counter variant="outlined" density="compact" 
+                                    color="white">
+                                </v-text-field>
+                                <v-textarea v-model="reviewText" label="Write your thoughts..." maxlength="500" counter variant="outlined" density="compact" 
+                                    rows="3" no-resize color="white">
+                                </v-textarea>
                                 <div class="form-actions">
                                     <div class="rating-picker">
                                         <span>Score:</span>
@@ -467,12 +439,7 @@
                                         </select>
                                     </div>
                                     <div style="display: flex; gap: 8px;">
-                                        <v-btn
-                                            v-if="userReview"
-                                            class="btn-delete-review-form"
-                                            size="small"
-                                            @click="deleteReview(selectedGame.id)"
-                                        >
+                                        <v-btn v-if="userReview" class="btn-delete-reviewform" size="small" @click="deleteReview(selectedGame.id)">
                                             Delete
                                         </v-btn>
                                         <v-btn class="btn-send" size="small" @click="postReview(selectedGame)">
@@ -505,16 +472,48 @@
 
 <style scoped>
 
+:deep(.v-field__outline) {
+    --v-field-border-opacity: 0.2;
+}
+
+:deep(.v-field) {
+    color: #eee;
+}
+
+:deep(.v-label) {
+    color: #666;
+}
+
+:deep(.v-counter) {
+    color: #555;
+}
+
+:deep(.v-input) {
+    margin-bottom: 4px;
+}
+
+:deep(.v-input__details) {
+    padding-top: 2px;
+    padding-bottom: 6px;
+}
+
+.author-link {
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.author-link:hover {
+    color: #4a9eff;
+}
+
 .loading-wrap {
     display: flex;
     justify-content: center;
-    padding: 0px 0;
 }
 
 .scroll-trigger {
     height: 1px;
 }
-
 
 .review-avatar-wrap {
     flex: 0 0 auto;
@@ -540,7 +539,7 @@
     color: #666;
 }
 
-.review-badge-you {
+.review-you {
     font-size: 10px;
     color: #4a9eff;
     border: 1px solid rgba(74, 158, 255, 0.3);
@@ -562,6 +561,12 @@
     color: gray;
 }
 
+.review-details {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
 .btn-delete-review {
     background: transparent;
     border: none;
@@ -577,14 +582,13 @@
     opacity: 1;
 }
 
-.btn-delete-review-form {
+.btn-delete-reviewform {
     background: transparent;
     color: #ff5f5f;
     border: 1px solid rgba(255, 95, 95, 0.3);
     text-transform: none;
     font-size: 12px;
 }
-
 
 .btn-remove-collection {
     background: transparent;
@@ -593,7 +597,7 @@
     text-transform: none;
     font-weight: 500;
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .collection-form {
@@ -601,7 +605,7 @@
     border: 1px solid #1f1f1f;
     border-radius: 10px;
     padding: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -625,23 +629,6 @@
     padding: 5px 8px;
 }
 
-.collection-notes {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid #1f1f1f;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 12px;
-    padding: 8px;
-    resize: none;
-    outline: none;
-    font-family: inherit;
-}
-
-.collection-notes:focus {
-    border-color: #444;
-}
-
 .track-row {
     display: flex;
     align-items: center;
@@ -651,11 +638,11 @@
 .track-label {
     flex: 0 0 auto;
     font-size: 14px;
-    color: #ffffff;
+    color: #fff;
     white-space: nowrap;
     padding-right: 14px;
-    min-width: 80px;
     padding-bottom: 4px;
+    min-width: 80px;
 }
 
 .track-scroll {
@@ -673,12 +660,12 @@
     display: none;
 }
 
-.cb-item {
+.filter-item {
     display: inline-block;
     flex: 0 0 auto;
 }
 
-.cb-item input[type="checkbox"] {
+.filter-item input[type="checkbox"] {
     position: absolute;
     opacity: 0;
     width: 0;
@@ -686,7 +673,7 @@
     pointer-events: none;
 }
 
-.cb-item label {
+.filter-item label {
     display: block;
     font-size: 12px;
     padding: 4px 10px;
@@ -698,17 +685,18 @@
     user-select: none;
 }
 
-.cb-item label:hover {
+.filter-item label:hover {
     color: #fff;
 }
 
-.cb-item input:checked + label {
+.filter-item input:checked + label {
     color: #fff;
     background: #1f1f1f;
     font-weight: 500;
 }
 
-.v-card-title, .v-card-text {
+.v-card-title,
+.v-card-text {
     color: white;
 }
 
@@ -717,8 +705,9 @@
     font-size: 10px;
 }
 
-.dialog, .v-dialog-button {
-    background-color: rgb(0, 0, 0);
+.dialog,
+.v-dialog-button {
+    background-color: #000;
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.14);
 }
@@ -728,27 +717,13 @@
     border: 1px solid rgba(255, 255, 255, 0.587);
 }
 
-.custom-input-title {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    padding: 8px 12px;
-    color: white;
-    margin-bottom: 10px;
-    font-weight: bold;
-    outline: none;
-}
-
-.custom-input-title:focus {
-    border-color: #646cff;
-}
-
-.review-title-display {
+.review-title {
     font-weight: bold;
     font-size: 1.1rem;
     margin: 4px 0;
     color: #fff;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .game-modal {
@@ -757,34 +732,42 @@
     border-radius: 16px;
     overflow: hidden;
     color: #fff;
-}
-
-.modal-body {
-    display: flex;
-    flex-direction: row;
-    min-height: 500px;
-}
-
-@media (max-width: 600px) {
-    .modal-body { flex-direction: column; }
-}
-
-.modal-aside {
-    width: 300px;
-    background: #111;
-    border-right: 1px solid #1f1f1f;
+    height: 80vh;
+    max-height: 80vh;
     display: flex;
     flex-direction: column;
 }
 
-.modal-image {
-    width: 100%;
-    height: 380px;
-    object-fit: cover;
+.modal-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .modal-main-info {
-    padding: 20px;
+    flex: 0 0 220px;
+    width: 220px;
+    padding: 20px 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    border-right: 1px solid #1a1a1a;
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+}
+
+.modal-main-info::-webkit-scrollbar {
+    width: 4px;
+}
+
+.modal-main-info::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-main-info::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 2px;
 }
 
 .btn-add-collection {
@@ -793,7 +776,7 @@
     text-transform: none;
     font-weight: 600;
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .modal-stats {
@@ -808,33 +791,48 @@
     font-size: 12px;
 }
 
-.stat-label { color: #666; }
-.stat-value { color: #eee; }
+.stat-label {
+    color: #666;
+}
+
+.stat-value {
+    color: #eee;
+    white-space: pre-wrap;
+    word-break: break-word;
+    text-align: right;
+    max-width: 60%;
+}
 
 .modal-content-area {
     flex: 1;
     display: flex;
     flex-direction: column;
     padding: 20px;
-    position: relative;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .modal-title {
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 700;
-    padding: 0 0 20px 0;
+    padding: 0 0 16px;
     line-height: 1.2;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    flex-shrink: 0;
 }
 
-.close-btn { color: #555; }
+.close-btn {
+    color: #555;
+}
 
 .reviews-section {
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .section-title {
@@ -842,14 +840,30 @@
     text-transform: uppercase;
     color: #444;
     letter-spacing: 1px;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
 }
 
 .reviews-list {
     flex: 1;
-    max-height: 200px;
     overflow-y: auto;
-    margin-bottom: 20px;
+    min-height: 0;
+    margin-bottom: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+}
+
+.reviews-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.reviews-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.reviews-list::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 2px;
 }
 
 .review-item {
@@ -858,7 +872,8 @@
     padding: 12px;
     background: #161616;
     border-radius: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+    min-width: 0;
 }
 
 .review-avatar {
@@ -866,6 +881,7 @@
     height: 32px;
     background: #333;
     border-radius: 50%;
+    flex-shrink: 0;
 }
 
 .review-author {
@@ -873,6 +889,10 @@
     font-weight: 500;
     color: #fff;
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
 }
 
 .review-rating {
@@ -883,32 +903,32 @@
 .review-text {
     font-size: 13px;
     color: #aaa;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.no-reviews {
+    color: #555;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px 0;
 }
 
 .review-form {
+    flex-shrink: 0;
     background: #111;
     border: 1px solid #1f1f1f;
     border-radius: 12px;
     padding: 12px;
 }
 
-.custom-textarea {
-    width: 100%;
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 13px;
-    resize: none;
-    outline: none;
-    min-height: 60px;
-}
-
 .form-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 10px;
-    padding-top: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
     border-top: 1px solid #1f1f1f;
 }
 
@@ -935,7 +955,7 @@
     font-size: 12px;
 }
 
-.catalog-page {
+.page {
     min-height: 100vh;
     background: #0a0a0a;
     color: #e8e8e8;
@@ -971,7 +991,7 @@
 }
 
 .game-card {
-    background: #111111;
+    background: #111;
     border: 1px solid #181818;
     border-radius: 12px;
     overflow: hidden;
@@ -1014,7 +1034,7 @@
 .meta {
     font-size: 10px;
     font-weight: 300;
-    color: #666666;
+    color: #666;
 }
 
 .v-card {
@@ -1044,21 +1064,185 @@
 }
 
 .modal-label {
-    color: #ffffff;
+    color: #fff;
     font-weight: 400;
 }
 
 .v-dialog-button {
-    background-color: rgb(0, 0, 0);
+    background-color: #000;
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.14);
     min-width: 70px;
 }
 
-.v-btn-text {
-    color: white;
-    font-size: 10px;
-    margin: 0;
+@media (max-width: 768px) {
+    .games-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+    }
+
+    .game-image {
+        height: 180px;
+    }
+
+    .content {
+        padding: 16px 12px 32px;
+    }
+
+    .hero h1 {
+        font-size: 20px;
+    }
 }
+
+@media (max-width: 600px) {
+    .games-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .game-image {
+        height: 160px;
+    }
+
+    .game-info h2 {
+        font-size: 12px;
+    }
+
+    .content {
+        padding: 12px 10px 24px;
+    }
+
+    .hero {
+        margin-bottom: 14px;
+    }
+
+    .hero h1 {
+        font-size: 18px;
+    }
+
+    .hero p {
+        display: none;
+    }
+
+    .track-label {
+        font-size: 12px;
+        min-width: 66px;
+        padding-right: 8px;
+    }
+
+    .filter-item label {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+
+    .game-modal {
+        height: 92vh;
+        max-height: 92vh;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-body {
+        flex-direction: column;
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 0;
+    }
+
+    .modal-main-info {
+        flex: 0 0 auto;
+        width: 100%;
+        padding: 12px 14px;
+        border-right: none;
+        border-bottom: 1px solid #1a1a1a;
+        overflow: visible;
+        min-height: 0;
+    }
+
+    .btn-add-collection {
+        margin-bottom: 8px;
+    }
+
+    .modal-stats {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .stat-item {
+        flex-direction: column;
+        gap: 2px;
+        min-width: 80px;
+    }
+
+    .stat-value {
+        text-align: left;
+        max-width: 100%;
+    }
+
+    .modal-content-area {
+        flex: 0 0 auto;
+        padding: 14px;
+        overflow: visible;
+        min-height: 0;
+    }
+
+    .reviews-section {
+        flex: 0 0 auto;
+        overflow: visible;
+        min-height: 0;
+    }
+
+    .reviews-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        padding-bottom: 12px;
+    }
+
+    .review-item {
+        padding: 10px;
+    }
+
+    .review-title {
+        font-size: 1rem;
+    }
+
+    .review-text {
+        font-size: 12px;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .form-actions > div:last-child {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 380px) {
+    .games-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .game-image {
+        height: 140px;
+    }
+
+    .modal-title {
+        font-size: 16px;
+    }
+}
+
 
 </style>
