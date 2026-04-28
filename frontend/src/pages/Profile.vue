@@ -10,11 +10,11 @@ const profileusername = ref("placeholder_user")
 const profileBio = ref("No bio yet.")
 const profileRole = ref("user")
 const profileAvatar = ref(null)
-
+const counts = ref({ all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 })
 const collection = ref([])
 
-const activeFilter = ref('all')
-
+const activeFilter = ref('Visi')
+const sortOrder = ref('desc')
 const settingsPasswordConfirm = ref('')
 const settingsDialog = ref(false)
 const settingsUsername = ref('')
@@ -29,36 +29,39 @@ const settingsPasswordValid = computed(() => {
 })
 
 const filters = [
-    { key: 'all',       label: 'All' },
-    { key: 'playing',   label: 'Playing' },
-    { key: 'completed', label: 'Completed' },
-    { key: 'planned',   label: 'Planned' },
-    { key: 'dropped',   label: 'Dropped' },
+    { key: 'Visi', label: 'Visi' },
+    { key: 'Spēlēju', label: 'Spēlēju' },
+    { key: 'Pabeigta', label: 'Pabeigta' },
+    { key: 'Plānots', label: 'Plānots' },
+    { key: 'Pārtraukts', label: 'Pārtraukts' },
 ]
 
 const statusMeta = {
-    playing:   { color: '#38ef7d', label: 'Playing' },
-    completed: { color: '#4a9eff', label: 'Completed' },
-    planned:   { color: '#aaa',    label: 'Planned' },
-    dropped:   { color: '#ff5f5f', label: 'Dropped' },
+    Spēlēju:   { color: '#38ef7d', label: 'Spēlēju' },
+    Pabeigta: { color: '#4a9eff', label: 'Pabeigta' },
+    Plānots:   { color: '#aaa', label: 'Plānots' },
+    Pārtraukts:   { color: '#ff5f5f', label: 'Pārtraukts' },
 }
 
-const filteredCollection = computed(() => {
-    if (activeFilter.value === 'all') return collection.value
-    return collection.value.filter(item => item.status === activeFilter.value)
-})
 
-const counts = computed(() => {
-    const c = { all: collection.value.length }
-    filters.slice(1).forEach(f => {
-        c[f.key] = collection.value.filter(i => i.status === f.key).length
-    })
-    return c
-})
+
 
 const initials = computed(() => {
     return profileusername.value.slice(0, 2).toUpperCase()
 })
+
+async function loadCollection(status = null) {
+    const res = await axios.get("/api/user/collection", {
+        params: {
+            user_id: route.params.id,
+            status: status || undefined,
+            sort: sortOrder.value
+        }
+    })
+    collection.value = res.data.collection
+    counts.value = res.data.stats
+}
+
 
 function openSettings() {
     settingsUsername.value = profileusername.value
@@ -94,7 +97,15 @@ onMounted(async () => {
     profileAvatar.value = userData.avatar
     profileRole.value = userData.role
 
-    collection.value = (await axios.get("/api/user/collection", { params: { user_id: route.params.id } })).data
+    await loadCollection()
+})
+
+watch(activeFilter, (newFilter) => {
+    loadCollection(newFilter === 'Visi' ? null : newFilter)
+})
+
+watch(sortOrder, () => {
+    loadCollection(activeFilter.value === 'Visi' ? null : activeFilter.value)
 })
 
 watch(settingsUsername, async (newUsername) => {
@@ -150,6 +161,10 @@ watch(settingsUsername, async (newUsername) => {
             <div class="collection-section">
                 <div class="section-top">
                     <h2 class="section-title">Collection</h2>
+                        <button class="btn-sort" :class="{ 'active-sort': sortOrder }" @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'">
+                            Score {{ sortOrder === 'desc' ? '↓' : '↑' }}
+                        </button>
+
                     <div class="filter-tabs">
                         <button
                             v-for="f in filters"
@@ -167,7 +182,7 @@ watch(settingsUsername, async (newUsername) => {
                 <div class="collection-grid">
                     <div
                         class="game-entry"
-                        v-for="item in filteredCollection"
+                        v-for="item in collection"
                         :key="item.id"
                     >
                         <img :src="item.game.image" :alt="item.game.name" class="entry-cover" />
@@ -185,7 +200,7 @@ watch(settingsUsername, async (newUsername) => {
                         </div>
                     </div>
 
-                    <div v-if="filteredCollection.length === 0" class="empty-state">
+                    <div v-if="collection.length === 0" class="empty-state">
                         Nothing here yet.
                     </div>
                 </div>
@@ -196,48 +211,71 @@ watch(settingsUsername, async (newUsername) => {
             <v-card class="dialog">
                 <v-card-title class="v-card-title">Edit Profile</v-card-title>
                 <v-card-text class="v-card-text">
-
                     <div class="settings-avatar-row">
                         <div class="settings-avatar-preview">
                             <img v-if="settingsAvatarUrl" :src="settingsAvatarUrl" class="avatar-img" />
                             <div v-else class="avatar-placeholder">{{ initials }}</div>
                         </div>
-                        <div class="settings-field" style="flex: 1; margin-bottom: 0;">
-                            <label class="settings-label">Avatar URL</label>
-                            <input class="settings-input" v-model="settingsAvatarUrl" placeholder="https://..." />
-                        </div>
+                        <v-text-field
+                            v-model="settingsAvatarUrl"
+                            label="Avatar URL"
+                            placeholder="https://..."
+                            maxlength="2048"
+                            counter
+                            variant="outlined"
+                            density="compact"
+                            style="flex: 1;"
+                        ></v-text-field>
                     </div>
-
-                    <div class="settings-field">
-                        <label class="settings-label">Username</label>
-                        <input class="settings-input" v-model="settingsUsername" placeholder="Username" />
-                        <span v-if="settingsUsernameValid === false" class="field-hint hint-error">Username is already taken</span>
-                        <span v-if="settingsUsernameValid === true" class="field-hint hint-ok">Username is available</span>
-                    </div>
-
-                    <div class="settings-field">
-                        <label class="settings-label">Bio</label>
-                        <textarea
-                            class="settings-input settings-textarea"
-                            v-model="settingsBio"
-                            placeholder="Tell something about yourself..."
-                            rows="3"
-                        ></textarea>
-                    </div>
-
-                    <div class="settings-field">
-                        <label class="settings-label">New Password</label>
-                        <input class="settings-input" v-model="settingsPassword" type="password" placeholder="Leave empty to keep current" />
-                    </div>
-
-                    <div class="settings-field" v-if="settingsPassword">
-                        <label class="settings-label">Confirm Password</label>
-                        <input class="settings-input" v-model="settingsPasswordConfirm" type="password" placeholder="Repeat new password" />
-                        <span v-if="settingsPassword.length < 8" class="field-hint hint-error">Password must be at least 8 characters</span>
-                        <span v-else-if="settingsPasswordValid === false" class="field-hint hint-error">Passwords do not match</span>
-                        <span v-else-if="settingsPasswordValid === true" class="field-hint hint-ok">Passwords match</span>
-                    </div>
-
+                
+                    <v-text-field
+                        v-model="settingsUsername"
+                        label="Username"
+                        placeholder="Username"
+                        maxlength="10"
+                        counter
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="settingsUsernameValid === false ? 'Username is already taken' : ''"
+                        :messages="settingsUsernameValid === true ? 'Username is available' : ''"
+                    ></v-text-field>
+                
+                    <v-textarea
+                        v-model="settingsBio"
+                        placeholder="Tell something about yourself..."
+                        maxlength="50"
+                        counter
+                        variant="outlined"
+                        density="compact"
+                        rows="3"
+                        no-resize
+                    ></v-textarea>
+                
+                    <v-text-field
+                        v-model="settingsPassword"
+                        label="New Password"
+                        placeholder="Leave empty to keep current"
+                        type="password"
+                        maxlength="255"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="settingsPassword.length > 0 && settingsPassword.length < 8 ? 'Password must be at least 8 characters' : settingsPasswordValid === false ? 'Passwords do not match' : ''"
+                        persistent-hint
+                    ></v-text-field>
+                
+                    <v-text-field
+                        v-if="settingsPassword"
+                        v-model="settingsPasswordConfirm"
+                        label="Confirm Password"
+                        placeholder="Repeat new password"
+                        type="password"
+                        maxlength="255"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="settingsPassword.length < 8 ? 'Password must be at least 8 characters' : settingsPasswordValid === false ? 'Passwords do not match' : ''"
+                        :messages="settingsPasswordValid === true ? 'Passwords match' : ''"
+                    ></v-text-field>
+                
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -259,6 +297,61 @@ watch(settingsUsername, async (newUsername) => {
 
 
 <style scoped>
+
+.btn-sort {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    color: #666;
+    font-size: 11px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.btn-sort:hover {
+    color: #ccc;
+    border-color: #444;
+}
+
+.btn-sort.active-sort {
+    color: #ffffff;
+    border-color: #666;
+}
+
+
+:deep(.v-field__outline) {
+    --v-field-border-opacity: 0.3;
+}
+
+:deep(.v-field) {
+    color: #eee;
+}
+
+:deep(.v-label) {
+    color: #666;
+}
+
+:deep(.v-counter) {
+    color: #555;
+}
+
+:deep(.v-messages__message) {
+    color: #38ef7d;
+}
+
+:deep(.v-input--error .v-messages__message) {
+    color: #ff5f5f;
+}
+
+:deep(.v-input) {
+    margin-bottom: 6px;
+}
+
+:deep(.v-input__details) {
+    padding-top: 2px;
+    padding-bottom: 8px;
+}
 
 .field-hint {
     font-size: 11px;
@@ -362,6 +455,7 @@ watch(settingsUsername, async (newUsername) => {
     color: #666;
     font-weight: 300;
     line-height: 1.5;
+    overflow: auto
 }
 
 .btn-settings {

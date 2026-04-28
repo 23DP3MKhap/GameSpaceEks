@@ -21,7 +21,7 @@ class DatabaseController extends Controller
 
     $igdbId = $validated['igdb_id'];
 
-    $existingGame = Game::where('id', $igdbId)->first();
+    $existingGame = Game::find($igdbId);
     if ($existingGame) {
         return;
     }
@@ -38,39 +38,42 @@ class DatabaseController extends Controller
         "Client-ID" => config('services.twitch.igdbclientid'),
         "Authorization" => "Bearer "  . $token])->post("https://api.igdb.com/v4/games"));
 
-        if ($response->failed() || empty($response->json())) {
-        return response()->json(['error']);
+    if ($response->failed() || empty($response->json())) {
+        return;
     }
 
-    $externalData = $response->json()[0];
+    $resData = $response->json()[0];
 
-    if (isset($externalData['involved_companies'])) {
-    foreach ($externalData['involved_companies'] as $item) {
-        if ($item['developer'] === true) {
-            $dev = $item['company']['name'];
-        }
-        
-        if ($item['publisher'] === true) {
-            $pub = $item['company']['name'];
+    $developer = null;
+    $publisher = null;
+
+    if (!empty($resData['involved_companies'])) {
+        foreach ($resData['involved_companies'] as $company) {
+            $companyName = $company['company']['name'] ?? null;
+            if (!empty($company['developer']) && $developer === null) {
+                $developer = $companyName;
+            }
+            if (!empty($company['publisher']) && $publisher === null) {
+                $publisher = $companyName;
+            }
         }
     }
-}
 
     $game = Game::create([
-        'id'      => $externalData['id'],
-        'name'         => $externalData['name'],
-        'description'  => $externalData['summary'] ?? null,
-        'developer'    => $dev ?? null,
-        'publisher'    => $pub ?? null,
-        'release_date' => isset($externalData['first_release_date']) ? date('Y-m-d', $externalData['first_release_date']) : null,
-        'cover_url'    => isset($externalData['cover']) ? str_replace('t_thumb', 't_cover_big', $externalData['cover']['url']) : null,
-        'rating'       => $externalData['aggregated_rating'] ?? null,
+        'id' => $resData['id'],
+        'name' => $resData['name'],
+        'description' => $resData['summary'] ?? null,
+        'developer' => $dev ?? null,
+        'publisher' => $pub ?? null,
+        'release_date' => !empty($resData['first_release_date']) ? date('Y-m-d', $resData['first_release_date']) : null,
+        'cover_url' => !empty($resData['cover']) ? str_replace('t_thumb', 't_cover_big', $resData['cover']['url']) : null,
+        'rating' => $resData['aggregated_rating'] ?? null,
     ]);
 
 
-if (isset($externalData['genres']) && is_array($externalData['genres'])) {
-    foreach ($externalData['genres'] as $genreData) {
-        $genreId = is_array($genreData) ? ($genreData['id'] ?? null) : $genreData;
+if (!empty($resData['genres']) && is_array($resData['genres'])) {
+    foreach ($resData['genres'] as $genreData) {
+        $genreId = $genreData ?? null;
 
         if ($genreId) {
             $game->genres()->attach((int)$genreId);
@@ -78,9 +81,9 @@ if (isset($externalData['genres']) && is_array($externalData['genres'])) {
     }
 }
 
-if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
-    foreach ($externalData['platforms'] as $platformData) {
-        $platformId = is_array($platformData) ? ($platformData['id'] ?? null) : $platformData;
+if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
+    foreach ($resData['platforms'] as $platformData) {
+        $platformId = $platformData ?? null;
 
         if ($platformId) {
             $game->platforms()->attach((int)$platformId);
@@ -93,35 +96,33 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
     public function addReview(Request $request){
         $validated = $request->validate([
             'game_id' => 'required|integer',
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
+            'title' => 'required|string|max:20',
+            'content' => 'required|string|max:500',
             'rating' => 'required|integer|min:1|max:10',
         ]);
 
         Review::updateOrCreate(
         ['user_id' => $request->user()->id, 'game_id' => $validated['game_id']],
-
         [
-            'title'   => $validated['title'],
+            'title' => $validated['title'],
             'content' => $validated['content'],
-            'rating'  => $validated['rating'],
+            'rating' => $validated['rating'],
         ]
         );  
-        
     }
 
     public function deleteReview(Request $request){
         $request->validate(['game_id' => 'required|integer']);
-        $userId = auth()->id();
+        $userId = $request->user()->id;
         Review::where('game_id', $request->game_id)->where('user_id', $userId)->delete();
     }
 
     public function addToCollection(Request $request){
         $validated = $request->validate([
-        'game_id'    => 'required|integer',
-        'status'     => 'required|in:playing,completed,planned,dropped',
+        'game_id' => 'required|integer',
+        'status' => 'required|in:Spēlēju,Pabeigta,Plānots,Pārtraukts',
         'user_score' => 'nullable|integer|min:1|max:10',
-        'notes'      => 'nullable|string|max:1000',
+        'notes' => 'nullable|string|max:50',
     ]);
 
     $collectionItem = Collection::updateOrCreate(
@@ -130,15 +131,15 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
             'game_id' => $validated['game_id']
         ],
         [
-            'status'     => $validated['status'],
-            'user_score' => $validated['user_score'] ?? null,
-            'notes'      => $validated['notes'] ?? null,
+            'status' => $validated['status'],
+            'user_score' => $validated['user_score'],
+            'notes'  => $validated['notes'],
         ]);
     }
 
     public function removeFromCollection(Request $request){
         $request->validate(['game_id' => 'required|integer']);
-        $userId = auth()->id();
+        $userId = $request->user()->id;
         Collection::where('game_id', $request->game_id)->where('user_id', $userId)->delete();
     }
 
@@ -146,13 +147,13 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
         $user = $request->user(); 
 
         $validated = $request->validate([
-            'username'   => 'sometimes|string|max:255|unique:users,name,' . $user->id,
-            'bio'        => 'sometimes|nullable|string|max:500',
+            'username' => 'sometimes|string|max:10|unique:users,name,' . $user->id,
+            'bio' => 'sometimes|nullable|string|max:50',
             'avatar_url' => 'sometimes|nullable|url|max:2048',
-            'password'   => 'sometimes|nullable|string|min:8|max:255',
+            'password' => 'sometimes|nullable|string|min:8|max:255',
         ]);
 
-        if (isset($validated['username'])) {
+        if (!empty($validated['username'])) {
             $user->name = $validated['username'];
         }
 
@@ -175,88 +176,141 @@ if (isset($externalData['platforms']) && is_array($externalData['platforms'])) {
 
     // Get metodes
 
-    public function getReviews(Request $request){
-        $request->validate(['game_id' => 'required|integer']);
-        $reviews = Review::where('game_id', $request->game_id)->with('user')->latest()->get();
-        return response()->json($reviews);
-    }
+    public function getReviews(Request $request)
+{
+    $request->validate(['game_id' => 'required|integer']);
+
+    $reviews = Review::join('users', 'reviews.user_id', '=', 'users.id')
+        ->where('reviews.game_id', $request->game_id)
+        ->select(
+            'reviews.id',
+            'reviews.user_id',
+            'reviews.game_id',
+            'reviews.title',
+            'reviews.content',
+            'reviews.rating',
+            'reviews.created_at',
+            'users.name as user_name',
+            'users.avatar as user_avatar'
+        )
+        ->latest('reviews.created_at')
+        ->get()
+        ->map(function ($review) {
+            return [
+                'id' => $review->id,
+                'user_id' => $review->user_id,
+                'game_id' => $review->game_id,
+                'title' => $review->title,
+                'content' => $review->content,
+                'rating' => $review->rating,
+                'created_at' => $review->created_at,
+                'user' => [
+                    'id' => $review->user_id,
+                    'name' => $review->user_name,
+                    'avatar' => $review->user_avatar,
+                ],
+            ];
+        });
+
+    return $reviews;
+}
 
     public function getGenres(){
         $genres = Genre::orderBy("name", "asc")->get();
 
-        return response()->json($genres);
+        return $genres;
     }
 
     public function getPlatforms(){
         $platforms = Platform::orderBy("name", "asc")->get();
 
-        return response()->json($platforms);
+        return $platforms;
     }
 
     public function getGames(Request $request)
     {
-        $search    = $request->search;
-        $genres    = $request->genres;
+        $search = $request->search;
+        $genres = $request->genres;
         $platforms = $request->platforms;
         $offset = $request->offset ?? 0;
 
-        $query = Game::with(['genres', 'platforms']);
-
-
+        $rules = Game::with(['genres', 'platforms']);
 
         if ($search) {
-            $query->where('name', 'like', "%{$search}%");
+            $rules->where('name', 'like', "%{$search}%");
         }
 
 
         if (!empty($genres) && is_array($genres)) {
-            $query->whereHas('genres', function ($q) use ($genres) {
-                $q->whereIn('genre_id', $genres);
+            $rules->whereHas('genres', 
+            function ($rul) use ($genres) {
+                $rul->whereIn('genre_id', $genres);
             });
         }
 
         if (!empty($platforms) && is_array($platforms)) {
-        $query->whereHas('platforms', function ($q) use ($platforms) {
-            $q->whereIn('platform_id', $platforms);
+        $rules->whereHas('platforms', function ($rul) use ($platforms) {
+            $rul->whereIn('platform_id', $platforms);
         });
         }
 
-        $games = $query->skip($offset)->take(24)->get();
+       
+
+        $games = $rules->skip($offset)->take(24)->get();
         return $games->map(function ($game) {
         return [
-            'id'        => $game->id,
-            'name'      => $game->name,
-            'cover'     => ['url' => $game->cover_url],
-            'genres'    => $game->genres->map(fn($g) => ['name' => $g->name]),
+            'id' => $game->id,
+            'name' => $game->name,
+            'cover' => ['url' => $game->cover_url],
+            'genres' => $game->genres->map(fn($g) => ['name' => $g->name]),
             'platforms' => $game->platforms->map(fn($p) => ['name' => $p->name]),
         ];
         });
     }
 
     public function getCollection(Request $request){
-    $request->validate(['user_id' => 'required|integer']);
+    $request->validate(['user_id' => 'required|integer', 
+                        'status'  => 'sometimes|nullable|in:Spēlēju,Pabeigta,Plānots,Pārtraukts'
+                        ]);
 
-    $collection = Collection::where('user_id', $request->user_id)
-        ->with('game')
-        ->get();
+    $baserules = Collection::where('user_id', $request->user_id);
 
-    return response()->json(
-        $collection->map(function ($item) {
+    $stats = [
+        'Visi' => (clone $baserules)->count(),
+        'Spēlēju' => (clone $baserules)->where('status', 'Spēlēju')->count(),
+        'Pabeigta' => (clone $baserules)->where('status', 'Pabeigta')->count(),
+        'Plānots' => (clone $baserules)->where('status', 'Plānots')->count(),
+        'Pārtraukts' => (clone $baserules)->where('status', 'Pārtraukts')->count(),
+    ];
+
+    if ($request->status) {
+        $baserules->where('status', $request->status);
+    }
+
+    if ($request->sort){
+        $baserules->orderBy('user_score', $request->sort);
+    }
+
+    $collection = $baserules->with('game')->get()->map(function ($item) {
             return [
-                'id'         => $item->id,
-                'game'       => [
-                    'id'    => $item->game->id,
-                    'name'  => $item->game->name,
+                'id' => $item->id,
+                'game' => [
+                    'id' => $item->game->id,
+                    'name' => $item->game->name,
                     'image' => $item->game->cover_url
                         ? 'https:' . str_replace('t_thumb', 't_cover_big', $item->game->cover_url)
                         : 'https://placehold.co/60x80/111/444?text=' . urlencode($item->game->name),
                 ],
-                'status'     => $item->status,
+                'status' => $item->status,
                 'user_score' => $item->user_score,
-                'notes'      => $item->notes ?? '',
+                'notes' => $item->notes ?? '',
             ];
-        })
-    );
+        });
+
+    return response([
+        'collection' => $collection,
+        'stats' => $stats,
+    ]);
     }
 
     

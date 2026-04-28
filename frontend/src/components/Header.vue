@@ -7,7 +7,7 @@
     const dialog = ref(false)
     const items = [
         { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/catalog/1" },
+        { title: "CATALOG", to: "/Catalog" },
         { title: "ABOUT", to: "/about" },
         { title: "LOGIN", to: "/login" },
         { title: "REGISTER", to: "/register" },
@@ -18,7 +18,7 @@
     const itemsregistered = computed(() => {
       const items = [
         { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/catalog/1" },
+        { title: "CATALOG", to: "/Catalog" },
         { title: "ABOUT", to: "/about" },
       ]
     
@@ -27,6 +27,13 @@
           title: auth.user.name,
           to: `/User/${auth.user.id}/Profile`
         })
+
+        if (auth.user.role === 'admin') {
+          items.push({
+            title: "ADMIN",
+            to: "/Admin"
+          })
+        }
     
         items.push({
           title: "LOG OUT",
@@ -57,12 +64,14 @@
     <div class="header">
         <nav>      
             <router-link to="/"><a class="logo">GAMESPACE</a></router-link>
-            <router-link to="/Catalog/1" class="router-link"><a>CATALOG</a></router-link>
-            <a>ABOUT</a>  
+            <router-link to="/Catalog" class="router-link"><a>CATALOG</a></router-link>
+            <router-link to="/About" class="router-link"><a>ABOUT</a></router-link>
         </nav>
 
             <div v-if="auth.user">
                 <nav>
+                <router-link v-if="auth.user.role === 'admin'" :to = "{path: `/Admin`}" class="router-link"><a>Admin</a></router-link>
+                <p>|</p>
                 <router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link"><a>{{auth.user.name}}</a></router-link>
                 <p>|</p>
                 <a @click.prevent="logout">LOG OUT</a>
@@ -123,6 +132,24 @@
 
 
 <style scoped>
+    :deep(.v-list) {
+        background-color: #0d0d0d !important;
+        border: 1px solid #1f1f1f;
+        padding: 8px 0;
+    }
+    :deep(.v-list-item) {
+        color: #eeeeee;
+    }
+    
+    :deep(.v-list-item:hover) {
+        background-color: #1a1a1a;
+    }
+    
+    :deep(.v-list-item-title) {
+        font-size: 14px;
+        font-weight: 500;
+    }
+
 
     a {
         cursor: pointer;

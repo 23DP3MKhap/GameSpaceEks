@@ -188,7 +188,7 @@
         })
 
         const dbgames = database_games.data.map(game => ({ id: game.id, source: 'database', name: game.name || 'Unknown',
-            image: game.cover ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big') : 'https://placehold.co/600x400',
+            image: game.cover?.url  ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big')  : 'https://placehold.co/600x400',
             genre: game.genres?.length ? game.genres.map(genre => genre.name).join(', ') : 'Unknown'
         }))
 

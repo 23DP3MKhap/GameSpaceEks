@@ -2,6 +2,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\DatabaseController;
+use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -72,3 +73,18 @@ Route::middleware('auth:sanctum')->post("/database/removefromcollection", [Datab
 Route::middleware('auth:sanctum')->post("/user/update", [DatabaseController::class, 'updateUser']);
 
 Route::middleware('auth:sanctum')->post("/database/deletereview", [DatabaseController::class, 'deleteReview']);
+
+// ADMIN ROUTES
+
+Route::middleware('auth:sanctum', 'admin')->get("/admin/users", [AdminController::class, 'getUsers']);
+Route::middleware('auth:sanctum', 'admin')->put('/admin/users/{id}', [AdminController::class, 'updateUser']);
+Route::middleware('auth:sanctum', 'admin')->delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
+
+Route::middleware('auth:sanctum', 'admin')->get('/admin/games', [AdminController::class, 'getGames']);
+Route::middleware('auth:sanctum', 'admin')->put('/admin/games/{id}', [AdminController::class, 'updateGame']);
+Route::middleware('auth:sanctum', 'admin')->delete('/admin/games/{id}', [AdminController::class, 'deleteGame']);
+
+Route::middleware('auth:sanctum', 'admin')->get('/admin/reviews', [AdminController::class, 'getReviews']);
+Route::middleware('auth:sanctum', 'admin')->delete('/admin/reviews/{id}', [AdminController::class, 'deleteReview']);
+
+Route::middleware('auth:sanctum', 'admin')->delete('/admin/users/{id}/collection', [AdminController::class, 'deleteUserCollection']);

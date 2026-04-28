@@ -1,37 +1,37 @@
 <script setup>
-  import { auth } from './plugins/userinfo'
-  import { onMounted, ref } from 'vue'
-  import Header from './components/Header.vue'
-  import Footer from './components/Footer.vue'
-  import axios from './plugins/axios'
-  import Catalogheader from './components/Catalogheader.vue'
+    import { auth } from './plugins/userinfo'
+    import { onMounted, ref } from 'vue'
+    import Header from './components/Header.vue'
+    import Footer from './components/Footer.vue'
+    import axios from './plugins/axios'
+    import Catalogheader from './components/Catalogheader.vue'  
+    const searchBar = ref("")   
 
-  const searchBar = ref("")
+    function searchUpdate(search){
+        searchBar.value = search
+    }
 
-  const onSearch = (value) => {searchBar.value = value}
-
-  onMounted(async () => {
-  try {
-    const response = await axios.get('/api/user')
-    auth.user = response.data
-  } catch (error) {
-    auth.user = null
-    return console.log("Not logged in")
-  }
+    onMounted(async () => {
+    try {
+        const response = await axios.get('/api/user')
+        auth.user = response.data
+    } catch (error) {
+        auth.user = null
+        return console.log("Not logged in")
+    }
 })
 
 </script>
 <template>
   <v-app>
     <Header v-if="!$route.meta.hideHeader"></Header>
-    <Catalogheader v-if="$route.meta.hideHeader" @update-search="onSearch" :search-value="searchBar"></Catalogheader>
+    <Catalogheader v-if="$route.meta.hideHeader" @update-search="searchUpdate" :search-value="searchBar"></Catalogheader>
     <v-main>
-      <RouterView v-if="!$route.meta.hideHeader" v-slot="{ Component, route }">
-          <component :is="Component" :key="route.fullPath" />
-      </RouterView>
 
-      <RouterView v-if="$route.meta.hideHeader" v-slot="{ Component, route }">
-          <component :search-query="searchBar" :is="Component" :key="route.fullPath" />
+      <RouterView v-if="!$route.meta.hideHeader"></RouterView>
+
+      <RouterView v-if="$route.meta.hideHeader" v-slot="{Component}">
+          <component :search-value="searchBar" :is="Component"></component>
       </RouterView>
 
     </v-main>

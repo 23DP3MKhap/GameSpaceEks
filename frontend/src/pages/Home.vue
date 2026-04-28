@@ -16,7 +16,8 @@
     } catch (error) {
         apiStatus.value = false
         console.log(error)
-    }})
+    }
+})
 
   async function logout(){
         try {
@@ -47,10 +48,10 @@
         <div class="about">
           <div v-if="auth.user">
             <v-card class="v-about" variant="outlined">
-                <v-card-title class="about-title">WELCOME BACK!</v-card-title>
+                <v-card-title class="about-title">WELCOME!</v-card-title>
                 <v-card-text class="about-text"><router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link">Hello, {{ auth.user.name }}!</router-link></v-card-text>
                 <v-card-actions class="card-actions">
-                  <router-link to="/Catalog/1" class="router-link"><v-btn class="card-register">CATALOG</v-btn></router-link>
+                  <router-link to="/Catalog" class="router-link"><v-btn class="card-register">CATALOG</v-btn></router-link>
                   <span class="separator">|</span>
                   <v-btn class="card-login" @click="logout">LOG OUT</v-btn>
                 </v-card-actions>
@@ -79,10 +80,6 @@
                 <div v-if="apiStatus === null">Checking API status...</div>
                 <div v-else-if="apiStatus === true" > 
                     <p style="color: lightgreen;" >API is online</p>
-
-                    <!-- idk why it gave random value everytime :p gonna delete this probably -->
-                    <p>Expires in: {{ Math.round(igdb_expires/60/60/24)}} days</p>
-
                 </div>
                 <div v-else style="color: red;">API is offline</div>
               </v-card-text>

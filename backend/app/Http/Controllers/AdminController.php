@@ -11,7 +11,7 @@ use App\Models\Collection;
 class AdminController extends Controller
 {
     public function getUsers(){
-        return response()->json(User::select('id', 'name', 'email', 'bio', 'avatar', 'role', 'created_at')->get());
+        return User::select('id', 'name', 'email', 'bio', 'avatar', 'role', 'created_at')->get();
     }
 
     public function updateUser(Request $request, $id){
@@ -31,7 +31,7 @@ class AdminController extends Controller
     }
 
     public function getGames(){
-        return response()->json(Game::select('id', 'name', 'developer', 'publisher', 'release_date', 'rating', 'cover_url')->get());
+        return Game::select('id', 'name', 'developer', 'publisher', 'release_date', 'rating', 'cover_url')->get();
     }
 
     public function updateGame(Request $request, $id){
@@ -53,9 +53,7 @@ class AdminController extends Controller
     }
 
     public function getReviews(){
-        return response()->json(
-            Review::with(['user:id,name', 'game:id,name'])->get()
-        );
+        return Review::with(['user:id,name', 'game:id,name'])->get();
     }
 
     public function deleteReview($id){
@@ -64,6 +62,5 @@ class AdminController extends Controller
     
     public function deleteUserCollection($id){
     Collection::where('user_id', $id)->delete();
-    return response()->json(['message' => 'Collection cleared']);
     }
 }
