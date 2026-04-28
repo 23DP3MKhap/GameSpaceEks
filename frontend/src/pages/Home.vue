@@ -36,7 +36,7 @@
 
 <template>
   <div class="page">
-    <div class="background"><img src="/backgrounds/home-background.jpg"></div>
+    <div class="background"><img src="/backgrounds/home-background.jpg" alt="Background"></div>
     <div class="main-text">
 
         <h1>DISCOVER GAMES WITHOUT LIMITS</h1>

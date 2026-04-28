@@ -95,7 +95,7 @@
 
 <template>
   <div class="page"> 
-    <div class="background"><img src="/backgrounds/register-background.png"></div>
+    <div class="background"><img alt="Background" src="/backgrounds/register-background.png"></div>
     <div class="page-wrapper">
         <div class="register-form">
             <v-form v-model="valid" @submit.prevent="register">

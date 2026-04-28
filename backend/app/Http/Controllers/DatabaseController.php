@@ -203,7 +203,7 @@ if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
                 'title' => $review->title,
                 'content' => $review->content,
                 'rating' => $review->rating,
-                'created_at' => $review->created_at,
+                'created_at' => $review->created_at->format('Y-m-d'),
                 'user' => [
                     'id' => $review->user_id,
                     'name' => $review->user_name,
@@ -261,9 +261,14 @@ if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
         return [
             'id' => $game->id,
             'name' => $game->name,
-            'cover' => ['url' => $game->cover_url],
-            'genres' => $game->genres->map(fn($g) => ['name' => $g->name]),
-            'platforms' => $game->platforms->map(fn($p) => ['name' => $p->name]),
+            'image' => $game->cover_url
+            ? 'https:' . str_replace('t_thumb', 't_cover_big', $game->cover_url)
+            : 'https://placehold.co/600x400',
+            'genre' => $game->genres->pluck('name')->join(', ') ?: 'Unknown',
+            'platforms' => $game->platforms->pluck('name')->join(', ') ?: 'Unknown',
+            'source' => 'database',
+            'developer' => $game->developer ?? "Unknown",
+            'publisher' => $game->publisher ?? 'Unknown',
         ];
         });
     }

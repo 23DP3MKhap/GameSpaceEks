@@ -131,7 +131,7 @@ watch(settingsUsername, async (newUsername) => {
         <div class="profile-wrapper">
             <div class="profile-header">
                 <div class="avatar-wrap">
-                    <img v-if="profileAvatar" :src="profileAvatar" class="avatar-img" />
+                    <img v-if="profileAvatar" :src="profileAvatar" class="avatar-img" alt="profileAvatar">
                     <div v-else class="avatar-placeholder">{{ initials }}</div>
                 </div>
 
@@ -185,7 +185,7 @@ watch(settingsUsername, async (newUsername) => {
                         v-for="item in collection"
                         :key="item.id"
                     >
-                        <img :src="item.game.image" :alt="item.game.name" class="entry-cover" />
+                        <img :src="item.game.image" :alt="item.game.name" class="entry-cover">
                         <div class="entry-info">
                             <div class="entry-name">{{ item.game.name }}</div>
                             <div class="entry-status" :style="{ color: statusMeta[item.status].color }">
@@ -213,7 +213,7 @@ watch(settingsUsername, async (newUsername) => {
                 <v-card-text class="v-card-text">
                     <div class="settings-avatar-row">
                         <div class="settings-avatar-preview">
-                            <img v-if="settingsAvatarUrl" :src="settingsAvatarUrl" class="avatar-img" />
+                            <img v-if="settingsAvatarUrl" :src="settingsAvatarUrl" class="avatar-img">
                             <div v-else class="avatar-placeholder">{{ initials }}</div>
                         </div>
                         <v-text-field

@@ -282,7 +282,7 @@ class DatabaseSeeder extends Seeder
         shuffle($UserIdsNoAdmin);
         foreach ($UserIdsNoAdmin as $userId) {
             $availableGames = array_diff($gameIds, array_column(
-                array_filter($usedPairs, function($pair){return $pair[0] === $userId;}), 1
+                array_filter($usedPairs, function($pair) use($userId) {return $pair[0] === $userId;}), 1
             ));
  
             $gamesToReview = collect($availableGames)->shuffle()->take(rand(1, 3));

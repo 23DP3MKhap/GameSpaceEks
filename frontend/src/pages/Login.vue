@@ -56,7 +56,7 @@
 
 <template>
   <div class="page">
-    <div class="background"><img src="/backgrounds/login-background.png"></div>
+    <div class="background"><img alt="Bacground" src="/backgrounds/login-background.png"></div>
     <div class="page-wrapper">
         <div class="login-form">
             <v-form v-model="valid" @submit.prevent="login()">
@@ -98,10 +98,7 @@
           <v-card-actions>
             <v-spacer></v-spacer>
 
-            <v-btn
-              class="v-dialog-button"
-              @click="dialog = false"
-            >
+            <v-btn class="v-dialog-button" @click="dialog = false" >
               <p class="v-btn-text">Close</p>
             </v-btn>
           </v-card-actions>
@@ -118,10 +115,7 @@
           <v-card-actions>
             <v-spacer></v-spacer>
 
-            <v-btn
-              class="v-dialog-button"
-              @click="dialogerror = false"
-            >
+            <v-btn class="v-dialog-button" @click="dialogerror = false">
               <p class="v-btn-text">Close</p>
             </v-btn>
           </v-card-actions>

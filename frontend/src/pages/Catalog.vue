@@ -187,10 +187,7 @@
             params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, offset: loadingOffset.value}
         })
 
-        const dbgames = database_games.data.map(game => ({ id: game.id, source: 'database', name: game.name || 'Unknown',
-            image: game.cover?.url  ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big')  : 'https://placehold.co/600x400',
-            genre: game.genres?.length ? game.genres.map(genre => genre.name).join(', ') : 'Unknown'
-        }))
+        const dbgames = database_games.data
 
         newGames = [...dbgames]
 
@@ -200,17 +197,14 @@
                         dbgamesids: dbgames.map(genre => genre.id).join(',') || null, offset: loadingOffset.value
                 }
             })
-            const apigames = igdb_games.data.map(game => ({ id: game.id, name: game.name || 'Unknown', 
-            image: game.cover ? 'https:' + game.cover.url.replace('t_thumb', 't_cover_big') : 'https://placehold.co/600x400',
-                genre: game.genres?.length ? game.genres.map(genre => genre.name).join(', ') : 'Unknown'
-            }));
+            const apigames = igdb_games.data
             newGames = [...dbgames, ...apigames]
         }
 
-        const existingIds = new Set(games.value.map(genre => genre.id))
-        const uniqueNew = newGames.filter(function (genre){return !existingIds.has(genre)})
+        const existingIds = new Set(games.value.map(game => game.id))
+        const uniqueNew = newGames.filter(function (game){return !existingIds.has(game)})
         games.value = [...games.value, ...uniqueNew]
-        isLoading.value = false
+        isLoading.value = false     
         scrollTriggerBlock.value = false
     }
 
@@ -304,10 +298,12 @@
             <v-progress-linear v-if="isLoading" indeterminate color="white"></v-progress-linear>
             <section class="games-grid">
                 <div class="game-card" v-for="game in games" :key="game.id" @click="openGameModal(game)">
-                    <img :src="game.image" :alt="game.name" class="game-image" />
+                    <img :src="game.image" :alt="game.name" class="game-image">
                     <div class="game-info">
                         <h2>{{ game.name }}</h2>
                         <div class="genre">{{ game.genre }}</div>
+                        <div class="meta">Developer: {{ game.developer }}</div>
+                        <div class="meta">Publisher: {{ game.publisher }}</div>
                         <div class="meta">id: {{ game.id }} {{ game.source }}</div>
                     </div>
                 </div>
@@ -394,16 +390,16 @@
                             <div class="reviews-list">
                                 <div v-for="review in sortedReviews" :key="review.id" class="review-item">
                                     <div class="review-avatar-wrap">
-                                        <img v-if="review.user?.avatar" :src="review.user.avatar" class="review-avatar-img">
+                                        <img v-if="review.user?.avatar" :src="review.user.avatar" class="review-avatar-img" alt="userAvatar">
                                         <div v-else class="review-avatar-placeholder">
-                                            {{ review.user?.name ? review.user.name[0].toUpperCase() : 'U' }}
+                                            {{review.user.name[0].toUpperCase()}}
                                         </div>
                                     </div>
                                 
                                     <div class="review-details">
                                         <div class="review-author">
                                             <span class="author-link" @click="router.push(`/User/${review.user?.id}/Profile`)">
-                                            {{ review.user?.name || 'Anonymous' }}
+                                            {{ review.user.name }}
                                             <span class="review-you" v-if="review.user?.id === auth.user?.id">you</span>
                                             </span>
                                             <span class="review-rating">{{ review.rating }}/10</span>
@@ -411,7 +407,7 @@
                                         <div class="review-title">{{ review.title }}</div>
                                         <div class="review-text">{{ review.content }}</div>
                                         <div class="review-footer">
-                                            <span class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</span>
+                                            <span class="review-date">{{ review.created_at  }}</span>
                                             <button v-if="review.user?.id === auth.user?.id" class="btn-delete-review" @click="deleteReview(selectedGame.id)">
                                                 Delete
                                             </button>

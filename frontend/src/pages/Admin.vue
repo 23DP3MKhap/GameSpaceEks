@@ -223,11 +223,11 @@ async function deleteUserCollection(userId) {
                 <v-card-text class="v-card-text">
                     <div class="edit-field">
                         <label class="edit-label">Name</label>
-                        <input class="edit-input" v-model="editingUser.name" />
+                        <input class="edit-input" v-model="editingUser.name">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Email</label>
-                        <input class="edit-input" v-model="editingUser.email" />
+                        <input class="edit-input" v-model="editingUser.email">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Bio</label>
@@ -235,7 +235,7 @@ async function deleteUserCollection(userId) {
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Avatar URL</label>
-                        <input class="edit-input" v-model="editingUser.avatar" />
+                        <input class="edit-input" v-model="editingUser.avatar">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Role</label>
@@ -263,27 +263,27 @@ async function deleteUserCollection(userId) {
                 <v-card-text class="v-card-text">
                     <div class="edit-field">
                         <label class="edit-label">Name</label>
-                        <input class="edit-input" v-model="editingGame.name" />
+                        <input class="edit-input" v-model="editingGame.name">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Developer</label>
-                        <input class="edit-input" v-model="editingGame.developer" />
+                        <input class="edit-input" v-model="editingGame.developer">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Publisher</label>
-                        <input class="edit-input" v-model="editingGame.publisher" />
+                        <input class="edit-input" v-model="editingGame.publisher">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Release Date</label>
-                        <input class="edit-input" type="date" v-model="editingGame.release_date" />
+                        <input class="edit-input" type="date" v-model="editingGame.release_date">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Rating</label>
-                        <input class="edit-input" type="number" min="0" max="100" v-model="editingGame.rating" />
+                        <input class="edit-input" type="number" min="0" max="100" v-model="editingGame.rating">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Cover URL</label>
-                        <input class="edit-input" v-model="editingGame.cover_url" />
+                        <input class="edit-input" v-model="editingGame.cover_url">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Description</label>
