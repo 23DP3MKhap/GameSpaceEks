@@ -3,7 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import axios from '../plugins/axios'
 import { useRoute } from 'vue-router'
 import { auth } from '../plugins/userinfo'
-
+import router from '@/router';
 const route = useRoute()
 
 const profileusername = ref("placeholder_user")
@@ -12,7 +12,7 @@ const profileRole = ref("user")
 const profileAvatar = ref(null)
 const counts = ref({ all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 })
 const collection = ref([])
-
+const deleteConfirmation = ref(false)
 const activeFilter = ref('Visi')
 const sortOrder = ref('desc')
 const settingsPasswordConfirm = ref('')
@@ -90,6 +90,12 @@ async function saveSettings() {
     settingsDialog.value = false
 }
 
+async function deleteUser() {
+    await axios.get('/sanctum/csrf-cookie')
+    await axios.post('/api/database/deleteuser')
+    router.push('/')
+}
+
 onMounted(async () => {
     const userData = (await axios.get("/api/getuser", { params: { id: route.params.id } })).data
     profileusername.value = userData.name
@@ -141,13 +147,7 @@ watch(settingsUsername, async (newUsername) => {
                         {{ profileRole === 'admin' ? 'Admin' : 'User' }}
                     </div>
                     <div class="profile-bio">{{ profileBio }}</div>
-                    <button
-                        v-if="auth.user && auth.user.id == route.params.id"
-                        class="btn-settings"
-                        @click="openSettings"
-                    >
-                        Edit Profile
-                    </button>
+                    <button v-if="auth.user && auth.user.id == route.params.id" class="btn-settings" @click="openSettings">Edit Profile</button>
                 </div>
 
                 <div class="profile-stats">
@@ -180,11 +180,7 @@ watch(settingsUsername, async (newUsername) => {
                 </div>
 
                 <div class="collection-grid">
-                    <div
-                        class="game-entry"
-                        v-for="item in collection"
-                        :key="item.id"
-                    >
+                    <div class="game-entry" v-for="item in collection" :key="item.id">
                         <img :src="item.game.image" :alt="item.game.name" class="entry-cover">
                         <div class="entry-info">
                             <div class="entry-name">{{ item.game.name }}</div>
@@ -279,6 +275,9 @@ watch(settingsUsername, async (newUsername) => {
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button btn-delete" @click="deleteConfirmation = true">
+                        <p class="v-btn-text">Delete Account</p>
+                    </v-btn>
                     <v-btn class="v-dialog-button" @click="settingsDialog = false">
                         <p class="v-btn-text">Cancel</p>
                     </v-btn>
@@ -292,11 +291,56 @@ watch(settingsUsername, async (newUsername) => {
                 </v-card-actions>
             </v-card>
         </v-dialog>
+        <v-dialog max-width="400" v-model="deleteConfirmation">
+            <v-card class="dialog">
+                <v-card-title class="v-card-title">Delete Account</v-card-title>
+                <v-card-text class="v-card-text">Delete your account?</v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="deleteConfirmation = false">
+                        <p class="v-btn-text">Cancel</p>
+                    </v-btn>
+                    <v-btn class="v-dialog-button btn-delete-confirm" @click="deleteUser">
+                        <p class="v-btn-text">Delete</p>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 
 <style scoped>
+.v-dialog-button:hover {
+    background-color: rgba(255, 255, 255, 0.06) ;
+    border-color: rgba(255, 255, 255, 0.25) ;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.btn-save:hover {
+    background-color: rgba(74, 158, 255, 0.1) ;
+    border-color: rgba(74, 158, 255, 0.5) ;
+}
+
+.btn-delete {
+    border-color: rgba(255, 95, 95, 0.25);
+    color: #ff5f5f;
+}
+
+.btn-delete:hover {
+    background-color: rgba(255, 95, 95, 0.08) ;
+    border-color: rgba(255, 95, 95, 0.5) ;
+}
+
+.btn-delete-confirm {
+    border-color: rgba(255, 95, 95, 0.3);
+    color: #ff5f5f;
+}
+
+.btn-delete-confirm:hover {
+    background-color: rgba(255, 95, 95, 0.12) ;
+    border-color: rgba(255, 95, 95, 0.6) ;
+}
 
 .btn-sort {
     background: transparent;

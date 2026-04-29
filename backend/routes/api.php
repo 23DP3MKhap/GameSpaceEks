@@ -66,7 +66,10 @@ Route::get("/user/collection", [DatabaseController::class, 'getCollection']);
 
 Route::get("/getuser", [AuthController::class, 'getuser']);
 
+
 Route::middleware('auth:sanctum')->get("/database/checkcollection", [DatabaseController::class, 'checkCollection']);
+
+Route::middleware('auth:sanctum')->post("/database/deleteuser", [DatabaseController::class, "deleteUser"]);
 
 Route::middleware('auth:sanctum')->post("/database/removefromcollection", [DatabaseController::class, 'removeFromCollection']);
 

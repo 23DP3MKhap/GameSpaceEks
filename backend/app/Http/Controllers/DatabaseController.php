@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Game;
 use App\Models\Review;
 use App\Models\Collection;
@@ -170,6 +171,15 @@ if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
         }
 
         $user->save();
+    }
+
+    public function deleteUser(Request $request){
+        $user = $request->user();
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        $user->delete();
+
     }
     
 
