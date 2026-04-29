@@ -30,6 +30,7 @@
     const scrollTrigger = ref(null)
     const isLoading = ref(false)
     const scrollTriggerBlock= ref(true)
+    const catalogEmpty = ref(false)
     
     const userReview = computed(function() {
         if (auth.user){
@@ -206,6 +207,13 @@
         games.value = [...games.value, ...uniqueNew]
         isLoading.value = false     
         scrollTriggerBlock.value = false
+
+        if (games.value.length === 0){
+            catalogEmpty.value = true
+        }
+        else{
+            catalogEmpty.value = false
+        }
     }
 
     async function openGameModal(game) {
@@ -296,6 +304,7 @@
                 </div>
             </section>
             <v-progress-linear v-if="isLoading" indeterminate color="white"></v-progress-linear>
+            <div v-if="catalogEmpty"><p>No games for your request, please try other</p></div>
             <section class="games-grid">
                 <div class="game-card" v-for="game in games" :key="game.id" @click="openGameModal(game)">
                     <img :src="game.image" :alt="game.name" class="game-image">

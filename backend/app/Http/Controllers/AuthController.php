@@ -10,7 +10,7 @@ class AuthController extends Controller
     public function register(Request $request){
         $userdata = $request->validate([
             'email' => ['required', 'email', 'unique:users,email'],
-            'username' => ['required', 'unique:users,name', 'max:10'],
+            'username' => ['required', 'unique:users,name', 'max:10', 'regex: /^[a-zA-Z][\w]*$/'],
             'password' => ['required', 'min:8'],
         ]);
 
@@ -20,7 +20,6 @@ class AuthController extends Controller
         $user->password = $userdata['password'];
         $user->save();
 
-        return response()->json(["message" => "true"]);
     }
 
 
@@ -29,11 +28,10 @@ class AuthController extends Controller
         
         
         if (! Auth::attempt($credentials)){
-            return response()->json(["message" => "wrong credentials"]);
+            return response('wrong credentials', 401);
         }
 
         $request->session()->regenerate();
-        return response()->json(["message" => "true"]);
         }
 
 
