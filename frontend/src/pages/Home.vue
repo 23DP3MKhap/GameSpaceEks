@@ -36,11 +36,11 @@
 
 <template>
   <div class="page">
-    <div class="background"><img src="/backgrounds/home-background.jpg" alt="Background"></div>
+    <div class="background"><img src="/backgrounds/home-background.jpg" alt="Fons"></div>
     <div class="main-text">
 
-        <h1>DISCOVER GAMES WITHOUT LIMITS</h1>
-        <p>Explore worlds, genres and platforms All your games in one space</p>
+        <h1>ATKLĀJ SPĒLES BEZ ROBEŽĀM</h1>
+        <p>Izpēti pasaules, žanrus un platformas. Visas tavas spēles vienā vietā</p>
     </div>
 
     <div class="main-cards">
@@ -48,26 +48,26 @@
         <div class="about">
           <div v-if="auth.user">
             <v-card class="v-about" variant="outlined">
-                <v-card-title class="about-title">WELCOME!</v-card-title>
-                <v-card-text class="about-text"><router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link">Hello, {{ auth.user.name }}!</router-link></v-card-text>
+                <v-card-title class="about-title">LAIPNI LŪGTS!</v-card-title>
+                <v-card-text class="about-text"><router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link">Sveiks, {{ auth.user.name }}!</router-link></v-card-text>
                 <v-card-actions class="card-actions">
-                  <router-link to="/Catalog" class="router-link"><v-btn class="card-register">CATALOG</v-btn></router-link>
+                  <router-link to="/Catalog" class="router-link"><v-btn class="card-register">KATALOGS</v-btn></router-link>
                   <span class="separator">|</span>
-                  <v-btn class="card-login" @click="logout">LOG OUT</v-btn>
+                  <v-btn class="card-login" @click="logout">IZIET</v-btn>
                 </v-card-actions>
               </v-card>
           </div>
 
           <div v-if="!auth.user">
               <v-card class="v-about" variant="outlined">
-                <v-card-title class="about-title">HOW TO START</v-card-title>
+                <v-card-title class="about-title">KĀ SĀKT</v-card-title>
                 <v-card-text class="about-text">
-                  Start your adventure by logging into your account
+                  Sāc savu piedzīvojumu, piesakoties savā kontā
                 </v-card-text>
                 <v-card-actions class="card-actions">
-                  <router-link to="/Register" class="router-link"><v-btn class="card-register">REGISTER</v-btn></router-link>
+                  <router-link to="/Register" class="router-link"><v-btn class="card-register">REĢISTRĒTIES</v-btn></router-link>
                   <span class="separator">|</span>
-                  <router-link to="/Login" class="router-link"><v-btn class="card-login">LOG IN</v-btn></router-link>
+                  <router-link to="/Login" class="router-link"><v-btn class="card-login">PIETEIKTIES</v-btn></router-link>
                 </v-card-actions>
             </v-card>
           </div>
@@ -75,13 +75,13 @@
 
         <div class="api-status">
             <v-card class="v-api-status" variant="outlined">
-              <v-card-title class="api-status-title">API Status</v-card-title>
+              <v-card-title class="api-status-title">API Statuss</v-card-title>
               <v-card-text class="api-text">
-                <div v-if="apiStatus === null">Checking API status...</div>
+                <div v-if="apiStatus === null">Pārbauda API statusu...</div>
                 <div v-else-if="apiStatus === true" > 
-                    <p style="color: lightgreen;" >API is online</p>
+                    <p style="color: lightgreen;" >API ir tiešsaistē</p>
                 </div>
-                <div v-else style="color: red;">API is offline</div>
+                <div v-else style="color: red;">API nav pieejams</div>
               </v-card-text>
             </v-card>
         </div>
@@ -91,9 +91,9 @@
 
   <v-dialog max-width="500" v-model="dialog">
     <v-card class="v-card" color="black">
-      <v-card-title class="v-card-title">Logout</v-card-title>
+      <v-card-title class="v-card-title">Iziet</v-card-title>
       <v-card-text class="v-card-text">
-        Successfully logged out!
+        Veiksmīgi izrakstījies!
       </v-card-text>
 
       <v-card-actions>
@@ -101,7 +101,7 @@
         <v-btn
           class="v-dialog-button"
           @click="dialog = false" 
-        ><p class="v-btn-text">Close</p></v-btn>
+        ><p class="v-btn-text">Aizvērt</p></v-btn>
       </v-card-actions>
     </v-card>
 </v-dialog>

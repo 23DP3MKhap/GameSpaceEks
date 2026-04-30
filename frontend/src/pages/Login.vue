@@ -34,7 +34,7 @@
         value => {
           if (value) return true
 
-          return 'Password is required.'
+          return 'Parole ir obligāta.'
         },
       ],
       email: '',
@@ -42,12 +42,12 @@
         value => {
           if (value) return true
 
-          return 'E-mail is required.'
+          return 'E-pasts ir obligāts.'
         },
         value => {
           if (/.+@.+\..+/.test(value)) return true
 
-          return 'E-mail must be valid.'
+          return 'E-pastam jābūt derīgam.'
         },
       ],
     }),
@@ -56,18 +56,18 @@
 
 <template>
   <div class="page">
-    <div class="background"><img alt="Bacground" src="/backgrounds/login-background.png"></div>
+    <div class="background"><img alt="Fons" src="/backgrounds/login-background.png"></div>
     <div class="page-wrapper">
         <div class="login-form">
             <v-form v-model="valid" @submit.prevent="login()">
                 <v-container>
-                    <h1>Log in</h1>
+                    <h1>Pieteikties</h1>
 
                     <v-col class="login-row" cols="12" >
                       <v-text-field
                         v-model="email"
                         :rules="emailRules"
-                        label="E-mail"
+                        label="E-pasts"
                         required
                       ></v-text-field>
                     </v-col>                   
@@ -77,12 +77,12 @@
                         type="password"
                         v-model="password"
                         :rules="passwordRules"
-                        label="Password"
+                        label="Parole"
                         required
                       ></v-text-field>
                     </v-col>
 
-                    <v-btn :disabled="!valid" type = "submit" class="login-button">LOG IN</v-btn>
+                    <v-btn :disabled="!valid" type = "submit" class="login-button">PIETEIKTIES</v-btn>
                 </v-container>
             </v-form>
         </div>
@@ -90,16 +90,16 @@
 
     <v-dialog max-width="500" v-model="dialog">
         <v-card class="v-card" color="black">
-          <v-card-title class="v-card-title">Login</v-card-title>
+          <v-card-title class="v-card-title">Pieteikšanās</v-card-title>
           <v-card-text class="v-card-text">
-            Successfully logged in!
+            Veiksmīgi pieteicies!
           </v-card-text>
 
           <v-card-actions>
             <v-spacer></v-spacer>
 
             <v-btn class="v-dialog-button" @click="dialog = false" >
-              <p class="v-btn-text">Close</p>
+              <p class="v-btn-text">Aizvērt</p>
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -107,16 +107,16 @@
 
     <v-dialog max-width="500" v-model="dialogerror">
         <v-card class="v-card" color="black">
-          <v-card-title class="v-card-title">Login Error</v-card-title>
+          <v-card-title class="v-card-title">Pieteikšanās kļūda</v-card-title>
           <v-card-text class="v-card-text">
-            Please check your email and password and try again.
+            Lūdzu pārbaudi e-pastu un paroli un mēģini vēlreiz.
           </v-card-text>
 
           <v-card-actions>
             <v-spacer></v-spacer>
 
             <v-btn class="v-dialog-button" @click="dialogerror = false">
-              <p class="v-btn-text">Close</p>
+              <p class="v-btn-text">Aizvērt</p>
             </v-btn>
           </v-card-actions>
         </v-card>

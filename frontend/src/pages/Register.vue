@@ -49,17 +49,17 @@
     const usernameRules = [
         value => {
             if (value) return true
-            return 'Username is required.'
+            return 'Lietotājvārds ir obligāts.'
         },
         value => {
             if (value?.length <= 10) return true
-            return 'Username must be less than 10 characters.'
+            return 'Lietotājvārdam jābūt īsākam par 10 rakstzīmēm.'
         },
         async value => {
             await axios.get('/sanctum/csrf-cookie')
             const response = await axios.post('/api/usernamecheck', { username: value })
             if (response.data.exists === true) {
-                return 'Username already in use.'
+                return 'Lietotājvārds jau ir aizņemts.'
             }
             return true
         },
@@ -67,35 +67,35 @@
             if (/^[a-zA-Z][\w]*$/.test(value)){
                 return true
             }
-            return 'Username cant start with number and contain special symbols'
+            return 'Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus.'
         }
   ]
 
     const passwordRules = [
         value => {
             if (value) return true
-            return 'Password is required.'
+            return 'Parole ir obligāta.'
         },
         value => {
             if (value?.length >= 8) return true
-            return 'Password must be at least 8 characters.'
+            return 'Parolei jābūt vismaz 8 rakstzīmēm.'
         },
     ]
 
     const emailRules = [
         value => {
             if (value) return true
-            return 'E-mail is required.'
+            return 'E-pasts ir obligāts.'
         },
         value => {
             if (/.+@.+\..+/.test(value)) return true
-            return 'E-mail must be valid.'
+            return 'E-pasta adresei jābūt derīgai.'
         },
         async value => {
             await axios.get('/sanctum/csrf-cookie')
             const response = await axios.post('/api/emailcheck', { email: value })
             if (response.data.exists === true) {
-                return 'Email already in use.'
+                return 'E-pasts jau ir reģistrēts.'
             }
             return true
         }
@@ -104,11 +104,11 @@
     const passwordConfirmationRules = [
         value => {
             if (value) return true
-            return 'Password confirmation is required.'
+            return 'Paroles apstiprinājums ir obligāts.'
         },
         value => {
             if (value === password.value) return true
-            return 'Passwords do not match.'
+            return 'Paroles nesakrīt.'
         },
     ] 
   
@@ -123,14 +123,14 @@
             <div class="register-form">
                 <v-form v-model="valid" @submit.prevent="register">
                     <v-container>
-                        <h1>Register</h1>
+                        <h1>Reģistrācija</h1>
 
                         <v-col class="register-row" cols="12" >
                             <v-text-field
                                 v-model="username"
                                 :rules="usernameRules"
                                 :counter="10"
-                                label="Username"
+                                label="Lietotājvārds"
                                 required
                             ></v-text-field>
                         </v-col>
@@ -140,7 +140,7 @@
                             <v-text-field
                                 v-model="email"
                                 :rules="emailRules"
-                                label="E-mail"
+                                label="E-pasts"
                                 required
                             ></v-text-field>
                         </v-col>                   
@@ -150,7 +150,7 @@
                                 type="password"
                                 v-model="password"
                                 :rules="passwordRules"
-                                label="Password"
+                                label="Parole"
                                 required
                             ></v-text-field>
                         </v-col>
@@ -160,12 +160,12 @@
                                 type="password"
                                 v-model="passwordConfirmation"
                                 :rules="passwordConfirmationRules"
-                                label="Confirm Password"
+                                label="Apstiprināt paroli"
                                 required
                             ></v-text-field>
                         </v-col>
 
-                    <v-btn type="submit" :disabled="!valid" class="register-button">CREATE ACCOUNT</v-btn>
+                    <v-btn type="submit" :disabled="!valid" class="register-button">IZVEIDOT KONTU</v-btn>
                     </v-container>
                 </v-form>
             </div>
@@ -173,24 +173,25 @@
 
         <v-dialog max-width="500" v-model="dialog">
             <v-card class=dialog>
-                <v-card-title class="v-card-title">Registration</v-card-title> <v-card-text class="v-card-text">Successfully created account! </v-card-text>
+                <v-card-title class="v-card-title">Reģistrācija</v-card-title>
+                <v-card-text class="v-card-text">Konts veiksmīgi izveidots!</v-card-text>
             
             <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn class="v-dialog-button" @click="dialog = false" ><p class="v-btn-text">Close</p></v-btn>
+                <v-btn class="v-dialog-button" @click="dialog = false"><p class="v-btn-text">Aizvērt</p></v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
     
         <v-dialog max-width="500" v-model="dialogerror">
             <v-card>
-                <v-card-title class="v-card-title">Registration error</v-card-title>
-                <v-card-text class="v-card-text">Please check your data and try again.</v-card-text>
+                <v-card-title class="v-card-title">Reģistrācijas kļūda</v-card-title>
+                <v-card-text class="v-card-text">Lūdzu, pārbaudiet ievadītos datus un mēģiniet vēlreiz.</v-card-text>
             
                 <v-card-actions>
                     <v-spacer></v-spacer>
                 
-                    <v-btn class="v-dialog-button" @click="dialogerror = false"><p class="v-btn-text">Close</p></v-btn>
+                    <v-btn class="v-dialog-button" @click="dialogerror = false"><p class="v-btn-text">Aizvērt</p></v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

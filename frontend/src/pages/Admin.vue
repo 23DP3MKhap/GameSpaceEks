@@ -97,13 +97,13 @@ async function deleteUserCollection(userId) {
 <template>
     <div class="page">
         <div class="wrapper">
-            <h1 class="admin-title">Admin Panel</h1>
+            <h1 class="admin-title">Administratora Panelis</h1>
 
             <v-expansion-panels variant="accordion" class="panels">
 
                 <v-expansion-panel>
                     <v-expansion-panel-title class="panel-title">
-                        Users <span class="count">{{ users.length }}</span>
+                        Lietotāji <span class="count">{{ users.length }}</span>
                     </v-expansion-panel-title>
                     <v-expansion-panel-text class="panel-text">
                         <div class="table-wrap">
@@ -111,10 +111,10 @@ async function deleteUserCollection(userId) {
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Role</th>
-                                        <th>Actions</th>
+                                        <th>Vārds</th>
+                                        <th>E-pasts</th>
+                                        <th>Loma</th>
+                                        <th>Darbības</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -132,9 +132,9 @@ async function deleteUserCollection(userId) {
                                             </span>
                                         </td>
                                         <td class="actions">
-                                            <button class="btn-edit" @click="openEditUser(user)">Edit</button>
-                                            <button class="btn-warn" @click="confirm(`Clear collection of ${user.name}`, function(){deleteUserCollection(user.id)})">Clear Collection</button>
-                                            <button class="btn-delete" @click="confirm(`Delete user ${user.name}`, function(){deleteUser(user.id)})">Delete</button>
+                                            <button class="btn-edit" @click="openEditUser(user)">Rediģēt</button>
+                                            <button class="btn-warn" @click="confirm(`Notīrīt kolekciju lietotājam ${user.name}`, function(){deleteUserCollection(user.id)})">Notīrīt Kolekciju</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst lietotāju ${user.name}`, function(){deleteUser(user.id)})">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -145,7 +145,7 @@ async function deleteUserCollection(userId) {
 
                 <v-expansion-panel>
                     <v-expansion-panel-title class="panel-title">
-                        Games <span class="count">{{ games.length }}</span>
+                        Spēles <span class="count">{{ games.length }}</span>
                     </v-expansion-panel-title>
                     <v-expansion-panel-text class="panel-text">
                         <div class="table-wrap">
@@ -153,11 +153,11 @@ async function deleteUserCollection(userId) {
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Name</th>
-                                        <th>Developer</th>
-                                        <th>Publisher</th>
-                                        <th>Rating</th>
-                                        <th>Actions</th>
+                                        <th>Nosaukums</th>
+                                        <th>Izstrādātājs</th>
+                                        <th>Izdevējs</th>
+                                        <th>Vērtējums</th>
+                                        <th>Darbības</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -168,8 +168,8 @@ async function deleteUserCollection(userId) {
                                         <td>{{ game.publisher || '-' }}</td>
                                         <td>{{ game.rating ? game.rating : '-' }}</td>
                                         <td class="actions">
-                                            <button class="btn-edit" @click="openEditGame(game)">Edit</button>
-                                            <button class="btn-delete" @click="confirm(`Delete game ${game.name}?`, function(){deleteGame(game.id)})">Delete</button>
+                                            <button class="btn-edit" @click="openEditGame(game)">Rediģēt</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst spēli ${game.name}?`, function(){deleteGame(game.id)})">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -180,7 +180,7 @@ async function deleteUserCollection(userId) {
 
                 <v-expansion-panel>
                     <v-expansion-panel-title class="panel-title">
-                        Reviews <span class="count">{{ reviews.length }}</span>
+                        Atsauksmes <span class="count">{{ reviews.length }}</span>
                     </v-expansion-panel-title>
                     <v-expansion-panel-text class="panel-text">
                         <div class="table-wrap">
@@ -188,12 +188,12 @@ async function deleteUserCollection(userId) {
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>User</th>
-                                        <th>Game</th>
-                                        <th>Title</th>
-                                        <th>Content</th>
-                                        <th>Rating</th>
-                                        <th>Actions</th>
+                                        <th>Lietotājs</th>
+                                        <th>Spēle</th>
+                                        <th>Virsraksts</th>
+                                        <th>Saturs</th>
+                                        <th>Vērtējums</th>
+                                        <th>Darbības</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -205,7 +205,7 @@ async function deleteUserCollection(userId) {
                                         <td class="content-cell">{{ review.content }}</td>
                                         <td>{{ review.rating }}/10</td>
                                         <td class="actions">
-                                            <button class="btn-delete" @click="confirm(`Delete review by ${review.user?.name}?`, function(){deleteReview(review.id)})">Delete</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst atsauksmi no ${review.user?.name}?`, function(){deleteReview(review.id)})">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -219,39 +219,39 @@ async function deleteUserCollection(userId) {
 
         <v-dialog max-width="480" v-model="editUserDialog">
             <v-card class="dialog">
-                <v-card-title class="v-card-title">Edit User</v-card-title>
+                <v-card-title class="v-card-title">Rediģēt Lietotāju</v-card-title>
                 <v-card-text class="v-card-text">
                     <div class="edit-field">
-                        <label class="edit-label">Name</label>
+                        <label class="edit-label">Vārds</label>
                         <input class="edit-input" v-model="editingUser.name">
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Email</label>
+                        <label class="edit-label">E-pasts</label>
                         <input class="edit-input" v-model="editingUser.email">
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Bio</label>
+                        <label class="edit-label">Biogrāfija</label>
                         <textarea class="edit-input edit-textarea" v-model="editingUser.bio"></textarea>
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Avatar URL</label>
+                        <label class="edit-label">Avatara URL</label>
                         <input class="edit-input" v-model="editingUser.avatar">
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Role</label>
+                        <label class="edit-label">Loma</label>
                         <select class="edit-input" v-model="editingUser.role">
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
+                            <option value="user">Lietotājs</option>
+                            <option value="admin">Administrators</option>
                         </select>
                     </div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button" @click="editUserDialog = false">
-                        <p class="v-btn-text">Cancel</p>
+                        <p class="v-btn-text">Atcelt</p>
                     </v-btn>
                     <v-btn class="v-dialog-button btn-save" @click="saveUser">
-                        <p class="v-btn-text">Save</p>
+                        <p class="v-btn-text">Saglabāt</p>
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -259,44 +259,44 @@ async function deleteUserCollection(userId) {
 
         <v-dialog max-width="480" v-model="editGameDialog">
             <v-card class="dialog">
-                <v-card-title class="v-card-title">Edit Game</v-card-title>
+                <v-card-title class="v-card-title">Rediģēt Spēli</v-card-title>
                 <v-card-text class="v-card-text">
                     <div class="edit-field">
-                        <label class="edit-label">Name</label>
+                        <label class="edit-label">Nosaukums</label>
                         <input class="edit-input" v-model="editingGame.name">
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Developer</label>
+                        <label class="edit-label">Izstrādātājs</label>
                         <input class="edit-input" v-model="editingGame.developer">
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Publisher</label>
+                        <label class="edit-label">Izdevējs</label>
                         <input class="edit-input" v-model="editingGame.publisher">
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Release Date</label>
+                        <label class="edit-label">Iznākšanas Datums</label>
                         <input class="edit-input" type="date" v-model="editingGame.release_date">
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Rating</label>
+                        <label class="edit-label">Vērtējums</label>
                         <input class="edit-input" type="number" min="0" max="100" v-model="editingGame.rating">
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Cover URL</label>
+                        <label class="edit-label">Vāka URL</label>
                         <input class="edit-input" v-model="editingGame.cover_url">
                     </div>
                     <div class="edit-field">
-                        <label class="edit-label">Description</label>
+                        <label class="edit-label">Apraksts</label>
                         <textarea class="edit-input edit-textarea" v-model="editingGame.description"></textarea>
                     </div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button" @click="editGameDialog = false">
-                        <p class="v-btn-text">Cancel</p>
+                        <p class="v-btn-text">Atcelt</p>
                     </v-btn>
                     <v-btn class="v-dialog-button btn-save" @click="saveGame">
-                        <p class="v-btn-text">Save</p>
+                        <p class="v-btn-text">Saglabāt</p>
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -304,15 +304,15 @@ async function deleteUserCollection(userId) {
 
         <v-dialog max-width="400" v-model="confirmDialog">
             <v-card class="dialog">
-                <v-card-title class="v-card-title">Confirm</v-card-title>
+                <v-card-title class="v-card-title">Apstiprināt</v-card-title>
                 <v-card-text class="v-card-text">{{ confirmMessage }}</v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button" @click="confirmDialog = false">
-                        <p class="v-btn-text">Cancel</p>
+                        <p class="v-btn-text">Atcelt</p>
                     </v-btn>
                     <v-btn class="v-dialog-button btn-delete-confirm" @click="runConfirm">
-                        <p class="v-btn-text">Confirm</p>
+                        <p class="v-btn-text">Apstiprināt</p>
                     </v-btn>
                 </v-card-actions>
             </v-card>

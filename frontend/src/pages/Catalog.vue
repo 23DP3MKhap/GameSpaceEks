@@ -22,7 +22,7 @@
     const reviewdialog = ref(false)
     const reviews = ref([])
     const collectionExists = ref(false)
-    const collectionStatus = ref('planned')
+    const collectionStatus = ref('Plānots')
     const collectionScore = ref(5)
     const collectionNotes = ref('')
     const showCollectionForm = ref(false)
@@ -270,16 +270,16 @@
     <div class="page">
         <main class="content">
             <section class="hero">
-                <h1>Filters</h1>
-                <p>shift + scroll to scroll list</p>
+                <h1>Filtri</h1>
+                <p>shift + scroll, lai ritinātu sarakstu</p>
 
                 <div style="padding: 1rem 0;">
                     <div class="track-row">
-                        <span class="track-label">Genres: </span>
+                        <span class="track-label">Žanri: </span>
                         <div class="track-scroll">
                             <div class="filter-item">
                                 <input type="checkbox" id="g-all" :checked="selectedGenres.length === genresList.length" @change="toggleAllGenres">
-                                <label for="g-all">| ALL |</label>
+                                <label for="g-all">| VISI |</label>
                             </div>
                             <div class="filter-item" v-for="genre in genresList" :key="genre.id">
                                 <input type="checkbox" :id="'g-' + genre.id" :value="genre.id" v-model="selectedGenres">
@@ -289,11 +289,11 @@
                     </div>
 
                     <div class="track-row">
-                        <span class="track-label">Platforms: </span>
+                        <span class="track-label">Platformas: </span>
                         <div class="track-scroll">
                             <div class="filter-item">
                                 <input type="checkbox" id="p-all" :checked="selectedPlatforms.length === platformsList.length" @change="toggleAllPlatforms">
-                                <label for="p-all">| ALL |</label>
+                                <label for="p-all">| VISAS |</label>
                             </div>
                             <div class="filter-item" v-for="platform in platformsList" :key="platform.id">
                                 <input type="checkbox" :id="'p-' + platform.id" :value="platform.id" v-model="selectedPlatforms">
@@ -304,15 +304,15 @@
                 </div>
             </section>
             <v-progress-linear v-if="isLoading" indeterminate color="white"></v-progress-linear>
-            <div v-if="catalogEmpty"><p>No games for your request, please try other</p></div>
+            <div v-if="catalogEmpty"><p>Nav spēļu jūsu pieprasījumam, lūdzu mēģiniet citu</p></div>
             <section class="games-grid">
                 <div class="game-card" v-for="game in games" :key="game.id" @click="openGameModal(game)">
                     <img :src="game.image" :alt="game.name" class="game-image">
                     <div class="game-info">
                         <h2>{{ game.name }}</h2>
                         <div class="genre">{{ game.genre }}</div>
-                        <div class="meta">Developer: {{ game.developer }}</div>
-                        <div class="meta">Publisher: {{ game.publisher }}</div>
+                        <div class="meta">Izstrādātājs: {{ game.developer }}</div>
+                        <div class="meta">Izdevējs: {{ game.publisher }}</div>
                         <div class="meta">id: {{ game.id }} {{ game.source }}</div>
                     </div>
                 </div>
@@ -329,22 +329,22 @@
                     <div class="modal-main-info">
                         <template v-if="auth.user">
                             <v-btn v-if="!collectionExists" class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm"> 
-                                Add to Collection
+                                Pievienot Kolekcijai
                             </v-btn>
 
                             <template v-if="collectionExists">
                                 <v-btn class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm" style="margin-bottom: 8px">
-                                    Edit Collection
+                                    Rediģēt Kolekciju
                                 </v-btn>
                                 <v-btn class="btn-remove-collection" block @click="deleteCollection(selectedGame.id)">
-                                    Remove
+                                    Noņemt
                                 </v-btn>
                             </template>
                         </template>
 
                         <div v-if="showCollectionForm" class="collection-form">
                             <div class="collection-field">
-                                <label class="collection-label">Status</label>
+                                <label class="collection-label">Statuss</label>
                                 <select class="custom-select full-width" v-model="collectionStatus">
                                     <option v-for="status in statusVariants" :key="status.value" :value="status.value">
                                         {{ status.label }}
@@ -353,36 +353,36 @@
                             </div>
                         
                             <div class="collection-field">
-                                <label class="collection-label">Your Score</label>
+                                <label class="collection-label">Jūsu Vērtējums</label>
                                 <select class="custom-select full-width" v-model="collectionScore">
                                     <option v-for="score in 10" :key="score" :value="score">{{ score }}</option>
                                 </select>
                             </div>
                         
-                            <v-textarea v-model="collectionNotes" label="Notes" maxlength="50" counter variant="outlined" density="compact" 
+                            <v-textarea v-model="collectionNotes" label="Piezīmes" maxlength="50" counter variant="outlined" density="compact" 
                             rows="3" no-resize color="white">
                             </v-textarea>
                         
                             <v-btn class="btn-send" block size="small" @click="addToCollection(selectedGame.id)">
-                                {{ collectionExists ? 'Save Changes' : 'Add' }}
+                                {{ collectionExists ? 'Saglabāt Izmaiņas' : 'Pievienot' }}
                             </v-btn>
                         </div>
 
                         <div class="modal-stats" :style="showCollectionForm ? 'margin-top: 12px' : ''">
                             <div class="stat-item" v-if="collectionExists">
-                                <span class="stat-label">Status</span>
+                                <span class="stat-label">Statuss</span>
                                 <span class="stat-value">{{ collectionStatus }}</span>
                             </div>
                             <div class="stat-item" v-if="collectionExists">
-                                <span class="stat-label">Your Score</span>
+                                <span class="stat-label">Jūsu Vērtējums</span>
                                 <span class="stat-value">{{ collectionScore }}</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-label">Note</span>
-                                <span class="stat-value">{{ collectionNotes || 'N/A' }}</span>
+                                <span class="stat-label">Piezīme</span>
+                                <span class="stat-value">{{ collectionNotes || 'Nav' }}</span>
                             </div>
                             <div class="stat-item" style="flex-direction: column; gap: 4px;">
-                                <span class="stat-label">Genre:</span>
+                                <span class="stat-label">Žanrs:</span>
                                 <span class="stat-value">{{ selectedGame.genre }}</span>
                             </div>
                         </div>
@@ -394,7 +394,7 @@
                         </v-card-title>
 
                         <div class="reviews-section">
-                            <h3 class="section-title">Reviews ({{ reviews.length }})</h3>
+                            <h3 class="section-title">Atsauksmes ({{ reviews.length }})</h3>
 
                             <div class="reviews-list">
                                 <div v-for="review in sortedReviews" :key="review.id" class="review-item">
@@ -409,7 +409,7 @@
                                         <div class="review-author">
                                             <span class="author-link" @click="router.push(`/User/${review.user?.id}/Profile`)">
                                             {{ review.user.name }}
-                                            <span class="review-you" v-if="review.user?.id === auth.user?.id">you</span>
+                                            <span class="review-you" v-if="review.user?.id === auth.user?.id">jūs</span>
                                             </span>
                                             <span class="review-rating">{{ review.rating }}/10</span>
                                         </div>
@@ -418,37 +418,37 @@
                                         <div class="review-footer">
                                             <span class="review-date">{{ review.created_at  }}</span>
                                             <button v-if="review.user?.id === auth.user?.id" class="btn-delete-review" @click="deleteReview(selectedGame.id)">
-                                                Delete
+                                                Dzēst
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             
                                 <div v-if="reviews.length === 0" class="no-reviews">
-                                    <p>No reviews yet. Be the first to write one!</p>
+                                    <p>Vēl nav atsauksmju. Esi pirmais, kas uzraksta!</p>
                                 </div>
                             </div>
                         
                             <div class="review-form" v-if="auth.user">
-                                <v-text-field v-model="reviewTitle" label="Review Title" maxlength="20" counter variant="outlined" density="compact" 
+                                <v-text-field v-model="reviewTitle" label="Atsauksmes Virsraksts" maxlength="20" counter variant="outlined" density="compact" 
                                     color="white">
                                 </v-text-field>
-                                <v-textarea v-model="reviewText" label="Write your thoughts..." maxlength="500" counter variant="outlined" density="compact" 
+                                <v-textarea v-model="reviewText" label="Uzraksti savas domas..." maxlength="500" counter variant="outlined" density="compact" 
                                     rows="3" no-resize color="white">
                                 </v-textarea>
                                 <div class="form-actions">
                                     <div class="rating-picker">
-                                        <span>Score:</span>
+                                        <span>Vērtējums:</span>
                                         <select class="custom-select" v-model="reviewRating">
                                             <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
                                         </select>
                                     </div>
                                     <div style="display: flex; gap: 8px;">
                                         <v-btn v-if="userReview" class="btn-delete-reviewform" size="small" @click="deleteReview(selectedGame.id)">
-                                            Delete
+                                            Dzēst
                                         </v-btn>
                                         <v-btn class="btn-send" size="small" @click="postReview(selectedGame)">
-                                            {{ userReview ? 'Update Review' : 'Post Review' }}
+                                            {{ userReview ? 'Atjaunināt Atsauksmi' : 'Publicēt Atsauksmi' }}
                                         </v-btn>
                                     </div>
                                 </div>
@@ -461,12 +461,12 @@
 
         <v-dialog v-model="reviewdialog" max-width="400">
             <v-card class="dialog">
-                <v-card-title>Review published</v-card-title>
-                <v-card-text>Successfully published review!</v-card-text>
+                <v-card-title>Atsauksme publicēta</v-card-title>
+                <v-card-text>Atsauksme veiksmīgi publicēta!</v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button" @click="reviewdialog = false">
-                        <span class="v-btn-text">Close</span>
+                        <span class="v-btn-text">Aizvērt</span>
                     </v-btn>
                 </v-card-actions>
             </v-card>

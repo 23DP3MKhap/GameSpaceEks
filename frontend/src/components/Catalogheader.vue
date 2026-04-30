@@ -13,11 +13,11 @@
 
     const dialog = ref(false)  
     const items = [
-        { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/Catalog" },
-        { title: "ABOUT", to: "/about" },
-        { title: "LOGIN", to: "/login" },
-        { title: "REGISTER", to: "/register" },
+        { title: "SĀKUMS", to: "/" },
+        { title: "KATALOGS", to: "/Catalog" },
+        { title: "PAR MUMS", to: "/about" },
+        { title: "PIESLĒGTIES", to: "/login" },
+        { title: "REĢISTRĒTIES", to: "/register" },
     ]
 
 
@@ -26,9 +26,9 @@
 
     const itemsregistered = computed(() => {
       const items = [
-        { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/Catalog" },
-        { title: "ABOUT", to: "/about" },
+        { title: "SĀKUMS", to: "/" },
+        { title: "KATALOGS", to: "/Catalog" },
+        { title: "PAR MUMS", to: "/about" },
       ]
     
       if (auth.user) {
@@ -39,13 +39,13 @@
 
         if (auth.user.role === 'admin') {
           items.push({
-            title: "ADMIN",
+            title: "ADMINS",
             to: "/Admin"
           })
         }
     
         items.push({
-          title: "LOG OUT",
+          title: "IZRAKSTĪTIES",
           action: "logout"
         })
       }
@@ -73,36 +73,36 @@
     <div class="header">
         <nav>      
             <router-link to="/"><a class="logo">GAMESPACE</a></router-link>
-            <router-link to="/Catalog"><a>CATALOG</a></router-link>
-            <router-link to="/About"><a>ABOUT</a></router-link>
+            <router-link to="/Catalog"><a>KATALOGS</a></router-link>
+            <router-link to="/About"><a>PAR MUMS</a></router-link>
         </nav>
 
 
 
         <div class="header-center">
-            <input :value="searchValue"  @input="searchUpdate" type="text" placeholder="Search games..." class="search-input">
+            <input :value="searchValue"  @input="searchUpdate" type="text" placeholder="Meklēt spēles..." class="search-input">
         </div>
 
             <div v-if="auth.user">
                 <nav>
-                <router-link v-if="auth.user.role === 'admin'" :to = "{path: `/Admin`}"><a>Admin</a></router-link>
+                <router-link v-if="auth.user.role === 'admin'" :to = "{path: `/Admin`}"><a>Admins</a></router-link>
                 <p>|</p>
                 <router-link :to = "{path: `/User/${auth.user.id}/Profile`}"><a>{{auth.user.name}}</a></router-link>
                 <p>|</p>
-                <a @click.prevent="logout">LOG OUT</a>
+                <a @click.prevent="logout">IZRAKSTĪTIES</a>
                 </nav>
             </div>
             <div v-if="!auth.user">
                 <nav>
-                <router-link to="/login"><a>LOG IN</a></router-link>
+                <router-link to="/login"><a>PIESLĒGTIES</a></router-link>
                 <p>|</p>
-                <router-link to="/register"><a>REGISTER</a></router-link>
+                <router-link to="/register"><a>REĢISTRĒTIES</a></router-link>
                 </nav>
             </div>
     </div>
 
    <div class="burger-menu">
-        <input :value="searchValue" @input="searchUpdate" type="text" placeholder="Search games..." class="search-input">
+        <input :value="searchValue" @input="searchUpdate" type="text" placeholder="Meklēt spēles..." class="search-input">
         <v-menu>
         <template v-slot:activator="{ props }">
             <v-btn color="black" v-bind="props">☰</v-btn>
@@ -124,16 +124,16 @@
 
     <v-dialog max-width="500" v-model="dialog">
         <v-card class="v-card" color="black">
-        <v-card-title class="v-card-title">Logout</v-card-title>
+        <v-card-title class="v-card-title">Izrakstīšanās</v-card-title>
             <v-card-text class="v-card-text">
-                Successfully logged out!
+                Veiksmīgi izrakstījāties!
             </v-card-text>
 
             <v-card-actions>
                 <v-spacer></v-spacer>
 
                 <v-btn class="v-dialog-button" @click="dialog = false">
-                    <p class="v-btn-text">Close</p>
+                    <p class="v-btn-text">Aizvērt</p>
                 </v-btn>
             </v-card-actions>
         </v-card>

@@ -4,22 +4,22 @@
     <div class="page">
         <div class="hero">
             <div class="hero-label">GAMESPACE</div>
-            <h1 class="hero-title">About the Project</h1>
-            <p class="hero-sub">Catalog of games</p>
+            <h1 class="hero-title">Par Projektu</h1>
+            <p class="hero-sub">Spēļu katalogs</p>
         </div>
 
         <div class="rows">
             <div class="row">
                 <div class="row-text">
-                    <h2>Hosting</h2>
-                    <p><a href="https://vercel.com/" target="_blank">Vercel</a> is a hosting for a frontend part and 
+                    <h2>Hostings</h2>
+                    <p><a href="https://vercel.com/" target="_blank">Vercel</a> ir hostings frontend daļai un 
                         <a href="https://render.com/" target="_blank">Render</a>
-                        is a hosting for a backend part.
+                        ir hostings backend daļai.
                     </p>
                 </div>
                 <div class="image-wrap">
                     <div class="image-frame">
-                        <img src="https://darwin-public.s3.eu-west-1.amazonaws.com/framer/integration_logos/Vercel_Token_Auth.png" alt="Hosting">     
+                        <img src="https://darwin-public.s3.eu-west-1.amazonaws.com/framer/integration_logos/Vercel_Token_Auth.png" alt="Hostings">     
                     </div>
                 </div>
             </div>
@@ -34,8 +34,8 @@
                 <div class="row-text">
                     <h2>Frontend</h2>
                     <p>
-                        The entire frontend was created using the <a href="https://vuejs.org/" target="_blank">Vue.js</a> 
-                        framework and the <a href="https://vuetifyjs.com/" target="_blank">Vuetify</a> UI element library.
+                        Viss frontend tika izveidots, izmantojot <a href="https://vuejs.org/" target="_blank">Vue.js</a> 
+                        ietvaru un <a href="https://vuetifyjs.com/" target="_blank">Vuetify</a> UI elementu bibliotēku.
                     </p>
                 </div>
             </div>
@@ -43,8 +43,8 @@
             <div class="row">
                 <div class="row-text">
                     <h2>Backend</h2>
-                    <p>The entire backend was built using the <a href="https://laravel.com/" target="_blank">Laravel</a> 
-                        framework and a MySQL database as well as Laravel for user authentication.
+                    <p>Viss backend tika izveidots, izmantojot <a href="https://laravel.com/" target="_blank">Laravel</a> 
+                        ietvaru un MySQL datubāzi, kā arī Laravel lietotāju autentifikācijai.
                     </p>
                 </div>
                 <div class="image-wrap">

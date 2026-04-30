@@ -7,7 +7,7 @@ import router from '@/router';
 const route = useRoute()
 
 const profileusername = ref("placeholder_user")
-const profileBio = ref("No bio yet.")
+const profileBio = ref("Vēl nav bio.")
 const profileRole = ref("user")
 const profileAvatar = ref(null)
 const counts = ref({ all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 })
@@ -137,17 +137,17 @@ watch(settingsUsername, async (newUsername) => {
         <div class="profile-wrapper">
             <div class="profile-header">
                 <div class="avatar-wrap">
-                    <img v-if="profileAvatar" :src="profileAvatar" class="avatar-img" alt="profileAvatar">
+                    <img v-if="profileAvatar" :src="profileAvatar" class="avatar-img" alt="Profila attēls">
                     <div v-else class="avatar-placeholder">{{ initials }}</div>
                 </div>
 
                 <div class="profile-meta">
                     <div class="profile-name">{{ profileusername }}</div>
                     <div class="profile-role-badge" :class="profileRole === 'admin' ? 'role-admin' : 'role-user'">
-                        {{ profileRole === 'admin' ? 'Admin' : 'User' }}
+                        {{ profileRole === 'admin' ? 'Admins' : 'Lietotājs' }}
                     </div>
                     <div class="profile-bio">{{ profileBio }}</div>
-                    <button v-if="auth.user && auth.user.id == route.params.id" class="btn-settings" @click="openSettings">Edit Profile</button>
+                    <button v-if="auth.user && auth.user.id == route.params.id" class="btn-settings" @click="openSettings">Rediģēt profilu</button>
                 </div>
 
                 <div class="profile-stats">
@@ -160,9 +160,9 @@ watch(settingsUsername, async (newUsername) => {
 
             <div class="collection-section">
                 <div class="section-top">
-                    <h2 class="section-title">Collection</h2>
+                    <h2 class="section-title">Kolekcija</h2>
                         <button class="btn-sort" :class="{ 'active-sort': sortOrder }" @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'">
-                            Score {{ sortOrder === 'desc' ? '↓' : '↑' }}
+                            Vērtējums {{ sortOrder === 'desc' ? '↓' : '↑' }}
                         </button>
 
                     <div class="filter-tabs">
@@ -197,7 +197,7 @@ watch(settingsUsername, async (newUsername) => {
                     </div>
 
                     <div v-if="collection.length === 0" class="empty-state">
-                        Nothing here yet.
+                        Šeit vēl nekas nav.
                     </div>
                 </div>
             </div>
@@ -205,7 +205,7 @@ watch(settingsUsername, async (newUsername) => {
 
         <v-dialog max-width="480" v-model="settingsDialog">
             <v-card class="dialog">
-                <v-card-title class="v-card-title">Edit Profile</v-card-title>
+                <v-card-title class="v-card-title">Rediģēt profilu</v-card-title>
                 <v-card-text class="v-card-text">
                     <div class="settings-avatar-row">
                         <div class="settings-avatar-preview">
@@ -214,7 +214,7 @@ watch(settingsUsername, async (newUsername) => {
                         </div>
                         <v-text-field
                             v-model="settingsAvatarUrl"
-                            label="Avatar URL"
+                            label="Avatāra URL"
                             placeholder="https://..."
                             maxlength="2048"
                             counter
@@ -226,19 +226,19 @@ watch(settingsUsername, async (newUsername) => {
                 
                     <v-text-field
                         v-model="settingsUsername"
-                        label="Username"
-                        placeholder="Username"
+                        label="Lietotājvārds"
+                        placeholder="Lietotājvārds"
                         maxlength="10"
                         counter
                         variant="outlined"
                         density="compact"
-                        :error-messages="settingsUsernameValid === false ? 'Username is already taken' : ''"
-                        :messages="settingsUsernameValid === true ? 'Username is available' : ''"
+                        :error-messages="settingsUsernameValid === false ? 'Lietotājvārds jau ir aizņemts' : ''"
+                        :messages="settingsUsernameValid === true ? 'Lietotājvārds ir pieejams' : ''"
                     ></v-text-field>
                 
                     <v-textarea
                         v-model="settingsBio"
-                        placeholder="Tell something about yourself..."
+                        placeholder="Pastāsti kaut ko par sevi..."
                         maxlength="50"
                         counter
                         variant="outlined"
@@ -249,59 +249,59 @@ watch(settingsUsername, async (newUsername) => {
                 
                     <v-text-field
                         v-model="settingsPassword"
-                        label="New Password"
-                        placeholder="Leave empty to keep current"
+                        label="Jaunā parole"
+                        placeholder="Atstāj tukšu, lai saglabātu pašreizējo"
                         type="password"
                         maxlength="255"
                         variant="outlined"
                         density="compact"
-                        :error-messages="settingsPassword.length > 0 && settingsPassword.length < 8 ? 'Password must be at least 8 characters' : settingsPasswordValid === false ? 'Passwords do not match' : ''"
+                        :error-messages="settingsPassword.length > 0 && settingsPassword.length < 8 ? 'Parolei jābūt vismaz 8 rakstzīmēm' : settingsPasswordValid === false ? 'Paroles nesakrīt' : ''"
                         persistent-hint
                     ></v-text-field>
                 
                     <v-text-field
                         v-if="settingsPassword"
                         v-model="settingsPasswordConfirm"
-                        label="Confirm Password"
-                        placeholder="Repeat new password"
+                        label="Apstiprināt paroli"
+                        placeholder="Atkārtojiet jauno paroli"
                         type="password"
                         maxlength="255"
                         variant="outlined"
                         density="compact"
-                        :error-messages="settingsPassword.length < 8 ? 'Password must be at least 8 characters' : settingsPasswordValid === false ? 'Passwords do not match' : ''"
-                        :messages="settingsPasswordValid === true ? 'Passwords match' : ''"
+                        :error-messages="settingsPassword.length < 8 ? 'Parolei jābūt vismaz 8 rakstzīmēm' : settingsPasswordValid === false ? 'Paroles nesakrīt' : ''"
+                        :messages="settingsPasswordValid === true ? 'Paroles sakrīt' : ''"
                     ></v-text-field>
                 
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button btn-delete" @click="deleteConfirmation = true">
-                        <p class="v-btn-text">Delete Account</p>
+                        <p class="v-btn-text">Dzēst kontu</p>
                     </v-btn>
                     <v-btn class="v-dialog-button" @click="settingsDialog = false">
-                        <p class="v-btn-text">Cancel</p>
+                        <p class="v-btn-text">Atcelt</p>
                     </v-btn>
                     <v-btn
                         class="v-dialog-button btn-save"
                         @click="saveSettings"
                         :disabled="settingsUsernameValid === false || settingsPasswordValid === false"
                     >
-                        <p class="v-btn-text">Save</p>
+                        <p class="v-btn-text">Saglabāt</p>
                     </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
         <v-dialog max-width="400" v-model="deleteConfirmation">
             <v-card class="dialog">
-                <v-card-title class="v-card-title">Delete Account</v-card-title>
-                <v-card-text class="v-card-text">Delete your account?</v-card-text>
+                <v-card-title class="v-card-title">Dzēst kontu</v-card-title>
+                <v-card-text class="v-card-text">Dzēst savu kontu?</v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button" @click="deleteConfirmation = false">
-                        <p class="v-btn-text">Cancel</p>
+                        <p class="v-btn-text">Atcelt</p>
                     </v-btn>
                     <v-btn class="v-dialog-button btn-delete-confirm" @click="deleteUser">
-                        <p class="v-btn-text">Delete</p>
+                        <p class="v-btn-text">Dzēst</p>
                     </v-btn>
                 </v-card-actions>
             </v-card>

@@ -6,20 +6,20 @@
 
     const dialog = ref(false)
     const items = [
-        { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/Catalog" },
-        { title: "ABOUT", to: "/about" },
-        { title: "LOGIN", to: "/login" },
-        { title: "REGISTER", to: "/register" },
+        { title: "SĀKUMS", to: "/" },
+        { title: "KATALOGS", to: "/Catalog" },
+        { title: "PAR MUMS", to: "/about" },
+        { title: "PIESLĒGTIES", to: "/login" },
+        { title: "REĢISTRĒTIES", to: "/register" },
     ]
 
 
 
     const itemsregistered = computed(() => {
       const items = [
-        { title: "MAIN", to: "/" },
-        { title: "CATALOG", to: "/Catalog" },
-        { title: "ABOUT", to: "/about" },
+        { title: "SĀKUMS", to: "/" },
+        { title: "KATALOGS", to: "/Catalog" },
+        { title: "PAR MUMS", to: "/about" },
       ]
     
       if (auth.user) {
@@ -30,13 +30,13 @@
 
         if (auth.user.role === 'admin') {
           items.push({
-            title: "ADMIN",
+            title: "ADMINS",
             to: "/Admin"
           })
         }
     
         items.push({
-          title: "LOG OUT",
+          title: "IZRAKSTĪTIES",
           action: "logout"
         })
       }
@@ -64,24 +64,24 @@
     <div class="header">
         <nav>      
             <router-link to="/"><a class="logo">GAMESPACE</a></router-link>
-            <router-link to="/Catalog" class="router-link"><a>CATALOG</a></router-link>
-            <router-link to="/About" class="router-link"><a>ABOUT</a></router-link>
+            <router-link to="/Catalog" class="router-link"><a>KATALOGS</a></router-link>
+            <router-link to="/About" class="router-link"><a>PAR MUMS</a></router-link>
         </nav>
 
             <div v-if="auth.user">
                 <nav>
-                <router-link v-if="auth.user.role === 'admin'" :to = "{path: `/Admin`}" class="router-link"><a>Admin</a></router-link>
+                <router-link v-if="auth.user.role === 'admin'" :to = "{path: `/Admin`}" class="router-link"><a>Admins</a></router-link>
                 <p>|</p>
                 <router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link"><a>{{auth.user.name}}</a></router-link>
                 <p>|</p>
-                <a @click.prevent="logout">LOG OUT</a>
+                <a @click.prevent="logout">IZRAKSTĪTIES</a>
                 </nav>
             </div>
             <div v-if="!auth.user">
                 <nav>
-                <router-link to="/login"><a>LOG IN</a></router-link>
+                <router-link to="/login"><a>PIESLĒGTIES</a></router-link>
                 <p>|</p>
-                <router-link to="/register"><a>REGISTER</a></router-link>
+                <router-link to="/register"><a>REĢISTRĒTIES</a></router-link>
                 </nav>
             </div>
     </div>
@@ -110,9 +110,9 @@
 
     <v-dialog max-width="500" v-model="dialog">
         <v-card class="v-card" color="black">
-        <v-card-title class="v-card-title">Logout</v-card-title>
+        <v-card-title class="v-card-title">Izrakstīšanās</v-card-title>
           <v-card-text class="v-card-text">
-            Successfully logged out!
+            Veiksmīgi izrakstījāties!
           </v-card-text>
 
           <v-card-actions>
@@ -121,7 +121,7 @@
             <v-btn
               class="v-dialog-button"
               @click="dialog = false"
-            ><p class="v-btn-text">Close</p></v-btn>
+            ><p class="v-btn-text">Aizvērt</p></v-btn>
           </v-card-actions>
         </v-card>
     </v-dialog>
