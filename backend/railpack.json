@@ -12,6 +12,7 @@
         "libonig-dev",
         "libzip-dev",
         "pkg-config",
-        "libgd-dev"
+        "libgd-dev",
+        "libpq-dev"
     ]
 }
