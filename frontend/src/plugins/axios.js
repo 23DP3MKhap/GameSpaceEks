@@ -1,12 +1,12 @@
 import Axios from 'axios'
 
 const axios = Axios.create({
-  baseURL: 'http://localhost:8000',
-  withCredentials: true,
-  withXSRFToken: true,
-  headers: {
-    Accept: 'application/json',
-  },
+    baseURL: import.meta.env.VITE_API_URL,
+    withCredentials: true,
+    withXSRFToken: true,
+    headers: {
+        Accept: 'application/json',
+    },
 })
 
 axios.interceptors.response.use(
