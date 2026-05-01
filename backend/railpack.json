@@ -11,6 +11,7 @@
         "libsqlite3-dev",
         "libonig-dev",
         "libzip-dev",
-        "pkg-config"
+        "pkg-config",
+        "libgd-dev"
     ]
 }
