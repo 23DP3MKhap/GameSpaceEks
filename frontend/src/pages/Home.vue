@@ -7,12 +7,12 @@
   const igdb_expires = ref(null)
   onMounted(async () => {
     try {
-        const response = await fetch('http://localhost:8000/api/ping')
+        const response = await axios.get('api/ping')
         await axios.get('/sanctum/csrf-cookie')
         igdb_expires.value = (await axios.get('/api/igdb/client')).data
         
         console.log(igdb_expires.value)
-        apiStatus.value = response.ok
+        apiStatus.value = response.status === 200
     } catch (error) {
         apiStatus.value = false
         console.log(error)
