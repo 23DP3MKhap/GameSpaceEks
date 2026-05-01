@@ -1,5 +1,7 @@
 {
     "packages": {
-        "php": "8.4"
+        "php": "8.4",
+        "bison": "latest",
+        "re2c": "latest"
     }
 }
