@@ -4,6 +4,13 @@
     },
     "buildAptPackages": [
         "bison",
-        "re2c"
+        "re2c",
+        "libcurl4-openssl-dev",
+        "libssl-dev",
+        "libxml2-dev",
+        "libsqlite3-dev",
+        "libonig-dev",
+        "libzip-dev",
+        "pkg-config"
     ]
 }
