@@ -12,14 +12,16 @@
     const dialogerror = ref(false)
     async function register() {
         if (valid.value === true){
-            await axios.get('/sanctum/csrf-cookie')
+            
             try {
                 await axios.post("/api/register", {email: email.value, username: username.value, password: password.value})
                 dialog.value = true
 
                 try{
-                    await axios.post("/login", {email: email.value, password: password.value})
-                    auth.user = (await axios.get("/api/user")).data 
+                    const response = await axios.post("/api/login", {email: email.value, password: password.value})
+                    localStorage.setItem('token', response.data.token)
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+                    auth.user = response.data.user
                     router.push("/")
                 }
                 catch{
@@ -56,7 +58,7 @@
             return 'Lietotājvārdam jābūt īsākam par 10 rakstzīmēm.'
         },
         async value => {
-            await axios.get('/sanctum/csrf-cookie')
+            
             const response = await axios.post('/api/usernamecheck', { username: value })
             if (response.data.exists === true) {
                 return 'Lietotājvārds jau ir aizņemts.'
@@ -92,7 +94,7 @@
             return 'E-pasta adresei jābūt derīgai.'
         },
         async value => {
-            await axios.get('/sanctum/csrf-cookie')
+            
             const response = await axios.post('/api/emailcheck', { email: value })
             if (response.data.exists === true) {
                 return 'E-pasts jau ir reģistrēts.'

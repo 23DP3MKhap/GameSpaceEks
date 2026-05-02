@@ -46,8 +46,9 @@
 
     async function logout(){
         try {
-            await axios.get("/sanctum/csrf-cookie")
-            await axios.post("/logout")
+            await axios.post("/api/logout")
+            localStorage.removeItem('token')
+            delete axios.defaults.headers.common['Authorization']
             auth.user = null
             dialog.value = true
             return console.log("logged out")

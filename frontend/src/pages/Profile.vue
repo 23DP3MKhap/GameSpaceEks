@@ -76,7 +76,7 @@ async function saveSettings() {
     if (settingsUsernameValid.value === false) return
     if (settingsPasswordValid.value === false) return
     
-    await axios.get('/sanctum/csrf-cookie')
+    
     await axios.post('/api/user/update', {
         username: settingsUsername.value,
         bio: settingsBio.value,
@@ -91,8 +91,9 @@ async function saveSettings() {
 }
 
 async function deleteUser() {
-    await axios.get('/sanctum/csrf-cookie')
+    
     await axios.post('/api/database/deleteuser')
+    auth.user = null
     router.push('/')
 }
 

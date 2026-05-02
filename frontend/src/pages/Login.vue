@@ -12,9 +12,10 @@
 
   async function login(){
     try{
-    await axios.get('/sanctum/csrf-cookie')
-    await axios.post("/login", {email: email.value, password: password.value})
-    auth.user = (await axios.get("/api/user")).data
+    const response = await axios.post("/api/login", {email: email.value, password: password.value})
+    localStorage.setItem('token', response.data.token)
+    axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+    auth.user = response.data.user
     email.value = ""
     password.value = ""
     dialog.value = true

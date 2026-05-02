@@ -160,7 +160,7 @@
     }
 
     async function postReview(game) {
-        await axios.get('/sanctum/csrf-cookie')
+        
         await axios.post("/api/database/addgame", { igdb_id: game.id })
         await axios.post("/api/database/addreview", {
             user_id: auth.user.id,
@@ -238,13 +238,13 @@
     }
 
     async function deleteCollection(gameId) {
-        await axios.get('/sanctum/csrf-cookie')
+        
         await axios.post("/api/database/removefromcollection", { game_id: gameId })
         collectionExists.value = false
     }
 
     async function addToCollection(gameId) {
-        await axios.get('/sanctum/csrf-cookie')
+        
         await axios.post("/api/database/addgame", { igdb_id: gameId })
         await axios.post("/api/database/addtocollection", {
             game_id: gameId,
@@ -258,7 +258,7 @@
 
 
     async function deleteReview(gameId) {
-        await axios.get('/sanctum/csrf-cookie')
+        
         await axios.post("/api/database/deletereview", { game_id: gameId })
         getReviews(gameId)
     }

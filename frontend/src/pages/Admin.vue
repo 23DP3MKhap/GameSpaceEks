@@ -40,7 +40,7 @@ function openEditUser(user) {
 }
 
 async function saveUser() {
-    await axios.get('/sanctum/csrf-cookie')
+    
     await axios.put(`/api/admin/users/${editingUser.value.id}`, editingUser.value)
     editUserDialog.value = false
     await loadAll()
@@ -52,7 +52,7 @@ function openEditGame(game) {
 }
 
 async function saveGame() {
-    await axios.get('/sanctum/csrf-cookie')
+    
     await axios.put(`/api/admin/games/${editingGame.value.id}`, editingGame.value)
     editGameDialog.value = false
     await loadAll()
@@ -70,25 +70,25 @@ async function runConfirm() {
 }
 
 async function deleteUser(id) {
-    await axios.get('/sanctum/csrf-cookie')
+    
     await axios.delete(`/api/admin/users/${id}`)
     await loadAll()
 }
 
 async function deleteGame(id) {
-    await axios.get('/sanctum/csrf-cookie')
+    
     await axios.delete(`/api/admin/games/${id}`)
     await loadAll()
 }
 
 async function deleteReview(id) {
-    await axios.get('/sanctum/csrf-cookie')
+    
     await axios.delete(`/api/admin/reviews/${id}`)
     await loadAll()
 }
 
 async function deleteUserCollection(userId) {
-    await axios.get('/sanctum/csrf-cookie')
+    
     await axios.delete(`/api/admin/users/${userId}/collection`)
     await loadAll()
 }

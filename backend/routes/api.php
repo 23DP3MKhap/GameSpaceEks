@@ -15,6 +15,10 @@ Route::get('/ping', function () {
 
 // LARAVEL AUTHENTICATION
 
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+
 Route::post('/register', [AuthController::class, 'register']);
 
 Route::post('/emailcheck', [AuthController::class, 'emailcheck']);

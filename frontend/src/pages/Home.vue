@@ -8,7 +8,7 @@
   onMounted(async () => {
     try {
         const response = await axios.get('api/ping')
-        await axios.get('/sanctum/csrf-cookie')
+        
         igdb_expires.value = (await axios.get('/api/igdb/client')).data
         
         console.log(igdb_expires.value)
@@ -21,8 +21,9 @@
 
   async function logout(){
         try {
-            await axios.get('/sanctum/csrf-cookie')
-            await axios.post("/logout")
+            await axios.post("/api/logout")
+            localStorage.removeItem('token')
+            delete axios.defaults.headers.common['Authorization']
             auth.user = null
             dialog.value = true
             return console.log("logged out")
