@@ -181,17 +181,17 @@ class DatabaseSeeder extends Seeder
  
         $userIds = [];
         foreach ($users as $userData) {
-            $user = User::create([
-                'name'       => $userData['name'],
-                'email'      => $userData['email'],
-                'password'   => $userData['password'],
-                'role'       => $userData['role'],
-                'bio'        => $userData['bio'],
-                'avatar'     => $userData['avatar'],
-                'isPrivate'  => $userData['isPrivate'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $user = User::firstOrCreate(
+                ['email' => $userData['email']],
+                [
+                    'name'      => $userData['name'],
+                    'password'  => $userData['password'],
+                    'role'      => $userData['role'],
+                    'bio'       => $userData['bio'],
+                    'avatar'    => $userData['avatar'],
+                    'isPrivate' => $userData['isPrivate'],
+                ]
+            );
             $userIds[] = $user->id;
         }
  
@@ -291,7 +291,10 @@ class DatabaseSeeder extends Seeder
                 $usedPairs[] = [$userId, $gameId];
  
                 $review = $reviews[$reviewCount % 10];
-                DB::table('reviews')->insert([
+                DB::table('reviews')->updateOrInsert(
+                ['user_id'    => $userId,
+                'game_id'    => $gameId],    
+                [
                     'user_id'    => $userId,
                     'game_id'    => $gameId,
                     'title'      => $review['title'],
