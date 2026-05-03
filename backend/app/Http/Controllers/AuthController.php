@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Mail\Message;
+use Illuminate\Support\Facades\Http;
+
 class AuthController extends Controller
 {   
     public function register(Request $request){
@@ -49,14 +51,26 @@ class AuthController extends Controller
     }
 
     public function sendVerificationCode(Request $request){
-    $code = rand(100000, 999999);
-    $request->user()->update(['verification_code' => $code]);
-    
-    Mail::send('emails.verification', ['code' => $code], function (Message $message) use ($request) {
-    $message->to($request->user()->email)->subject('E-pasta verifikācija | GameSpace');
-    });
-    
-    }
+        $code = rand(100000, 999999);
+        $request->user()->update(['verification_code' => $code]);
+
+        Http::withHeaders([
+            'api-key' => env('BREVO_API_KEY'),
+            'Content-Type' => 'application/json',
+        ])->post('https://api.brevo.com/v3/smtp/email', [
+            'sender' => [
+                'name' => 'GameSpace',
+                'email' => env('MAIL_FROM_ADDRESS')
+            ],
+            'to' => [
+                ['email' => $request->user()->email]
+            ],
+            'subject' => 'Verifikācijas kods — GameSpace',
+            'htmlContent' => view('emails.verification', ['code' => $code])->render(),
+        ]);
+
+        return response()->json(['message' => 'sent']);
+}
 
     public function verifyCode(Request $request){
     $request->validate(['code' => 'required']);
