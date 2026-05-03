@@ -9,6 +9,7 @@ use App\Models\Review;
 use App\Models\Collection;
 use App\Models\Genre;
 use App\Models\Platform;
+use App\Models\User;
 
 class DatabaseController extends Controller
 {
@@ -146,30 +147,30 @@ if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
 
     public function updateUser(Request $request){
         $user = $request->user(); 
-
         $validated = $request->validate([
-            'username' => 'sometimes|string|max:10|unique:users,name,' . $user->id,
-            'bio' => 'sometimes|nullable|string|max:50',
+            'username'   => 'sometimes|string|max:10|unique:users,name,' . $user->id,
+            'bio'        => 'sometimes|nullable|string|max:50',
             'avatar_url' => 'sometimes|nullable|url|max:2048',
-            'password' => 'sometimes|nullable|string|min:8|max:255',
+            'password'   => 'sometimes|nullable|string|min:8|max:255',
+            'is_private' => 'sometimes|boolean',
         ]);
-
+    
         if (!empty($validated['username'])) {
             $user->name = $validated['username'];
         }
-
         if (array_key_exists('bio', $validated)) {
             $user->bio = $validated['bio'];
         }
-
         if (array_key_exists('avatar_url', $validated)) {
             $user->avatar = $validated['avatar_url'];
         }
-
         if (!empty($validated['password'])) {
             $user->password = $validated['password'];
         }
-
+        if (isset($validated['is_private'])) {
+            $user->isPrivate = $validated['is_private'];
+        }
+    
         $user->save();
     }
 
@@ -281,12 +282,20 @@ if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
     }
 
     public function getCollection(Request $request){
-    $request->validate(['user_id' => 'required|integer', 
-                        'status'  => 'sometimes|nullable|in:Spēlēju,Pabeigta,Plānots,Pārtraukts'
-                        ]);
+    $request->validate([
+        'user_id' => 'required|integer', 
+        'status'  => 'sometimes|nullable|in:Spēlēju,Pabeigta,Plānots,Pārtraukts'
+    ]);
+
+    $profileUser = User::findOrFail($request->user_id);
+    $user = auth('sanctum')->user();
+    $isOwner = $user && $user->id == $request->user_id;
+
+    if ($profileUser->isPrivate && !$isOwner) {
+        return response()->json(['message' => 'Profils ir privāts'], 403);
+    }
 
     $baserules = Collection::where('user_id', $request->user_id);
-
     $stats = [
         'Visi' => (clone $baserules)->count(),
         'Spēlēju' => (clone $baserules)->where('status', 'Spēlēju')->count(),
@@ -298,32 +307,31 @@ if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
     if ($request->status) {
         $baserules->where('status', $request->status);
     }
-
     if ($request->sort){
         $baserules->orderBy('user_score', $request->sort);
     }
 
     $collection = $baserules->with('game')->get()->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'game' => [
-                    'id' => $item->game->id,
-                    'name' => $item->game->name,
-                    'image' => $item->game->cover_url
-                        ? 'https:' . str_replace('t_thumb', 't_cover_big', $item->game->cover_url)
-                        : 'https://placehold.co/60x80/111/444?text=' . urlencode($item->game->name),
-                ],
-                'status' => $item->status,
-                'user_score' => $item->user_score,
-                'notes' => $item->notes ?? '',
-            ];
-        });
+        return [
+            'id' => $item->id,
+            'game' => [
+                'id' => $item->game->id,
+                'name' => $item->game->name,
+                'image' => $item->game->cover_url
+                    ? 'https:' . str_replace('t_thumb', 't_cover_big', $item->game->cover_url)
+                    : 'https://placehold.co/60x80/111/444?text=' . urlencode($item->game->name),
+            ],
+            'status' => $item->status,
+            'user_score' => $item->user_score,
+            'notes' => $item->notes ?? '',
+        ];
+    });
 
     return response([
         'collection' => $collection,
         'stats' => $stats,
     ]);
-    }
+}
 
     
 

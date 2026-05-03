@@ -27,7 +27,9 @@ const verificationCode = ref("")
 const verificationError = ref(false)
 const verificationLoading = ref(false)
 const resendLoading = ref(false)
-
+const collectionStatus = ref(null)
+const settingsIsPrivate = ref(false)
+const profileIsPrivate = ref(false)
 const settingsPasswordValid = computed(() => {
     if (!settingsPassword.value) return null
     if (settingsPassword.value.length < 8) return false
@@ -57,6 +59,7 @@ const initials = computed(() => {
 })
 
 async function loadCollection(status = null) {
+    try{
     const res = await axios.get("/api/user/collection", {
         params: {
             user_id: route.params.id,
@@ -66,6 +69,20 @@ async function loadCollection(status = null) {
     })
     collection.value = res.data.collection
     counts.value = res.data.stats
+
+    }
+    catch(error){
+        if (error.response?.status === 403) {
+            collection.value = []
+            counts.value = { Visi: 0, Spēlēju: 0, Pabeigta: 0, Plānots: 0, Pārtraukts: 0 }
+            collectionStatus.value = 'Profils ir iestatīts kā privāts'
+        }
+        else{
+            collection.value = []
+            counts.value = { Visi: 0, Spēlēju: 0, Pabeigta: 0, Plānots: 0, Pārtraukts: 0 }
+            collectionStatus.value = 'Ielādējot kolekciju, radās kļūda.'
+        }
+    }
 }
 
 async function sendVerificationCode() {
@@ -102,6 +119,7 @@ async function resendCode() {
 }
 
 function openSettings() {
+    settingsIsPrivate.value = profileIsPrivate.value
     settingsUsername.value = profileusername.value
     settingsBio.value = profileBio.value
     settingsPassword.value = ''
@@ -120,8 +138,10 @@ async function saveSettings() {
         bio: settingsBio.value,
         avatar_url: settingsAvatarUrl.value,
         password: settingsPassword.value || undefined,
+        is_private: settingsIsPrivate.value
     })
 
+    profileIsPrivate.value = settingsIsPrivate.value
     profileusername.value = settingsUsername.value
     profileBio.value = settingsBio.value
     profileAvatar.value = settingsAvatarUrl.value || null
@@ -137,6 +157,7 @@ async function deleteUser() {
 
 onMounted(async () => {
     const userData = (await axios.get("/api/getuser", { params: { id: route.params.id } })).data
+    profileIsPrivate.value = userData.isPrivate
     profileusername.value = userData.name
     profileBio.value = userData.bio
     profileAvatar.value = userData.avatar
@@ -243,7 +264,7 @@ watch(settingsUsername, async (newUsername) => {
                     </div>
 
                     <div v-if="collection.length === 0" class="empty-state">
-                        Šeit vēl nekas nav.
+                        {{collectionStatus ? collectionStatus  : 'Šeit vēl nekas nav.' }}
                     </div>
                 </div>
             </div>
@@ -292,7 +313,17 @@ watch(settingsUsername, async (newUsername) => {
                         rows="3"
                         no-resize
                     ></v-textarea>
-                
+
+                    <div class="settings-private-row">
+                        <span class="settings-label">Privāts profils</span>
+                        <v-switch
+                            v-model="settingsIsPrivate"
+                            color="white"
+                            density="compact"
+                            hide-details
+                        ></v-switch>
+                    </div>
+
                     <v-text-field
                         v-model="settingsPassword"
                         label="Jaunā parole"
@@ -385,6 +416,15 @@ watch(settingsUsername, async (newUsername) => {
 
 
 <style scoped>
+.settings-private-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-top: 1px solid #1a1a1a;
+    margin-top: 8px;
+}
+
 .btn-verify {
     margin-top: 6px;
     background: transparent;
