@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->append(\App\Http\Middleware\Cors::class);
     $middleware->alias([
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        'verified' => \App\Http\Middleware\EmailIsVerified::class,
     ]);
 })->withExceptions(function (Exceptions $exceptions): void {
         //

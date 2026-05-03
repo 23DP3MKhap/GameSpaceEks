@@ -22,6 +22,12 @@ const settingsPassword = ref('')
 const settingsBio = ref('')
 const settingsAvatarUrl = ref('')
 const settingsUsernameValid = ref(null)
+const verificationDialog = ref(false)
+const verificationCode = ref("")
+const verificationError = ref(false)
+const verificationLoading = ref(false)
+const resendLoading = ref(false)
+
 const settingsPasswordValid = computed(() => {
     if (!settingsPassword.value) return null
     if (settingsPassword.value.length < 8) return false
@@ -62,6 +68,38 @@ async function loadCollection(status = null) {
     counts.value = res.data.stats
 }
 
+async function sendVerificationCode() {
+    resendLoading.value = true
+    try {
+        await axios.post("/api/email/sendcode")
+        verificationDialog.value = true
+    } finally {
+        resendLoading.value = false
+    }
+}
+
+async function verifyCode() {
+    verificationLoading.value = true
+    verificationError.value = false
+    try {
+        await axios.post("/api/email/verifycode", { code: verificationCode.value })
+        auth.user.email_verified = true
+        verificationDialog.value = false
+    } catch {
+        verificationError.value = true
+    } finally {
+        verificationLoading.value = false
+    }
+}
+
+async function resendCode() {
+    resendLoading.value = true
+    try {
+        await axios.post("/api/email/sendcode")
+    } finally {
+        resendLoading.value = false
+    }
+}
 
 function openSettings() {
     settingsUsername.value = profileusername.value
@@ -149,6 +187,13 @@ watch(settingsUsername, async (newUsername) => {
                     </div>
                     <div class="profile-bio">{{ profileBio }}</div>
                     <button v-if="auth.user && auth.user.id == route.params.id" class="btn-settings" @click="openSettings">Rediģēt profilu</button>
+                    <button 
+                        v-if="auth.user && auth.user.id == route.params.id && !auth.user.email_verified" 
+                        class="btn-verify" 
+                        :disabled="resendLoading"
+                        @click="sendVerificationCode">
+                        {{ resendLoading ? 'Sūta...' : 'Apstiprināt e-pastu' }}
+                    </button>
                 </div>
 
                 <div class="profile-stats">
@@ -307,11 +352,56 @@ watch(settingsUsername, async (newUsername) => {
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <v-dialog max-width="500" v-model="verificationDialog" persistent>
+            <v-card class="dialog">
+                <v-card-title class="v-card-title">E-pasta verifikācija</v-card-title>
+                <v-card-text class="v-card-text">
+                    Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk.
+                    <v-text-field
+                        v-model="verificationCode"
+                        label="Verifikācijas kods"
+                        maxlength="6"
+                        class="mt-4"
+                        :error-messages="verificationError ? 'Nepareizs kods. Mēģini vēlreiz.' : ''"
+                    ></v-text-field>
+                </v-card-text>
+                <v-card-actions>
+                    <v-btn :loading="resendLoading" @click="resendCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
+                        Nosūtīt vēlreiz
+                    </v-btn>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="verificationDialog = false">
+                        <p class="v-btn-text">Atcelt</p>
+                    </v-btn>
+                    <v-btn class="v-dialog-button btn-save" :loading="verificationLoading" @click="verifyCode">
+                        <p class="v-btn-text">Apstiprināt</p>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 
 <style scoped>
+.btn-verify {
+    margin-top: 6px;
+    background: transparent;
+    border: 1px solid rgba(255, 223, 95, 0.3);
+    border-radius: 6px;
+    color: #fff45f;
+    font-size: 11px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.btn-verify:hover {
+    border-color: rgba(255, 218, 95, 0.6);
+    background: rgba(255, 228, 95, 0.08);
+}
+
 .v-dialog-button:hover {
     background-color: rgba(255, 255, 255, 0.06) ;
     border-color: rgba(255, 255, 255, 0.25) ;

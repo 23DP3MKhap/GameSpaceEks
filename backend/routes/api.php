@@ -39,6 +39,10 @@ Route::get("/user/username", [AuthController::class, 'getusername']);
 
 Route::get("/user/id", [AuthController::class, 'getid']);
 
+Route::middleware('auth:sanctum')->post('/email/sendcode', [AuthController::class, 'sendVerificationCode']);
+
+Route::middleware('auth:sanctum')->post('/email/verifycode', [AuthController::class, 'verifyCode']);
+
 
 // IGDB API
 
@@ -50,13 +54,13 @@ Route::post("/igdb/searchbyname", [GameController::class, 'getgamesbyname']);
 
 // DATABASE
 
-Route::middleware('auth:sanctum')->post("/database/addgame", [DatabaseController::class, 'addGame']);
+Route::middleware('auth:sanctum', 'verified')->post("/database/addgame", [DatabaseController::class, 'addGame']);
 
-Route::middleware('auth:sanctum')->post("/database/addreview", [DatabaseController::class, 'addReview']);
+Route::middleware('auth:sanctum', 'verified')->post("/database/addreview", [DatabaseController::class, 'addReview']);
 
 Route::get("/database/getreviews", [DatabaseController::class, 'getReviews']);
 
-Route::middleware('auth:sanctum')->post("/database/addtocollection", [DatabaseController::class, 'addToCollection']);
+Route::middleware('auth:sanctum', 'verified')->post("/database/addtocollection", [DatabaseController::class, 'addToCollection']);
 
 Route::get("/database/getgenres", [DatabaseController::class, 'getGenres']);
 

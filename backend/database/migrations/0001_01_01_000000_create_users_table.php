@@ -24,6 +24,9 @@ return new class extends Migration
             $table->string('bio')->nullable();
             $table->boolean("isPrivate")->default(false);
             $table->enum('role', ['user', 'admin'])->default('user');
+
+            $table->string('verification_code')->nullable();
+            $table->boolean('email_verified')->default(false);
             
         });
 

@@ -190,6 +190,7 @@ class DatabaseSeeder extends Seeder
                     'bio'       => $userData['bio'],
                     'avatar'    => $userData['avatar'],
                     'isPrivate' => $userData['isPrivate'],
+                    'email_verified' => true,
                 ]
             );
             $userIds[] = $user->id;

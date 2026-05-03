@@ -32,10 +32,19 @@
       ]
     
       if (auth.user) {
-        items.unshift({
-          title: auth.user.name,
-          to: `/User/${auth.user.id}/Profile`
-        })
+        if (auth.user.email_verified){
+                items.unshift({
+                  title: `${auth.user.name}`,
+                  to: `/User/${auth.user.id}/Profile`
+                })
+            }
+
+        else{
+            items.unshift({
+              title: `${auth.user.name} (nepārbaudīts)`,
+              to: `/User/${auth.user.id}/Profile`
+            })
+            }
 
         if (auth.user.role === 'admin') {
           items.push({
@@ -87,8 +96,9 @@
             <div v-if="auth.user">
                 <nav>
                 <router-link v-if="auth.user.role === 'admin'" :to = "{path: `/Admin`}"><a>Admins</a></router-link>
-                <p>|</p>
-                <router-link :to = "{path: `/User/${auth.user.id}/Profile`}"><a>{{auth.user.name}}</a></router-link>
+                <router-link :to = "{path: `/User/${auth.user.id}/Profile`}">
+                    <a>{{ auth.user.email_verified ? auth.user.name : `${auth.user.name} (nepārbaudīts)` }}</a>
+                </router-link>
                 <p>|</p>
                 <a @click.prevent="logout">IZRAKSTĪTIES</a>
                 </nav>

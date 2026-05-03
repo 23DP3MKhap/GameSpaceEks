@@ -1,58 +1,56 @@
 <script setup>
-  import { ref } from 'vue'
-  import axios from '../plugins/axios'
-  import { auth } from '../plugins/userinfo'
-  import router from '@/router';
-  
-  const email = ref("")
-  const password = ref("")
-  const valid = ref(false)
-  const dialog = ref(false)
-  const dialogerror = ref(false)
+    import { ref } from 'vue'
+    import axios from '../plugins/axios'
+    import { auth } from '../plugins/userinfo'
+    import router from '@/router';
 
-  async function login(){
+    const email = ref("")
+    const password = ref("")
+    const valid = ref(false)
+    const dialog = ref(false)
+    const dialogerror = ref(false)  
+    async function login(){
     try{
-    const response = await axios.post("/api/login", {email: email.value, password: password.value})
-    localStorage.setItem('token', response.data.token)
-    axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
-    auth.user = response.data.user
-    email.value = ""
-    password.value = ""
-    dialog.value = true
-    router.push("/")
-  }catch (error) {
-    dialogerror.value = true
-    return console.log("Error")
-  }}
+        const response = await axios.post("/api/login", {email: email.value, password: password.value})
+        localStorage.setItem('token', response.data.token)
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+        auth.user = response.data.user
+        email.value = ""
+        password.value = ""
+        dialog.value = true
+        router.push("/")
+    }catch (error) {
+        dialogerror.value = true
+        return console.log("Error")
+    }}
 </script>
 
 <script>
-  export default {
-    data: () => ({
-      valid: false,
-      password: '',
-      passwordRules: [
-        value => {
-          if (value) return true
+    export default {
+        data: () => ({
+            valid: false,
+            password: '',
+            passwordRules: [
+                value => {
+                    if (value) return true  
+                    return 'Parole ir obligāta.'
+                },
+            ],
+            email: '',
+            emailRules: [
+            value => {
+                if (value) return true
 
-          return 'Parole ir obligāta.'
-        },
-      ],
-      email: '',
-      emailRules: [
-        value => {
-          if (value) return true
+                return 'E-pasts ir obligāts.'
+            },
+            value => {
+                if (/.+@.+\..+/.test(value)) return true
 
-          return 'E-pasts ir obligāts.'
-        },
-        value => {
-          if (/.+@.+\..+/.test(value)) return true
-
-          return 'E-pastam jābūt derīgam.'
-        },
-      ],
-    }),
-  }
+                return 'E-pastam jābūt derīgam.'
+            },
+            ],
+        }),
+    }
 </script>
 
 <template>
@@ -65,22 +63,11 @@
                     <h1>Pieteikties</h1>
 
                     <v-col class="login-row" cols="12" >
-                      <v-text-field
-                        v-model="email"
-                        :rules="emailRules"
-                        label="E-pasts"
-                        required
-                      ></v-text-field>
+                        <v-text-field v-model="email" :rules="emailRules" label="E-pasts" required></v-text-field>
                     </v-col>                   
                    
                     <v-col class="login-row" cols="12" >
-                      <v-text-field
-                        type="password"
-                        v-model="password"
-                        :rules="passwordRules"
-                        label="Parole"
-                        required
-                      ></v-text-field>
+                      <v-text-field type="password" v-model="password" :rules="passwordRules" label="Parole" required></v-text-field>
                     </v-col>
 
                     <v-btn :disabled="!valid" type = "submit" class="login-button">PIETEIKTIES</v-btn>
@@ -91,60 +78,58 @@
 
     <v-dialog max-width="500" v-model="dialog">
         <v-card class="v-card" color="black">
-          <v-card-title class="v-card-title">Pieteikšanās</v-card-title>
-          <v-card-text class="v-card-text">
-            Veiksmīgi pieteicies!
-          </v-card-text>
+            <v-card-title class="v-card-title">Pieteikšanās</v-card-title>
+            <v-card-text class="v-card-text">
+                Veiksmīgi pieteicies!
+            </v-card-text>
 
           <v-card-actions>
             <v-spacer></v-spacer>
 
             <v-btn class="v-dialog-button" @click="dialog = false" >
-              <p class="v-btn-text">Aizvērt</p>
+                <p class="v-btn-text">Aizvērt</p>
             </v-btn>
-          </v-card-actions>
+            </v-card-actions>
         </v-card>
     </v-dialog>
 
     <v-dialog max-width="500" v-model="dialogerror">
         <v-card class="v-card" color="black">
-          <v-card-title class="v-card-title">Pieteikšanās kļūda</v-card-title>
-          <v-card-text class="v-card-text">
-            Lūdzu pārbaudi e-pastu un paroli un mēģini vēlreiz.
-          </v-card-text>
+            <v-card-title class="v-card-title">Pieteikšanās kļūda</v-card-title>
+            <v-card-text class="v-card-text">
+                Lūdzu pārbaudi e-pastu un paroli un mēģini vēlreiz.
+            </v-card-text>
 
           <v-card-actions>
             <v-spacer></v-spacer>
 
             <v-btn class="v-dialog-button" @click="dialogerror = false">
-              <p class="v-btn-text">Aizvērt</p>
+                <p class="v-btn-text">Aizvērt</p>
             </v-btn>
-          </v-card-actions>
+            </v-card-actions>
         </v-card>
     </v-dialog>
     </div>  
 </template>
 
 <style scoped>
-      .v-card-title, .v-card-text {
-        color: white;
-      }
-
-      .v-btn-text {
-        color:white;
-        font-size: 10px;
-      }
-      .dialog, .v-dialog-button{
-        background-color: rgb(0, 0, 0);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-      }
-
-      .v-card{
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.587);
-      }
-
+    .v-card-title, .v-card-text {
+      color: white;
+    }
+    .v-btn-text {
+      color:white;
+      font-size: 10px;
+    }
+    .dialog, .v-dialog-button{
+      background-color: rgb(0, 0, 0);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .v-card{
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.587);
+    }
+    
     h1{
         color:white;
         width: 100%;

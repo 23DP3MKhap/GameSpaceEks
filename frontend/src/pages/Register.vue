@@ -1,54 +1,81 @@
 <script setup>
-    import { ref } from 'vue'
-    import axios from '../plugins/axios'
-    import router from '@/router';
-    import { auth } from '../plugins/userinfo'
-    const email = ref("")
-    const username = ref("")
-    const password = ref("")
-    const passwordConfirmation = ref("")
-    const valid = ref(false)
-    const dialog = ref(false)
-    const dialogerror = ref(false)
-    async function register() {
-        if (valid.value === true){
-            
-            try {
-                await axios.post("/api/register", {email: email.value, username: username.value, password: password.value})
-                dialog.value = true
+import { ref } from 'vue'
+import axios from '../plugins/axios'
+import router from '@/router';
+import { auth } from '../plugins/userinfo'
 
-                try{
-                    const response = await axios.post("/api/login", {email: email.value, password: password.value})
-                    localStorage.setItem('token', response.data.token)
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
-                    auth.user = response.data.user
-                    router.push("/")
-                }
-                catch{
-                    console.log("login error")
-                    router.push("/login")
-                }
+const email = ref("")
+const username = ref("")
+const password = ref("")
+const passwordConfirmation = ref("")
+const valid = ref(false)
+const dialog = ref(false)
+const dialogerror = ref(false)
+const verificationDialog = ref(false)
+const verificationCode = ref("")
+const verificationError = ref(false)
+const verificationLoading = ref(false)
+const resendLoading = ref(false)
 
-                username.value = ''
-                email.value = ''
-                password.value = ''
-                passwordConfirmation.value = ''
+async function register() {
+    if (valid.value === true) {
+        try {
+            await axios.post("/api/register", {
+                email: email.value,
+                username: username.value,
+                password: password.value
+            })
 
+            const response = await axios.post("/api/login", {
+                email: email.value,
+                password: password.value
+            })
+            localStorage.setItem('token', response.data.token)
+            axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+            auth.user = response.data.user
 
-            }
-            catch{
-                console.log("register Error");
-            } 
+            await axios.post("/api/email/sendcode")
+            verificationDialog.value = true
 
-        }
-        else {
-            console.log("Error")
+            username.value = ''
+            email.value = ''
+            password.value = ''
+            passwordConfirmation.value = ''
+
+        } catch {
             dialogerror.value = true
-        } 
+        }
+    } else {
+        dialogerror.value = true
     }
- 
-       
-    const usernameRules = [
+}
+
+async function verifyCode() {
+    verificationLoading.value = true
+    verificationError.value = false
+    try {
+        await axios.post("/api/email/verifycode", { code: verificationCode.value })
+        auth.user.email_verified = true
+        verificationDialog.value = false
+        dialog.value = true
+        router.push("/")
+    } catch {
+        verificationError.value = true
+    } finally {
+        verificationLoading.value = false
+    }
+}
+
+async function resendCode() {
+    resendLoading.value = true
+    try {
+        await axios.post("/api/email/send-code")
+    } finally {
+        resendLoading.value = false
+    }
+}
+
+const usernameRules = [
         value => {
             if (value) return true
             return 'Lietotājvārds ir obligāts.'
@@ -113,13 +140,10 @@
             return 'Paroles nesakrīt.'
         },
     ] 
-  
 </script>
 
-
-
 <template>
-    <div class="page"> 
+    <div class="page">
         <div class="background"><img alt="Background" src="/backgrounds/register-background.png"></div>
         <div class="page-wrapper">
             <div class="register-form">
@@ -127,77 +151,71 @@
                     <v-container>
                         <h1>Reģistrācija</h1>
 
-                        <v-col class="register-row" cols="12" >
-                            <v-text-field
-                                v-model="username"
-                                :rules="usernameRules"
-                                :counter="10"
-                                label="Lietotājvārds"
-                                required
-                            ></v-text-field>
-                        </v-col>
-                    
-
-                        <v-col class="register-row" cols="12" >
-                            <v-text-field
-                                v-model="email"
-                                :rules="emailRules"
-                                label="E-pasts"
-                                required
-                            ></v-text-field>
-                        </v-col>                   
-                   
-                        <v-col class="register-row" cols="12" >
-                            <v-text-field
-                                type="password"
-                                v-model="password"
-                                :rules="passwordRules"
-                                label="Parole"
-                                required
-                            ></v-text-field>
-                        </v-col>
-                    
-                        <v-col class="register-row" cols="12" >
-                            <v-text-field
-                                type="password"
-                                v-model="passwordConfirmation"
-                                :rules="passwordConfirmationRules"
-                                label="Apstiprināt paroli"
-                                required
-                            ></v-text-field>
+                        <v-col class="register-row" cols="12">
+                            <v-text-field v-model="username" :rules="usernameRules" :counter="10" label="Lietotājvārds" required></v-text-field>
                         </v-col>
 
-                    <v-btn type="submit" :disabled="!valid" class="register-button">IZVEIDOT KONTU</v-btn>
+                        <v-col class="register-row" cols="12">
+                            <v-text-field v-model="email" :rules="emailRules" label="E-pasts" required></v-text-field>
+                        </v-col>
+
+                        <v-col class="register-row" cols="12">
+                            <v-text-field type="password" v-model="password" :rules="passwordRules" label="Parole" required></v-text-field>
+                        </v-col>
+
+                        <v-col class="register-row" cols="12">
+                            <v-text-field type="password" v-model="passwordConfirmation" :rules="passwordConfirmationRules"
+                             label="Apstiprināt paroli" required></v-text-field>
+                        </v-col>
+
+                        <v-btn type="submit" :disabled="!valid" class="register-button">IZVEIDOT KONTU</v-btn>
                     </v-container>
                 </v-form>
             </div>
         </div>
 
-        <v-dialog max-width="500" v-model="dialog">
-            <v-card class=dialog>
-                <v-card-title class="v-card-title">Reģistrācija</v-card-title>
-                <v-card-text class="v-card-text">Konts veiksmīgi izveidots!</v-card-text>
-            
-            <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn class="v-dialog-button" @click="dialog = false"><p class="v-btn-text">Aizvērt</p></v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
-    
-        <v-dialog max-width="500" v-model="dialogerror">
-            <v-card>
-                <v-card-title class="v-card-title">Reģistrācijas kļūda</v-card-title>
-                <v-card-text class="v-card-text">Lūdzu, pārbaudiet ievadītos datus un mēģiniet vēlreiz.</v-card-text>
-            
+        <v-dialog max-width="500" v-model="verificationDialog" persistent>
+            <v-card class="dialog">
+                <v-card-title class="v-card-title">E-pasta verifikācija</v-card-title>
+                <v-card-text class="v-card-text">
+                    Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk.
+                    <v-text-field v-model="verificationCode" label="Verifikācijas kods" maxlength="6" class="mt-4"
+                        :error-messages="verificationError ? 'Nepareizs kods. Mēģini vēlreiz.' : ''">
+                    </v-text-field>
+                </v-card-text>
                 <v-card-actions>
+                    <v-btn :loading="resendLoading" @click="resendCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
+                        Nosūtīt vēlreiz
+                    </v-btn>
                     <v-spacer></v-spacer>
-                
-                    <v-btn class="v-dialog-button" @click="dialogerror = false"><p class="v-btn-text">Aizvērt</p></v-btn>
+                    <v-btn class="v-dialog-button" :loading="verificationLoading" @click="verifyCode">
+                        <p class="v-btn-text">Apstiprināt</p>
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
 
+        <v-dialog max-width="500" v-model="dialog">
+            <v-card class="dialog">
+                <v-card-title class="v-card-title">Reģistrācija</v-card-title>
+                <v-card-text class="v-card-text">Konts veiksmīgi izveidots!</v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="dialog = false"><p class="v-btn-text">Aizvērt</p></v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <v-dialog max-width="500" v-model="dialogerror">
+            <v-card>
+                <v-card-title class="v-card-title">Reģistrācijas kļūda</v-card-title>
+                <v-card-text class="v-card-text">Lūdzu, pārbaudiet ievadītos datus un mēģiniet vēlreiz.</v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="dialogerror = false"><p class="v-btn-text">Aizvērt</p></v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 

@@ -327,7 +327,7 @@
             <v-card class="game-modal" v-if="selectedGame">
                 <div class="modal-body">
                     <div class="modal-main-info">
-                        <template v-if="auth.user">
+                        <template v-if="auth.user && auth.user.email_verified">
                             <v-btn v-if="!collectionExists" class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm"> 
                                 Pievienot Kolekcijai
                             </v-btn>
@@ -429,7 +429,7 @@
                                 </div>
                             </div>
                         
-                            <div class="review-form" v-if="auth.user">
+                            <div class="review-form" v-if="auth.user && auth.user.email_verified">
                                 <v-text-field v-model="reviewTitle" label="Atsauksmes Virsraksts" maxlength="20" counter variant="outlined" density="compact" 
                                     color="white">
                                 </v-text-field>

@@ -22,23 +22,35 @@
         { title: "PAR MUMS", to: "/about" },
       ]
     
-      if (auth.user) {
-        items.unshift({
-          title: auth.user.name,
-          to: `/User/${auth.user.id}/Profile`
-        })
+        if (auth.user) {
 
-        if (auth.user.role === 'admin') {
-          items.push({
-            title: "ADMINS",
-            to: "/Admin"
-          })
-        }
+            if (auth.user.email_verified){
+                items.unshift({
+                  title: `${auth.user.name}`,
+                  to: `/User/${auth.user.id}/Profile`
+                })
+            }
+
+            else{
+                items.unshift({
+                  title: `${auth.user.name} (nepārbaudīts)`,
+                  to: `/User/${auth.user.id}/Profile`
+                })
+            }
+
+        
+
+            if (auth.user.role === 'admin') {
+                items.push({
+                    title: "ADMINS",
+                    to: "/Admin"
+                })
+            }
     
-        items.push({
-          title: "IZRAKSTĪTIES",
-          action: "logout"
-        })
+            items.push({
+              title: "IZRAKSTĪTIES",
+              action: "logout"
+            })
       }
   
       return items
@@ -72,8 +84,9 @@
             <div v-if="auth.user">
                 <nav>
                 <router-link v-if="auth.user.role === 'admin'" :to = "{path: `/Admin`}" class="router-link"><a>Admins</a></router-link>
-                <p>|</p>
-                <router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link"><a>{{auth.user.name}}</a></router-link>
+                <router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link">
+                    <a>{{ auth.user.email_verified ? auth.user.name : `${auth.user.name} (nepārbaudīts)` }}</a>
+                </router-link>
                 <p>|</p>
                 <a @click.prevent="logout">IZRAKSTĪTIES</a>
                 </nav>

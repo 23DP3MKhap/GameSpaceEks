@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Mail\Message;
 class AuthController extends Controller
 {   
     public function register(Request $request){
@@ -46,6 +47,33 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'logged out']);
     }
+
+    public function sendVerificationCode(Request $request){
+    $code = rand(100000, 999999);
+    $request->user()->update(['verification_code' => $code]);
+    
+    Mail::send('emails.verification', ['code' => $code], function (Message $message) use ($request) {
+    $message->to($request->user()->email)->subject('E-pasta verifikācija | GameSpace');
+    });
+    
+    }
+
+    public function verifyCode(Request $request){
+    $request->validate(['code' => 'required']);
+    
+    if ($request->user()->verification_code != $request->code) {
+        return response()->json(['message' => 'wrong code'], 422);
+    }
+    
+    $request->user()->update([
+        'email_verified' => true,
+        'verification_code' => null
+    ]);
+    }
+
+
+
+
 
 
     public function emailcheck(Request $request){
