@@ -16,9 +16,11 @@ const verificationCode = ref("")
 const verificationError = ref(false)
 const verificationLoading = ref(false)
 const resendLoading = ref(false)
+const isRegistering = ref(false)
 
 async function register() {
     if (valid.value === true) {
+        isRegistering.value = true
         try {
             await axios.post("/api/register", {
                 email: email.value,
@@ -45,9 +47,13 @@ async function register() {
         } catch {
             dialogerror.value = true
         }
+        finally {
+            isRegistering.value = false
+        }
     } else {
         dialogerror.value = true
-    }
+    } 
+    
 }
 
 async function verifyCode() {
@@ -69,7 +75,7 @@ async function verifyCode() {
 async function resendCode() {
     resendLoading.value = true
     try {
-        await axios.post("/api/email/send-code")
+        await axios.post("/api/email/sendcode")
     } finally {
         resendLoading.value = false
     }
@@ -85,7 +91,7 @@ const usernameRules = [
             return 'Lietotājvārdam jābūt īsākam par 10 rakstzīmēm.'
         },
         async value => {
-            
+            if (isRegistering.value) return true
             const response = await axios.post('/api/usernamecheck', { username: value })
             if (response.data.exists === true) {
                 return 'Lietotājvārds jau ir aizņemts.'
@@ -116,12 +122,14 @@ const usernameRules = [
             if (value) return true
             return 'E-pasts ir obligāts.'
         },
+
         value => {
             if (/.+@.+\..+/.test(value)) return true
             return 'E-pasta adresei jābūt derīgai.'
         },
+
         async value => {
-            
+            if (isRegistering.value) return true
             const response = await axios.post('/api/emailcheck', { email: value })
             if (response.data.exists === true) {
                 return 'E-pasts jau ir reģistrēts.'
@@ -178,7 +186,7 @@ const usernameRules = [
             <v-card class="dialog">
                 <v-card-title class="v-card-title">E-pasta verifikācija</v-card-title>
                 <v-card-text class="v-card-text">
-                    Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk.
+                    Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk. Ja e-pasta adrese tika ievadīta nepareizi, varat to mainīt savā profilā.
                     <v-text-field v-model="verificationCode" label="Verifikācijas kods" maxlength="6" class="mt-4"
                         :error-messages="verificationError ? 'Nepareizs kods. Mēģini vēlreiz.' : ''">
                     </v-text-field>

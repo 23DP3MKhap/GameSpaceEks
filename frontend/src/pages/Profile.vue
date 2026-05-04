@@ -29,6 +29,10 @@ const verificationLoading = ref(false)
 const resendLoading = ref(false)
 const collectionStatus = ref(null)
 const settingsIsPrivate = ref(false)
+const settingsEmail = ref('')
+const settingsEmailValid = ref(null)
+
+
 const profileIsPrivate = ref(false)
 const settingsPasswordValid = computed(() => {
     if (!settingsPassword.value) return null
@@ -119,6 +123,7 @@ async function resendCode() {
 }
 
 function openSettings() {
+    settingsEmail.value = auth.user.email 
     settingsIsPrivate.value = profileIsPrivate.value
     settingsUsername.value = profileusername.value
     settingsBio.value = profileBio.value
@@ -128,19 +133,21 @@ function openSettings() {
 }
 
 async function saveSettings() {
-
+    if (settingsEmailValid.value === false) return
     if (settingsUsernameValid.value === false) return
     if (settingsPasswordValid.value === false) return
     
     
     await axios.post('/api/user/update', {
+        email: settingsEmail.value,
         username: settingsUsername.value,
         bio: settingsBio.value,
         avatar_url: settingsAvatarUrl.value,
         password: settingsPassword.value || undefined,
         is_private: settingsIsPrivate.value
     })
-
+    auth.user.email_verified = false
+    auth.user.email = settingsEmail.value
     profileIsPrivate.value = settingsIsPrivate.value
     profileusername.value = settingsUsername.value
     profileBio.value = settingsBio.value
@@ -164,6 +171,19 @@ onMounted(async () => {
     profileRole.value = userData.role
 
     await loadCollection()
+})
+
+watch(settingsEmail, async (newEmail) => {
+    if (!newEmail || newEmail === auth.user?.email) {
+        settingsEmailValid.value = null
+        return
+    }
+    if (!/.+@.+\..+/.test(newEmail)) {
+        settingsEmailValid.value = false
+        return
+    }
+    const res = await axios.post('/api/emailcheck', { email: newEmail })
+    settingsEmailValid.value = !res.data.exists
 })
 
 watch(activeFilter, (newFilter) => {
@@ -301,6 +321,17 @@ watch(settingsUsername, async (newUsername) => {
                         density="compact"
                         :error-messages="settingsUsernameValid === false ? 'Lietotājvārds jau ir aizņemts' : ''"
                         :messages="settingsUsernameValid === true ? 'Lietotājvārds ir pieejams' : ''"
+                    ></v-text-field>
+                    
+                    <v-text-field
+                        v-model="settingsEmail"
+                        label="E-pasts"
+                        placeholder="E-pasta adrese"
+                        maxlength="255"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="settingsEmailValid === false ? 'E-pasts jau ir reģistrēts vai nederīgs' : ''"
+                        :messages="settingsEmailValid === true ? 'E-pasts ir pieejams' : ''"
                     ></v-text-field>
                 
                     <v-textarea
