@@ -65,7 +65,7 @@ class AuthController extends Controller
             'to' => [
                 ['email' => $request->user()->email]
             ],
-            'subject' => 'Verifikācijas kods — GameSpace',
+            'subject' => 'Verifikācijas kods - GameSpace',
             'htmlContent' => view('emails.verification', ['code' => $code])->render(),
         ]);
 

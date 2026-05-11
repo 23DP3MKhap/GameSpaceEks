@@ -82,10 +82,11 @@ async function resendCode() {
 }
 
 const usernameRules = [
-        value => {
+        value => { 
             if (value) return true
             return 'Lietotājvārds ir obligāts.'
         },
+        
         value => {
             if (value?.length <= 10) return true
             return 'Lietotājvārdam jābūt īsākam par 10 rakstzīmēm.'
@@ -99,9 +100,8 @@ const usernameRules = [
             return true
         },
         value => {
-            if (/^[a-zA-Z][\w]*$/.test(value)){
-                return true
-            }
+            if (/^[a-zA-Z][\w]*$/.test(value)) return true
+            
             return 'Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus.'
         }
   ]
@@ -228,6 +228,16 @@ const usernameRules = [
 </template>
 
 <style scoped>
+
+    .background img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        pointer-events: none;
+        user-select: none;
+    }
+
 
     .v-card-title, .v-card-text {
         color: white;

@@ -21,7 +21,6 @@ const settingsUsername = ref('')
 const settingsPassword = ref('')
 const settingsBio = ref('')
 const settingsAvatarUrl = ref('')
-const settingsUsernameValid = ref(null)
 const verificationDialog = ref(false)
 const verificationCode = ref("")
 const verificationError = ref(false)
@@ -30,15 +29,10 @@ const resendLoading = ref(false)
 const collectionStatus = ref(null)
 const settingsIsPrivate = ref(false)
 const settingsEmail = ref('')
-const settingsEmailValid = ref(null)
-
+const settingsValid = ref(null)
+const isSaving = ref(true)
 
 const profileIsPrivate = ref(false)
-const settingsPasswordValid = computed(() => {
-    if (!settingsPassword.value) return null
-    if (settingsPassword.value.length < 8) return false
-    return settingsPassword.value === settingsPasswordConfirm.value
-})
 
 const filters = [
     { key: 'Visi', label: 'Visi' },
@@ -61,6 +55,71 @@ const statusMeta = {
 const initials = computed(() => {
     return profileusername.value.slice(0, 2).toUpperCase()
 })
+
+const avatarUrlRules = [
+    value => {
+        if (!value || /^https?:\/\/.+/.test(value)) return true
+        return 'URL ir jāsākas ar http:// vai https://'
+    }
+]
+
+const bioRules = [
+    value => { if (!value || value.length <= 50) return true
+    return "Biogrāfija nedrīkst būt garāka par 50 simboliem"
+    }
+]
+
+const usernameRules = [
+        
+        async value => {
+            if (isSaving.value) return true
+            if (settingsUsername.value === value || !settingsUsername.value) return true
+            const response = await axios.post('/api/usernamecheck', { username: value })
+            if (response.data.exists === true) {
+                return 'Lietotājvārds jau ir aizņemts.'
+            }
+            return true
+        },
+        value => {
+            if (/^[a-zA-Z][\w]*$/.test(value) || !value) return true
+            
+            return 'Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus.'
+        }
+  ]
+
+const passwordRules = [
+        value => {
+            if (value?.length >= 8 || !value) return true
+            return 'Parolei jābūt vismaz 8 simboliem.'
+        },
+    ]
+
+const emailRules = [
+    value => {
+        if (/.+@.+\..+/.test(value) || !value) return true
+        return 'E-pasta adresei jābūt derīgai.'
+    },
+    async value => {
+        if (isSaving.value) return true
+        if (settingsEmail.value === value || !settingsEmail.value) return true
+        const response = await axios.post('/api/emailcheck', { email: value })
+        if (response.data.exists === true) {
+            return 'E-pasts jau ir reģistrēts.'
+        }
+        return true
+    }
+]
+
+    const passwordConfirmationRules = [
+        value => {
+            if (value) return true
+            return 'Paroles apstiprinājums ir obligāts.'
+        },
+        value => {
+            if (value === password.value) return true
+            return 'Paroles nesakrīt.'
+        },
+    ] 
 
 async function loadCollection(status = null) {
     try{
@@ -133,23 +192,18 @@ function openSettings() {
 }
 
 async function saveSettings() {
-    if (settingsEmailValid.value === false) return
-    if (settingsUsernameValid.value === false) return
-    if (settingsPasswordValid.value === false) return
-    
-    
-    await axios.post('/api/user/update', {
-        email: settingsEmail.value,
-        username: settingsUsername.value,
+    const updatedUser = await axios.post('/api/user/update', {
+        email: settingsEmail.value || undefined,
+        username: settingsUsername.value || undefined,
         bio: settingsBio.value,
         avatar_url: settingsAvatarUrl.value,
         password: settingsPassword.value || undefined,
         is_private: settingsIsPrivate.value
     })
-    auth.user.email_verified = false
-    auth.user.email = settingsEmail.value
+
+    auth.user = updatedUser.data
     profileIsPrivate.value = settingsIsPrivate.value
-    profileusername.value = settingsUsername.value
+    profileusername.value = settingsUsername.value || auth.user.name
     profileBio.value = settingsBio.value
     profileAvatar.value = settingsAvatarUrl.value || null
     settingsDialog.value = false
@@ -173,42 +227,15 @@ onMounted(async () => {
     await loadCollection()
 })
 
-watch(settingsEmail, async (newEmail) => {
-    if (!newEmail || newEmail === auth.user?.email) {
-        settingsEmailValid.value = null
-        return
-    }
-    if (!/.+@.+\..+/.test(newEmail)) {
-        settingsEmailValid.value = false
-        return
-    }
-    const res = await axios.post('/api/emailcheck', { email: newEmail })
-    settingsEmailValid.value = !res.data.exists
-})
-
-watch(activeFilter, (newFilter) => {
-    loadCollection(newFilter === 'Visi' ? null : newFilter)
+watch(activeFilter, (filter) => {
+    loadCollection(filter === 'Visi' ? null : filter)
 })
 
 watch(sortOrder, () => {
     loadCollection(activeFilter.value === 'Visi' ? null : activeFilter.value)
 })
 
-watch(settingsUsername, async (newUsername) => {
-    if (!newUsername || newUsername === profileusername.value){
-        settingsUsernameValid.value = null
-        return
-    }
 
-    const res = await axios.post('/api/usernamecheck', { username: newUsername })
-
-    if (res.data.exists) {
-        settingsUsernameValid.value = false
-    } else {
-        settingsUsernameValid.value = true
-    }
-
-})
 </script>
 
 
@@ -217,7 +244,7 @@ watch(settingsUsername, async (newUsername) => {
         <div class="profile-wrapper">
             <div class="profile-header">
                 <div class="avatar-wrap">
-                    <img v-if="profileAvatar" :src="profileAvatar" class="avatar-img" alt="Profila attēls">
+                    <img v-if="profileAvatar" :src="profileAvatar" class="avatar-img" alt="Profila attēls" @error="$event.target.src = 'https://placehold.co/150/212121/white?text=U'">
                     <div v-else class="avatar-placeholder">{{ initials }}</div>
                 </div>
 
@@ -294,92 +321,94 @@ watch(settingsUsername, async (newUsername) => {
             <v-card class="dialog">
                 <v-card-title class="v-card-title">Rediģēt profilu</v-card-title>
                 <v-card-text class="v-card-text">
-                    <div class="settings-avatar-row">
-                        <div class="settings-avatar-preview">
-                            <img v-if="settingsAvatarUrl" :src="settingsAvatarUrl" class="avatar-img">
-                            <div v-else class="avatar-placeholder">{{ initials }}</div>
+                    <v-form v-model="settingsValid" ref="settingsForm">
+                    
+                        <div class="settings-avatar-row">
+                            <div class="settings-avatar-preview">
+                                <img v-if="settingsAvatarUrl" :src="settingsAvatarUrl" class="avatar-img" @error="$event.target.src = 'https://placehold.co/150/212121/white?text=U'">
+                                <div v-else class="avatar-placeholder">{{ initials }}</div>
+                            </div>
+                            <v-text-field
+                                v-model="settingsAvatarUrl"
+                                label="Avatāra URL"
+                                placeholder="https://..."
+                                maxlength="2048"
+                                counter
+                                variant="outlined"
+                                density="compact"
+                                style="flex: 1;"
+                                :rules="avatarUrlRules"
+                            ></v-text-field>
                         </div>
+                    
                         <v-text-field
-                            v-model="settingsAvatarUrl"
-                            label="Avatāra URL"
-                            placeholder="https://..."
-                            maxlength="2048"
+                            v-model="settingsUsername"
+                            label="Lietotājvārds"
+                            placeholder="Lietotājvārds"
+                            maxlength="10"
                             counter
                             variant="outlined"
                             density="compact"
-                            style="flex: 1;"
+                            :rules="usernameRules"
                         ></v-text-field>
-                    </div>
-                
-                    <v-text-field
-                        v-model="settingsUsername"
-                        label="Lietotājvārds"
-                        placeholder="Lietotājvārds"
-                        maxlength="10"
-                        counter
-                        variant="outlined"
-                        density="compact"
-                        :error-messages="settingsUsernameValid === false ? 'Lietotājvārds jau ir aizņemts' : ''"
-                        :messages="settingsUsernameValid === true ? 'Lietotājvārds ir pieejams' : ''"
-                    ></v-text-field>
                     
-                    <v-text-field
-                        v-model="settingsEmail"
-                        label="E-pasts"
-                        placeholder="E-pasta adrese"
-                        maxlength="255"
-                        variant="outlined"
-                        density="compact"
-                        :error-messages="settingsEmailValid === false ? 'E-pasts jau ir reģistrēts vai nederīgs' : ''"
-                        :messages="settingsEmailValid === true ? 'E-pasts ir pieejams' : ''"
-                    ></v-text-field>
-                
-                    <v-textarea
-                        v-model="settingsBio"
-                        placeholder="Pastāsti kaut ko par sevi..."
-                        maxlength="50"
-                        counter
-                        variant="outlined"
-                        density="compact"
-                        rows="3"
-                        no-resize
-                    ></v-textarea>
-
-                    <div class="settings-private-row">
-                        <span class="settings-label">Privāts profils</span>
-                        <v-switch
-                            v-model="settingsIsPrivate"
-                            color="white"
+                        <v-text-field
+                            v-model="settingsEmail"
+                            label="E-pasts"
+                            placeholder="E-pasta adrese"
+                            maxlength="255"
+                            variant="outlined"
                             density="compact"
-                            hide-details
-                        ></v-switch>
-                    </div>
-
-                    <v-text-field
-                        v-model="settingsPassword"
-                        label="Jaunā parole"
-                        placeholder="Atstāj tukšu, lai saglabātu pašreizējo"
-                        type="password"
-                        maxlength="255"
-                        variant="outlined"
-                        density="compact"
-                        :error-messages="settingsPassword.length > 0 && settingsPassword.length < 8 ? 'Parolei jābūt vismaz 8 rakstzīmēm' : settingsPasswordValid === false ? 'Paroles nesakrīt' : ''"
-                        persistent-hint
-                    ></v-text-field>
-                
-                    <v-text-field
-                        v-if="settingsPassword"
-                        v-model="settingsPasswordConfirm"
-                        label="Apstiprināt paroli"
-                        placeholder="Atkārtojiet jauno paroli"
-                        type="password"
-                        maxlength="255"
-                        variant="outlined"
-                        density="compact"
-                        :error-messages="settingsPassword.length < 8 ? 'Parolei jābūt vismaz 8 rakstzīmēm' : settingsPasswordValid === false ? 'Paroles nesakrīt' : ''"
-                        :messages="settingsPasswordValid === true ? 'Paroles sakrīt' : ''"
-                    ></v-text-field>
-                
+                            :rules="emailRules"
+                        ></v-text-field>
+                    
+                        <v-textarea
+                            v-model="settingsBio"
+                            placeholder="Pastāsti kaut ko par sevi..."
+                            maxlength="50"
+                            counter
+                            variant="outlined"
+                            density="compact"
+                            rows="3"
+                            no-resize
+                            :rules="bioRules"
+                        ></v-textarea>
+                    
+                        <div class="settings-private-row">
+                            <span class="settings-label">Privāts profils</span>
+                            <v-switch
+                                v-model="settingsIsPrivate"
+                                color="white"
+                                density="compact"
+                                hide-details
+                            ></v-switch>
+                        </div>
+                    
+                        <v-text-field
+                            v-model="settingsPassword"
+                            label="Jaunā parole"
+                            placeholder="Atstāj tukšu, lai saglabātu pašreizējo"
+                            type="password"
+                            maxlength="255"
+                            variant="outlined"
+                            density="compact"
+                            :rules="passwordRules"
+                            persistent-hint
+                        ></v-text-field>
+                    
+                        <v-text-field
+                            v-if="settingsPassword"
+                            v-model="settingsPasswordConfirm"
+                            label="Apstiprināt paroli"
+                            placeholder="Atkārtojiet jauno paroli"
+                            type="password"
+                            maxlength="255"
+                            variant="outlined"
+                            density="compact"
+                            :rules="passwordConfirmationRules"
+                        ></v-text-field>
+                    
+                    </v-form>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -392,7 +421,7 @@ watch(settingsUsername, async (newUsername) => {
                     <v-btn
                         class="v-dialog-button btn-save"
                         @click="saveSettings"
-                        :disabled="settingsUsernameValid === false || settingsPasswordValid === false"
+                        :disabled="!settingsValid"
                     >
                         <p class="v-btn-text">Saglabāt</p>
                     </v-btn>

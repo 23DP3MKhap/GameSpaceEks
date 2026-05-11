@@ -149,36 +149,33 @@ if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
         $user = $request->user(); 
         $validated = $request->validate([
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'username'   => 'sometimes|string|max:10|unique:users,name,' . $user->id,
-            'bio'        => 'sometimes|nullable|string|max:50',
-            'avatar_url' => 'sometimes|nullable|url|max:2048',
-            'password'   => 'sometimes|nullable|string|min:8|max:255',
+            'username' => 'sometimes|string|max:10|regex:/^[a-zA-Z][\w]*$/|unique:users,name,' . $user->id,
+            'bio' => 'sometimes|nullable|string|max:50',
+            'avatar_url' => 'sometimes|nullable|regex:/^https?:\/\/.+/',
+            'password' => 'sometimes|nullable|string|min:8|max:255',
             'is_private' => 'sometimes|boolean',
         ]);
 
-        if (!empty($validated['email'])) {
+        if (!empty($validated['email']) && $validated['email'] !== $user->email) {
             $user->email = $validated['email'];
             $user->email_verified = false; 
             $user->verification_code = null;
         }
-
         if (!empty($validated['username'])) {
-            $user->name = $validated['username'];
+        $user->name = $validated['username'];
         }
-        if (array_key_exists('bio', $validated)) {
             $user->bio = $validated['bio'];
-        }
-        if (array_key_exists('avatar_url', $validated)) {
+        
             $user->avatar = $validated['avatar_url'];
-        }
+        
         if (!empty($validated['password'])) {
             $user->password = $validated['password'];
         }
-        if (isset($validated['is_private'])) {
             $user->isPrivate = $validated['is_private'];
-        }
 
         $user->save();
+
+        return $user;
     }
 
     public function deleteUser(Request $request){

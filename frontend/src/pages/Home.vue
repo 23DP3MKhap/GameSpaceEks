@@ -144,6 +144,15 @@
   z-index: -1;
 }
 
+.background img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
 .main-text {
   color: white;
   margin-top: 50px;
