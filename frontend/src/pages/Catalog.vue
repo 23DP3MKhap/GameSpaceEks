@@ -78,7 +78,6 @@
 
             const observer = new IntersectionObserver(async (elements) => {
             if (elements[0].isIntersecting && !scrollTriggerBlock.value) {
-                loadingOffset.value += 24
                 await gameLoader()
             }
             }, { threshold: 0.1 })
@@ -192,7 +191,7 @@
 
         newGames = [...dbgames]
 
-        if (dbgames.length < 24) {
+        if (dbgames.length < 50) {
             const igdb_games = await axios.get('/api/igdb/games', {
                 params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, dbgamesquantity: dbgames.length,
                         dbgamesids: dbgames.map(genre => genre.id).join(',') || null, offset: loadingOffset.value
@@ -203,7 +202,7 @@
         }
 
         const existingIds = new Set(games.value.map(game => game.id))
-        const uniqueNew = newGames.filter(function (game){return !existingIds.has(game)})
+        const uniqueNew = newGames.filter(function (game){return !existingIds.has(game.id)})
         games.value = [...games.value, ...uniqueNew]
         isLoading.value = false     
         scrollTriggerBlock.value = false
@@ -214,6 +213,8 @@
         else{
             catalogEmpty.value = false
         }
+
+        loadingOffset.value += 50
     }
 
     async function openGameModal(game) {

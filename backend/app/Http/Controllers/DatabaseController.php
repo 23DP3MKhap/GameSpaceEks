@@ -268,7 +268,7 @@ if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
 
        
 
-        $games = $rules->skip($offset)->take(24)->get();
+        $games = $rules->skip($offset)->take(50)->get();
         return $games->map(function ($game) {
         return [
             'id' => $game->id,

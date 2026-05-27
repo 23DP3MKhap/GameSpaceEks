@@ -33,7 +33,7 @@ class GameController extends Controller
         $dbgamesids = $request->dbgamesids;
         $offset = $request->offset ?? 0;
 
-        $limit = 24 - $dbgamesquantity;
+        $limit = 50 - $dbgamesquantity;
         $igdbOffset = max(0, $offset - $dbgamesquantity);
         $httpBody = "fields id, name, cover.url, genres.name, involved_companies.company.name, involved_companies.developer, involved_companies.publisher; sort total_rating_count desc; limit $limit; offset $igdbOffset;";
         
