@@ -60,10 +60,6 @@
             color: #ffffff;
             margin-bottom: 10px;
         }
-        .code-hint {
-            font-size: 12px;
-            color: #555;
-        }
         .footer {
             margin-top: 28px;
             font-size: 12px;
@@ -84,7 +80,6 @@
             <div class="divider"></div>
             <div class="code-label">Verifikācijas kods</div>
             <div class="code">{{ $code }}</div>
-            <div class="code-hint">Kods ir derīgs 15 minūtes</div>
         </div>
         <div class="footer">
             Ja jūs nereģistrējāties GameSpace, ignorējiet šo ziņojumu.<br>
