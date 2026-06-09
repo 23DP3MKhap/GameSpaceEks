@@ -1,23 +1,23 @@
-# GameSpace Documentation
+# GameSpace Dokumentācija
 
-## Content
-1. [What is GameSpace](#what-is-gamespace)
-2. [Technologies](#technologies)
+## Saturs
+1. [Kas ir GameSpace](#kas-ir-gamespace)
+2. [Tehnoloģijas](#tehnoloģijas)
     * [Frontend](#frontend)
     * [Backend](#backend)
-    * [.exe file](#exe-file)
-3. [How to start](#how-to-start)
-    * [Before start (Dependencies)](#Before-start-Dependencies)
-    * [1. variant (via .exe)](#1-variant-via-exe)
-    * [2. variant (manual)](#2-variant-manual)
-4. [TestCases table](#testcases-table)
+    * [.exe fails](#exe-fails)
+3. [Kā sākt](#kā-sākt)
+    * [Pirms sākuma (Atkarības)](#pirms-sākuma-atkarības)
+    * [1. variants (izmantojot .exe)](#1-variants-izmantojot-exe)
+    * [2. variants (manuāli)](#2-variants-manuāli)
+4. [TestCases tabula](#testcases-tabula)
 
 
-## What is GameSpace
+## Kas ir GameSpace
 Full-stack tīmekļa lietotne, kas bāzēta uz IGDB API spēļu pārlūkošanai un kolekciju veidošanai. Tā apvieno uzlabotas filtrēšanas un meklēšanas iespējas, personīgās kolekcijas ar progresa sekošanu un statistiku, lietotāju atsauksmes, kā arī administratora paneli. Lietotne ir izvietota (deployed) Vercel un Railway (pēdējam beidzies termiņš) platformās. Izstrādāta, izmantojot Laravel, MySQL un Vue.js
 
 
-## Technologies 
+## Tehnoloģijas
 
 ### Backend (Servera puse)
 * **PHP (v8.4.0)** -- īpaši izstrādāts tīmekļa izstrādei, padarot to daudz ātrāku un vieglāku. Tas ir pielāgots HTTP pieprasījumiem un datubāzes mijiedarbībai. Satur noderīgas iebūvētas funkcijas darbam ar datiem, piemēram, `date()`, `rand()`, `implode()`.
@@ -55,9 +55,9 @@ Full-stack tīmekļa lietotne, kas bāzēta uz IGDB API spēļu pārlūkošanai 
     * `tauri_plugin_opener` -- saišu vai sistēmas noklusēto programmu drošai atvēršanai.
 
 
-## How to start
+## Kā sākt
 
-### Before start (Dependencies) 
+### Pirms sākuma (Atkarības)
 
 Pirms projekta palaišanas ir nepieciešams uzstādīt un konfigurēt tālāk norādītās vides un piekļuves atslēgas (API keys):
 
@@ -297,7 +297,7 @@ php artisan serve
 Atveriet [Frontend](http://localhost:5173/).
 
 Ja viss noritēja veiksmīgi, jums vajadzētu redzēt vietnes galveno lapu ar uzrakstu **"API ir tiešsaistē"**.
-## TestCases table
+## TestCases tabulas
 
 |Lorem | Lorem | Lorem| Lorem| Lorem |
 | :--- | :--- | :--- | :--- | :---:  |
