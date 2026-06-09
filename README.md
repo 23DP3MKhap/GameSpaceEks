@@ -300,6 +300,7 @@ Ja viss noritēja veiksmīgi, jums vajadzētu redzēt vietnes galveno lapu ar uz
 ## TestCases tabulas
 
 1. Tabula lietotājvārds ievades lauka testēšana
+
 | Testa numurs | Ieejas dati | Izejas dati |
 | :---: | :--- | :--- |
 | **1** | `“”` *(tukšs)* | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds ir obligāts. |
@@ -310,6 +311,7 @@ Ja viss noritēja veiksmīgi, jums vajadzētu redzēt vietnes galveno lapu ar uz
 | **6** | `user` | Lietotājvārda ievades lauks vairs neaizsedz reģistrācijas pogu. |
 
 2. Tabula e-pasta adrese ievades lauka testēšana
+
 | Testa numurs | Ieejas dati | Izejas dati |
 | :---: | :--- | :--- |
 | **1** | `“”` *(tukšs)* | E-pasta adreses ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: E-pasts ir obligāts. |
@@ -320,6 +322,7 @@ Ja viss noritēja veiksmīgi, jums vajadzētu redzēt vietnes galveno lapu ar uz
 | **6** | `epasts@ep.com` | E-pasta ievades lauks vairs neaizsedz reģistrācijas pogu. |
 
 3. Tabula paroles  ievades lauka testēšana
+
 | Testa numurs | Ieejas dati | Izejas dati |
 | :---: | :--- | :--- |
 | **1** | `“”` *(tukšs)* | Paroles ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: Parole ir obligāta. |
@@ -328,6 +331,7 @@ Ja viss noritēja veiksmīgi, jums vajadzētu redzēt vietnes galveno lapu ar uz
 
 4. Tabula paroles apstiprināšanas ievades lauka testēšana
 Lai pārbaudītu datus paroles ievades laukā, vērtība tika iestatīta uz “password”
+
 | Testa numurs | Ieejas dati | Izejas dati |
 | :---: | :--- | :--- |
 | **1** | `“”` *(tukšs)* | Paroles apstiprināšanas ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: Paroles apstiprinājums ir obligāts. |
@@ -336,6 +340,7 @@ Lai pārbaudītu datus paroles ievades laukā, vērtība tika iestatīta uz “p
 
 5. Lai pārbaudītu e-pasta apstiprinājuma lauka datus, datubāzē tika instalēts kods 709829.
 Tabula e-pasta adrese apstiprināšanas ievades lauka testēšana
+
 | Testa numurs | Ieejas dati | Izejas dati |
 | :---: | :--- | :--- |
 | **1** | `“”` *(tukšs)* | Noklikšķinot uz validācijas pogas, serveris atgriež kļūdu 422, un lietotājam tiek parādīta šāda kļūda: Nepareizs kods. Mēģini vēlreiz. |
