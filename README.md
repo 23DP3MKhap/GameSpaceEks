@@ -299,7 +299,46 @@ Atveriet [Frontend](http://localhost:5173/).
 Ja viss noritēja veiksmīgi, jums vajadzētu redzēt vietnes galveno lapu ar uzrakstu **"API ir tiešsaistē"**.
 ## TestCases tabulas
 
-|Lorem | Lorem | Lorem| Lorem| Lorem |
-| :--- | :--- | :--- | :--- | :---:  |
-| Lorem | Lorem | Lorem | Lorem | Lorem |
-| Lorem | ILorem | Lorem| Lorem | Lorem |
+1. Tabula lietotājvārds ievades lauka testēšana
+| Testa numurs | Ieejas dati | Izejas dati |
+| :---: | :--- | :--- |
+| **1** | `“”` *(tukšs)* | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds ir obligāts. |
+| **2** | `1user` | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus. |
+| **3** | `Admin` | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds jau ir aizņemts. |
+| **4** | `useruesruser` | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārdam jābūt īsākam par 10 rakstzīmēm. |
+| **5** | `useruser!` | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus. |
+| **6** | `user` | Lietotājvārda ievades lauks vairs neaizsedz reģistrācijas pogu. |
+
+2. Tabula e-pasta adrese ievades lauka testēšana
+| Testa numurs | Ieejas dati | Izejas dati |
+| :---: | :--- | :--- |
+| **1** | `“”` *(tukšs)* | E-pasta adreses ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: E-pasts ir obligāts. |
+| **2** | `epasts` | E-pasta adreses ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: E-pasta adresei jābūt derīgai. |
+| **3** | `epasts@ep` | E-pasta adreses ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: E-pasta adresei jābūt derīgai. |
+| **4** | `epasts@ep.` | E-pasta adreses ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: E-pasta adresei jābūt derīgai. |
+| **5** | `admin@example.com` | E-pasta adreses ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: E-pasts jau ir reģistrēts. |
+| **6** | `epasts@ep.com` | E-pasta ievades lauks vairs neaizsedz reģistrācijas pogu. |
+
+3. Tabula paroles  ievades lauka testēšana
+| Testa numurs | Ieejas dati | Izejas dati |
+| :---: | :--- | :--- |
+| **1** | `“”` *(tukšs)* | Paroles ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: Parole ir obligāta. |
+| **2** | `pass` | Paroles ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: Parolei jābūt vismaz 8 rakstzīmēm. |
+| **3** | `password` | Paroles lauks vairs neaizsedz reģistrācijas pogu. |
+
+4. Tabula paroles apstiprināšanas ievades lauka testēšana
+Lai pārbaudītu datus paroles ievades laukā, vērtība tika iestatīta uz “password”
+| Testa numurs | Ieejas dati | Izejas dati |
+| :---: | :--- | :--- |
+| **1** | `“”` *(tukšs)* | Paroles apstiprināšanas ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: Paroles apstiprinājums ir obligāts. |
+| **2** | `pass` | Paroles apstiprināšanas ievades lauks bloķē reģistrācijas pogu un parāda kļūdu: Paroles nesakrīt. |
+| **3** | `password` | Paroles apstiprināšanas lauks vairs neaizsedz reģistrācijas pogu. |
+
+5. Lai pārbaudītu e-pasta apstiprinājuma lauka datus, datubāzē tika instalēts kods 709829.
+Tabula e-pasta adrese apstiprināšanas ievades lauka testēšana
+| Testa numurs | Ieejas dati | Izejas dati |
+| :---: | :--- | :--- |
+| **1** | `“”` *(tukšs)* | Noklikšķinot uz validācijas pogas, serveris atgriež kļūdu 422, un lietotājam tiek parādīta šāda kļūda: Nepareizs kods. Mēģini vēlreiz. |
+| **2** | `-12314` | Noklikšķinot uz validācijas pogas, serveris atgriež kļūdu 422, un lietotājam tiek parādīta šāda kļūda: Nepareizs kods. Mēģini vēlreiz. |
+| **3** | `passwo` | Noklikšķinot uz validācijas pogas, serveris atgriež kļūdu 422, un lietotājam tiek parādīta šāda kļūda: Nepareizs kods. Mēģini vēlreiz. |
+| **4** | `709829` *(pareizs kods)* | Veiksmīgi. Lietotājs tiek novirzīts uz galveno lapu, un viņa konts ir apstiprināts. |
