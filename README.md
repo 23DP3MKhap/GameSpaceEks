@@ -226,7 +226,17 @@ BREVO_API_KEY=
 
 7. Saglabājiet failu (**Ctrl+S**).
 
-### 4. Projekta atkarību uzstādīšana
+### 4. Frontend `.env.local` faila konfigurācija
+
+1. Atgriezieties projekta saknes mapē un atveriet mapi **`frontend`**.
+2. Izveidojiet jaunu teksta failu un piešķiriet tam nosaukumu **`.env.local`** *(ar punktu sākumā, bez `.txt` paplašinājuma)*.
+3. Atveriet šo failu un ielīmējiet šādu konfigurācijas rindu, kas norāda ceļu uz lokālo Laravel backend serveri:
+```
+VITE_API_URL=http://localhost:8000
+```
+4. Saglabājiet failu (**Ctrl+S**).
+
+### 5. Projekta atkarību uzstādīšana
 
 No projekta saknes mapes (cd "ceļš uz programmas saknes mapi, kurā atrodas .exe fails"):
 
@@ -239,7 +249,7 @@ cd frontend
 npm install
 ```
 
-### 5. Laravel atslēgas ģenerēšana
+### 6. Laravel atslēgas ģenerēšana
 
 No projekta saknes mapes (cd "ceļš uz programmas saknes mapi, kurā atrodas .exe fails"):
 
@@ -248,7 +258,7 @@ cd backend
 php artisan key:generate
 ```
 
-### 6. Datubāzes `gamespace` izveide
+### 7. Datubāzes `gamespace` izveide
 
 *(Nepieciešams ieslēgts MySQL datorā)*
 
@@ -260,7 +270,7 @@ echo CREATE DATABASE IF NOT EXISTS gamespace; | mysql -u root
 echo CREATE DATABASE IF NOT EXISTS gamespace; | mysql -u root -p"jūsu_root_parole"
 ```
 
-### 7. Datubāzes migrāciju palaišana un aizpildīšana ar datiem
+### 8. Datubāzes migrāciju palaišana un aizpildīšana ar datiem
 
 No projekta saknes mapes (cd "ceļš uz programmas saknes mapi, kurā atrodas .exe fails"):
 
@@ -270,7 +280,7 @@ php artisan migrate
 php artisan db:seed
 ```
 
-### 8. Frontend palaišana
+### 9. Frontend palaišana
 
 > -- Neaizveriet termināli ar palaisto serveri!
 
@@ -281,7 +291,7 @@ cd frontend
 npm run dev
 ```
 
-### 9. Backend palaišana
+### 10. Backend palaišana
 
 > -- Neaizveriet termināli ar palaisto serveri!
 
@@ -292,7 +302,7 @@ cd backend
 php artisan serve
 ```
 
-### 10. Vietnes atvēršana
+### 11. Vietnes atvēršana
 
 Atveriet [Frontend](http://localhost:5173/).
 
