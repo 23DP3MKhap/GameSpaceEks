@@ -14,7 +14,6 @@ class GameController extends Controller
             "client_secret" => config('services.twitch.igdbclientsecret'),
             "grant_type" => 'client_credentials'
             ]))->json();
-        return $response['expires_in'];
     }
     
     public function getgames(Request $request){
