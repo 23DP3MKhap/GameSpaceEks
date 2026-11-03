@@ -31,7 +31,11 @@ const collectionStatus = ref(null)
 const settingsIsPrivate = ref(false)
 const settingsEmail = ref('')
 const settingsValid = ref(null)
-const isSaving = ref(true)
+const settingsForm = ref(null)
+const settingsCurrentPassword = ref('')
+const settingsErrors = ref({})
+const settingsError = ref('')
+const isSaving = ref(false)
 
 const profileIsPrivate = ref(false)
 const profileNotFound = ref(false)
@@ -71,21 +75,29 @@ const bioRules = [
     }
 ]
 
+const emailChanged = computed(() => {
+    return !!settingsEmail.value && settingsEmail.value !== auth.user?.email
+})
+
+const needsCurrentPassword = computed(() => emailChanged.value || !!settingsPassword.value)
+
 const usernameRules = [
-        
-        async value => {
-            if (isSaving.value) return true
-            if (settingsUsername.value === value || !settingsUsername.value) return true
-            const response = await axios.post('/api/usernamecheck', { username: value })
-            if (response.data.exists === true) {
-                return 'Lietotājvārds jau ir aizņemts.'
-            }
-            return true
-        },
         value => {
             if (/^[a-zA-Z][\w]*$/.test(value) || !value) return true
-            
+
             return 'Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus.'
+        },
+        async value => {
+            if (!value || value === profileusername.value) return true
+            try {
+                const response = await axios.post('/api/usernamecheck', { username: value })
+                if (response.data.exists === true) {
+                    return 'Lietotājvārds jau ir aizņemts.'
+                }
+            } catch {
+                // serveris pārbaudīs vēlreiz saglabāšanas brīdī
+            }
+            return true
         }
   ]
 
@@ -102,11 +114,14 @@ const emailRules = [
         return 'E-pasta adresei jābūt derīgai.'
     },
     async value => {
-        if (isSaving.value) return true
-        if (settingsEmail.value === value || !settingsEmail.value) return true
-        const response = await axios.post('/api/emailcheck', { email: value })
-        if (response.data.exists === true) {
-            return 'E-pasts jau ir reģistrēts.'
+        if (!value || value === auth.user?.email) return true
+        try {
+            const response = await axios.post('/api/emailcheck', { email: value })
+            if (response.data.exists === true) {
+                return 'E-pasts jau ir reģistrēts.'
+            }
+        } catch {
+
         }
         return true
     }
@@ -118,10 +133,17 @@ const emailRules = [
             return 'Paroles apstiprinājums ir obligāts.'
         },
         value => {
-            if (value === password.value) return true
+            if (value === settingsPassword.value) return true
             return 'Paroles nesakrīt.'
         },
-    ] 
+    ]
+
+    const currentPasswordRules = [
+        value => {
+            if (value) return true
+            return 'Ievadi pašreizējo paroli, lai mainītu e-pastu vai paroli.'
+        },
+    ]
 
 async function loadCollection(status = null) {
     try{
@@ -186,26 +208,58 @@ function openSettings() {
     settingsUsername.value = profileusername.value
     settingsBio.value = profileBio.value
     settingsPassword.value = ''
+    settingsPasswordConfirm.value = ''
+    settingsCurrentPassword.value = ''
+    settingsErrors.value = {}
+    settingsError.value = ''
     settingsAvatarUrl.value = profileAvatar.value || ''
     settingsDialog.value = true
 }
 
-async function saveSettings() {
-    const updatedUser = await axios.post('/api/user/update', {
-        email: settingsEmail.value || undefined,
-        username: settingsUsername.value || undefined,
-        bio: settingsBio.value,
-        avatar_url: settingsAvatarUrl.value,
-        password: settingsPassword.value || undefined,
-        is_private: settingsIsPrivate.value
-    })
+const settingsFieldErrors = {
+    current_password: 'Pašreizējā parole nav pareiza.',
+    username: 'Lietotājvārds jau ir aizņemts vai nav derīgs.',
+    email: 'E-pasts jau ir reģistrēts vai nav derīgs.',
+    password: 'Parolei jābūt vismaz 8 simboliem.',
+}
 
-    auth.user = updatedUser.data
-    profileIsPrivate.value = settingsIsPrivate.value
-    profileusername.value = settingsUsername.value || auth.user.name
-    profileBio.value = settingsBio.value
-    profileAvatar.value = settingsAvatarUrl.value || null
-    settingsDialog.value = false
+async function saveSettings() {
+    const { valid } = await settingsForm.value.validate()
+    if (!valid) return
+
+    isSaving.value = true
+    settingsErrors.value = {}
+    settingsError.value = ''
+
+    try {
+        const updatedUser = await axios.post('/api/user/update', {
+            email: settingsEmail.value || undefined,
+            username: settingsUsername.value || undefined,
+            bio: settingsBio.value,
+            avatar_url: settingsAvatarUrl.value,
+            password: settingsPassword.value || undefined,
+            current_password: needsCurrentPassword.value ? settingsCurrentPassword.value : undefined,
+            is_private: settingsIsPrivate.value
+        })
+
+        auth.user = updatedUser.data
+        profileIsPrivate.value = settingsIsPrivate.value
+        profileusername.value = settingsUsername.value || auth.user.name
+        profileBio.value = settingsBio.value
+        profileAvatar.value = settingsAvatarUrl.value || null
+        settingsDialog.value = false
+    } catch (error) {
+        const fields = Object.keys(error.response?.data?.errors ?? {})
+        const known = fields.filter(field => settingsFieldErrors[field])
+
+        if (error.response?.status === 422 && known.length) {
+            settingsErrors.value = Object.fromEntries(known.map(field => [field, settingsFieldErrors[field]]))
+        } else {
+            settingsError.value = 'Neizdevās saglabāt izmaiņas. Mēģini vēlreiz.'
+        }
+    } finally {
+        isSaving.value = false
+    }
 }
 
 async function deleteUser() {
@@ -239,6 +293,11 @@ watch(activeFilter, (filter) => {
 watch(sortOrder, () => {
     loadCollection(activeFilter.value === 'Visi' ? null : activeFilter.value)
 })
+
+watch(settingsUsername, () => { delete settingsErrors.value.username })
+watch(settingsEmail, () => { delete settingsErrors.value.email })
+watch(settingsPassword, () => { delete settingsErrors.value.password })
+watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_password })
 
 
 </script>
@@ -358,6 +417,7 @@ watch(sortOrder, () => {
                             variant="outlined"
                             density="compact"
                             :rules="usernameRules"
+                            :error-messages="settingsErrors.username"
                         ></v-text-field>
                     
                         <v-text-field
@@ -368,6 +428,7 @@ watch(sortOrder, () => {
                             variant="outlined"
                             density="compact"
                             :rules="emailRules"
+                            :error-messages="settingsErrors.email"
                         ></v-text-field>
                     
                         <v-textarea
@@ -401,6 +462,7 @@ watch(sortOrder, () => {
                             variant="outlined"
                             density="compact"
                             :rules="passwordRules"
+                            :error-messages="settingsErrors.password"
                             persistent-hint
                         ></v-text-field>
                     
@@ -415,7 +477,22 @@ watch(sortOrder, () => {
                             density="compact"
                             :rules="passwordConfirmationRules"
                         ></v-text-field>
-                    
+
+                        <v-text-field
+                            v-if="needsCurrentPassword"
+                            v-model="settingsCurrentPassword"
+                            label="Pašreizējā parole"
+                            placeholder="Nepieciešama e-pasta vai paroles maiņai"
+                            type="password"
+                            maxlength="255"
+                            variant="outlined"
+                            density="compact"
+                            :rules="currentPasswordRules"
+                            :error-messages="settingsErrors.current_password"
+                        ></v-text-field>
+
+                        <div v-if="settingsError" class="field-hint hint-error">{{ settingsError }}</div>
+
                     </v-form>
                 </v-card-text>
                 <v-card-actions>
@@ -429,7 +506,8 @@ watch(sortOrder, () => {
                     <v-btn
                         class="v-dialog-button btn-save"
                         @click="saveSettings"
-                        :disabled="!settingsValid"
+                        :disabled="settingsValid === false"
+                        :loading="isSaving"
                     >
                         <p class="v-btn-text">Saglabāt</p>
                     </v-btn>
