@@ -160,6 +160,7 @@ if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
             $user->email = $validated['email'];
             $user->email_verified = false; 
             $user->verification_code = null;
+            $user->verification_code_expires_at = null;
         }
         if (!empty($validated['username'])) {
         $user->name = $validated['username'];

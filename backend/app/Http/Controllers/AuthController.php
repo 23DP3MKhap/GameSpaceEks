@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -51,38 +53,59 @@ class AuthController extends Controller
     }
 
     public function sendVerificationCode(Request $request){
-        $code = rand(100000, 999999);
-        $request->user()->update(['verification_code' => $code]);
+        $user = $request->user();
 
-        Http::withHeaders([
-            'api-key' => env('BREVO_API_KEY'),
-            'Content-Type' => 'application/json',
-        ])->post('https://api.brevo.com/v3/smtp/email', [
-            'sender' => [
-                'name' => 'GameSpace',
-                'email' => env('MAIL_FROM_ADDRESS')
-            ],
-            'to' => [
-                ['email' => $request->user()->email]
-            ],
-            'subject' => 'Verifikācijas kods - GameSpace',
-            'htmlContent' => view('emails.verification', ['code' => $code])->render(),
+        if ($user->email_verified) {
+            return response()->json(['message' => 'already verified'], 409);
+        }
+
+        $code = (string) random_int(100000, 999999);
+
+        try {
+            Http::timeout(10)->withHeaders([
+                'api-key' => config('services.brevo.key'),
+                'Content-Type' => 'application/json',
+            ])->post('https://api.brevo.com/v3/smtp/email', [
+                'sender' => [
+                    'name' => 'GameSpace',
+                    'email' => config('mail.from.address')
+                ],
+                'to' => [
+                    ['email' => $user->email]
+                ],
+                'subject' => 'Verifikācijas kods - GameSpace',
+                'htmlContent' => view('emails.verification', ['code' => $code])->render(),
+            ])->throw();
+        } catch (ConnectionException | RequestException $e) {
+            report($e);
+            return response()->json(['message' => 'send failed'], 502);
+        }
+
+        $user->update([
+            'verification_code' => $code,
+            'verification_code_expires_at' => now()->addMinutes(15),
         ]);
 
         return response()->json(['message' => 'sent']);
-}
+    }
 
     public function verifyCode(Request $request){
-    $request->validate(['code' => 'required']);
-    
-    if ($request->user()->verification_code != $request->code) {
-        return response()->json(['message' => 'wrong code'], 422);
-    }
-    
-    $request->user()->update([
-        'email_verified' => true,
-        'verification_code' => null
-    ]);
+        $validated = $request->validate(['code' => 'required|string|size:6']);
+        $user = $request->user();
+
+        if ($user->verification_code === null || !hash_equals($user->verification_code, $validated['code'])) {
+            return response()->json(['message' => 'wrong code'], 422);
+        }
+
+        if ($user->verification_code_expires_at === null || $user->verification_code_expires_at->isPast()) {
+            return response()->json(['message' => 'code expired'], 422);
+        }
+
+        $user->update([
+            'email_verified' => true,
+            'verification_code' => null,
+            'verification_code_expires_at' => null,
+        ]);
     }
 
 

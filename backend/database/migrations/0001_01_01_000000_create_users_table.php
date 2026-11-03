@@ -26,6 +26,7 @@ return new class extends Migration
             $table->enum('role', ['user', 'admin'])->default('user');
 
             $table->string('verification_code')->nullable();
+            $table->timestamp('verification_code_expires_at')->nullable();
             $table->boolean('email_verified')->default(false);
             
         });

@@ -13,9 +13,10 @@ const dialog = ref(false)
 const dialogerror = ref(false)
 const verificationDialog = ref(false)
 const verificationCode = ref("")
-const verificationError = ref(false)
+const verificationError = ref("")
 const verificationLoading = ref(false)
 const resendLoading = ref(false)
+const sendError = ref(false)
 const isRegistering = ref(false)
 
 async function register() {
@@ -36,7 +37,7 @@ async function register() {
             axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
             auth.user = response.data.user
 
-            await axios.post("/api/email/sendcode")
+            await sendCode()
             verificationDialog.value = true
 
             username.value = ''
@@ -58,27 +59,38 @@ async function register() {
 
 async function verifyCode() {
     verificationLoading.value = true
-    verificationError.value = false
+    verificationError.value = ""
     try {
         await axios.post("/api/email/verifycode", { code: verificationCode.value })
         auth.user.email_verified = true
         verificationDialog.value = false
         dialog.value = true
         router.push("/")
-    } catch {
-        verificationError.value = true
+    } catch (error) {
+        verificationError.value = error.response?.data?.message === 'code expired'
+            ? 'Kods vairs nav derīgs.'
+            : 'Nepareizs kods. Mēģini vēlreiz.'
     } finally {
         verificationLoading.value = false
     }
 }
 
-async function resendCode() {
+async function sendCode() {
     resendLoading.value = true
+    sendError.value = false
+    verificationError.value = ""
     try {
         await axios.post("/api/email/sendcode")
+    } catch {
+        sendError.value = true
     } finally {
         resendLoading.value = false
     }
+}
+
+function skipVerification() {
+    verificationDialog.value = false
+    router.push("/")
 }
 
 const usernameRules = [
@@ -186,16 +198,21 @@ const usernameRules = [
             <v-card class="dialog">
                 <v-card-title class="v-card-title">E-pasta verifikācija</v-card-title>
                 <v-card-text class="v-card-text">
-                    Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk. Ja e-pasta adrese tika ievadīta nepareizi, varat to mainīt savā profilā.
+                    {{ sendError
+                        ? 'Konts ir izveidots, bet verifikācijas kodu neizdevās nosūtīt. Mēģini vēlreiz vai apstiprini e-pastu vēlāk savā profilā.'
+                        : 'Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk. Ja e-pasta adrese tika ievadīta nepareizi, varat to mainīt savā profilā.' }}
                     <v-text-field v-model="verificationCode" label="Verifikācijas kods" maxlength="6" class="mt-4"
-                        :error-messages="verificationError ? 'Nepareizs kods. Mēģini vēlreiz.' : ''">
+                        :error-messages="verificationError">
                     </v-text-field>
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn :loading="resendLoading" @click="resendCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
+                    <v-btn :loading="resendLoading" @click="sendCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
                         Nosūtīt vēlreiz
                     </v-btn>
                     <v-spacer></v-spacer>
+                    <v-btn v-if="sendError" class="v-dialog-button" @click="skipVerification">
+                        <p class="v-btn-text">Aizvērt</p>
+                    </v-btn>
                     <v-btn class="v-dialog-button" :loading="verificationLoading" @click="verifyCode">
                         <p class="v-btn-text">Apstiprināt</p>
                     </v-btn>

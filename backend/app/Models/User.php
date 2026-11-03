@@ -26,6 +26,7 @@ class User extends Authenticatable
         'bio',
         'isPrivate',
         'verification_code',
+        'verification_code_expires_at',
         'email_verified'
     ];
 
@@ -37,6 +38,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'verification_code',
+        'verification_code_expires_at',
     ];
 
     /**
@@ -48,6 +51,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'verification_code_expires_at' => 'datetime',
             'password' => 'hashed',
             'isPrivate' => 'boolean',
         ];

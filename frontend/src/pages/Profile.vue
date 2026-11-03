@@ -23,9 +23,10 @@ const settingsBio = ref('')
 const settingsAvatarUrl = ref('')
 const verificationDialog = ref(false)
 const verificationCode = ref("")
-const verificationError = ref(false)
+const verificationError = ref("")
 const verificationLoading = ref(false)
 const resendLoading = ref(false)
+const sendError = ref(false)
 const collectionStatus = ref(null)
 const settingsIsPrivate = ref(false)
 const settingsEmail = ref('')
@@ -150,34 +151,31 @@ async function loadCollection(status = null) {
 
 async function sendVerificationCode() {
     resendLoading.value = true
+    sendError.value = false
+    verificationError.value = ""
     try {
         await axios.post("/api/email/sendcode")
-        verificationDialog.value = true
+    } catch {
+        sendError.value = true
     } finally {
         resendLoading.value = false
+        verificationDialog.value = true
     }
 }
 
 async function verifyCode() {
     verificationLoading.value = true
-    verificationError.value = false
+    verificationError.value = ""
     try {
         await axios.post("/api/email/verifycode", { code: verificationCode.value })
         auth.user.email_verified = true
         verificationDialog.value = false
-    } catch {
-        verificationError.value = true
+    } catch (error) {
+        verificationError.value = error.response?.data?.message === 'code expired'
+            ? 'Kods vairs nav derīgs.'
+            : 'Nepareizs kods. Mēģini vēlreiz.'
     } finally {
         verificationLoading.value = false
-    }
-}
-
-async function resendCode() {
-    resendLoading.value = true
-    try {
-        await axios.post("/api/email/sendcode")
-    } finally {
-        resendLoading.value = false
     }
 }
 
@@ -448,17 +446,19 @@ watch(sortOrder, () => {
             <v-card class="dialog">
                 <v-card-title class="v-card-title">E-pasta verifikācija</v-card-title>
                 <v-card-text class="v-card-text">
-                    Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk.
+                    {{ sendError
+                        ? 'Verifikācijas kodu neizdevās nosūtīt. Mēģini vēlreiz.'
+                        : 'Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk.' }}
                     <v-text-field
                         v-model="verificationCode"
                         label="Verifikācijas kods"
                         maxlength="6"
                         class="mt-4"
-                        :error-messages="verificationError ? 'Nepareizs kods. Mēģini vēlreiz.' : ''"
+                        :error-messages="verificationError"
                     ></v-text-field>
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn :loading="resendLoading" @click="resendCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
+                    <v-btn :loading="resendLoading" @click="sendVerificationCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
                         Nosūtīt vēlreiz
                     </v-btn>
                     <v-spacer></v-spacer>
