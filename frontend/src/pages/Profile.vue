@@ -34,6 +34,7 @@ const settingsValid = ref(null)
 const isSaving = ref(true)
 
 const profileIsPrivate = ref(false)
+const profileNotFound = ref(false)
 
 const filters = [
     { key: 'Visi', label: 'Visi' },
@@ -215,7 +216,13 @@ async function deleteUser() {
 }
 
 onMounted(async () => {
-    const userData = (await axios.get("/api/getuser", { params: { id: route.params.id } })).data
+    let userData
+    try {
+        userData = (await axios.get("/api/getuser", { params: { id: route.params.id } })).data
+    } catch {
+        profileNotFound.value = true
+        return
+    }
     profileIsPrivate.value = userData.isPrivate
     profileusername.value = userData.name
     profileBio.value = userData.bio
@@ -239,7 +246,10 @@ watch(sortOrder, () => {
 
 <template>
     <div class="profile-page">
-        <div class="profile-wrapper">
+        <div v-if="profileNotFound" class="profile-wrapper">
+            <div class="empty-state">Lietotājs nav atrasts.</div>
+        </div>
+        <div v-else class="profile-wrapper">
             <div class="profile-header">
                 <div class="avatar-wrap">
                     <img v-if="profileAvatar" :src="profileAvatar" class="avatar-img" alt="Profila attēls" @error="$event.target.src = 'https://placehold.co/150/212121/white?text=U'">

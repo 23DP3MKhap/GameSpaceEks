@@ -108,11 +108,6 @@ class AuthController extends Controller
         ]);
     }
 
-
-
-
-
-
     public function emailcheck(Request $request){
         $exists = User::where('email', $request->email)->exists();
         return ["exists" => $exists];
@@ -123,21 +118,9 @@ class AuthController extends Controller
         return ["exists" => $exists];
     }
 
-
-    public function getemail(Request $request){
-        return User::where("id", $request->id)->value("email");
-    }
-
-    public function getusername(Request $request){
-        return User::where("id", $request->id)->value("name");
-    }
-
-    public function getid(Request $request){
-        return User::where("id", $request->id)->value("id");
-    }
-
     public function getuser(Request $request){
-        return User::where("id", $request->id)->select("name", "avatar", "bio", "isPrivate", "role")->first(); 
+        $request->validate(['id' => 'required|integer']);
+        return User::select("name", "avatar", "bio", "isPrivate", "role")->findOrFail($request->id);
     }
 
 }

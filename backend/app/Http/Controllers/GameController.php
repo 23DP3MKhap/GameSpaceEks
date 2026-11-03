@@ -8,14 +8,6 @@ use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
-    public function getclient(){
-        $response = (Http::post("https://id.twitch.tv/oauth2/token", 
-            ["client_id" => config('services.twitch.igdbclientid'), 
-            "client_secret" => config('services.twitch.igdbclientsecret'),
-            "grant_type" => 'client_credentials'
-            ]))->json();
-    }
-    
     public function getgames(Request $request){
         $client = (Http::post("https://id.twitch.tv/oauth2/token", 
         ["client_id" => config('services.twitch.igdbclientid'), 

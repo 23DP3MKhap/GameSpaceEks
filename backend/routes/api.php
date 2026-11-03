@@ -15,15 +15,15 @@ Route::get('/ping', function () {
 
 // LARAVEL AUTHENTICATION
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('throttle:login')->post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 
-Route::post('/register', [AuthController::class, 'register']);
+Route::middleware('throttle:register')->post('/register', [AuthController::class, 'register']);
 
-Route::post('/emailcheck', [AuthController::class, 'emailcheck']);
+Route::middleware('throttle:emailcheck')->post('/emailcheck', [AuthController::class, 'emailcheck']);
 
-Route::post('/usernamecheck', [AuthController::class, 'usernamecheck']);
+Route::middleware('throttle:usernamecheck')->post('/usernamecheck', [AuthController::class, 'usernamecheck']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     try {
@@ -33,24 +33,14 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     }
 });
 
-Route::get("/user/email", [AuthController::class, 'getemail']);
+Route::middleware('auth:sanctum', 'throttle:sendcode')->post('/email/sendcode', [AuthController::class, 'sendVerificationCode']);
 
-Route::get("/user/username", [AuthController::class, 'getusername']);
-
-Route::get("/user/id", [AuthController::class, 'getid']);
-
-Route::middleware('auth:sanctum')->post('/email/sendcode', [AuthController::class, 'sendVerificationCode']);
-
-Route::middleware('auth:sanctum')->post('/email/verifycode', [AuthController::class, 'verifyCode']);
+Route::middleware('auth:sanctum', 'throttle:verifycode')->post('/email/verifycode', [AuthController::class, 'verifyCode']);
 
 
 // IGDB API
 
-Route::get("/igdb/client", [GameController::class, 'getclient']);
-
-Route::get("/igdb/games", [GameController::class, 'getgames']);  
-
-Route::post("/igdb/searchbyname", [GameController::class, 'getgamesbyname']);
+Route::get("/igdb/games", [GameController::class, 'getgames']);
 
 // DATABASE
 
@@ -67,8 +57,6 @@ Route::get("/database/getgenres", [DatabaseController::class, 'getGenres']);
 Route::get("/database/getplatforms", [DatabaseController::class, 'getPlatforms']);
 
 Route::get("/database/getgames", [DatabaseController::class, 'getGames']);
-
-Route::get("/database/getgame", [DatabaseController::class, 'getGame']);
 
 Route::get("/user/collection", [DatabaseController::class, 'getCollection']);
 

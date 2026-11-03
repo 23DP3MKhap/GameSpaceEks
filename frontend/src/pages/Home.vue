@@ -4,14 +4,9 @@
   import { auth } from '../plugins/userinfo'
   const apiStatus = ref(null) 
   const dialog = ref(false)
-  const igdb_expires = ref(null)
   onMounted(async () => {
     try {
         const response = await axios.get('api/ping')
-        
-        igdb_expires.value = (await axios.get('/api/igdb/client')).data
-        
-        console.log(igdb_expires.value)
         apiStatus.value = response.status === 200
     } catch (error) {
         apiStatus.value = false
