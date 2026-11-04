@@ -1,26 +1,13 @@
 <script setup>
-    import { auth } from './plugins/userinfo'
-    import { onMounted, ref } from 'vue'
+    import { ref } from 'vue'
     import Header from './components/Header.vue'
     import Footer from './components/Footer.vue'
-    import axios from './plugins/axios'
-    import Catalogheader from './components/Catalogheader.vue'  
-    const searchBar = ref("")   
+    import Catalogheader from './components/Catalogheader.vue'
+    const searchBar = ref("")
 
     function searchUpdate(search){
         searchBar.value = search
     }
-
-    onMounted(async () => {
-    try {
-        const response = await axios.get('/api/user')
-        auth.user = response.data
-    } catch (error) {
-        auth.user = null
-        return console.log("Not logged in")
-    }
-})
-
 </script>
 <template>
   <v-app>

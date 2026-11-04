@@ -70,7 +70,7 @@ class DatabaseSeeder extends Seeder
 
         $coverUrl = null;
                if (!empty($game['cover']['url'])) {
-                   $coverUrl =  $game['cover']['url'];
+                   $coverUrl = 'https:' . str_replace('t_thumb', 't_cover_big', $game['cover']['url']);
                }
 
         $releaseDate = null;

@@ -23,15 +23,21 @@ class AdminController extends Controller
             'avatar' => 'sometimes|nullable|url|max:2048',
             'role' => 'sometimes|in:user,admin',
         ]);
+        if (($validated['role'] ?? null) === 'user' && $user->role === 'admin' && User::where('role', 'admin')->count() === 1) {
+            return response()->json(['message' => 'Nevar noņemt pēdējo administratoru'], 403);
+        }
         $user->update($validated);
     }
 
-    public function deleteUser($id){
+    public function deleteUser(Request $request, $id){
+        if ($request->user()->id == $id) {
+            return response()->json(['message' => 'Nevar dzēst savu kontu'], 403);
+        }
         User::findOrFail($id)->delete();
     }
 
     public function getGames(){
-        return Game::select('id', 'name', 'developer', 'publisher', 'release_date', 'rating', 'cover_url')->get();
+        return Game::select('id', 'name', 'developer', 'publisher', 'release_date', 'rating', 'cover_url', 'description')->get();
     }
 
     public function updateGame(Request $request, $id){
@@ -42,7 +48,7 @@ class AdminController extends Controller
             'publisher' => 'sometimes|nullable|string|max:255',
             'release_date' => 'sometimes|nullable|date',
             'rating' => 'sometimes|nullable|numeric|min:0|max:100',
-            'cover_url' => 'sometimes|nullable|string|max:2048',
+            'cover_url' => 'sometimes|nullable|url|max:2048',
             'description' => 'sometimes|nullable|string',
         ]);
         $game->update($validated);
@@ -59,8 +65,8 @@ class AdminController extends Controller
     public function deleteReview($id){
         Review::findOrFail($id)->delete();
     }
-    
+
     public function deleteUserCollection($id){
-    Collection::where('user_id', $id)->delete();
+        Collection::where('user_id', $id)->delete();
     }
 }

@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'avatar',
         'bio',
+        'role',
         'isPrivate',
         'verification_code',
         'verification_code_expires_at',

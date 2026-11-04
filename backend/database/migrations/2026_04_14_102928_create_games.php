@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('publisher')->nullable();
             $table->date('release_date')->nullable();
             $table->longText('description')->nullable();
-            $table->string('cover_url')->nullable();
+            $table->string('cover_url', 2048)->nullable();
             $table->FLOAT('rating', 10, 2)->nullable();
             $table->timestamps();
 

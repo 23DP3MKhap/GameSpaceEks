@@ -47,7 +47,7 @@ class DatabaseController extends Controller
         'developer' => $companies['developer'],
         'publisher' => $companies['publisher'],
         'release_date' => !empty($resData['first_release_date']) ? date('Y-m-d', $resData['first_release_date']) : null,
-        'cover_url' => !empty($resData['cover']) ? str_replace('t_thumb', 't_cover_big', $resData['cover']['url']) : null,
+        'cover_url' => !empty($resData['cover']) ? 'https:' . str_replace('t_thumb', 't_cover_big', $resData['cover']['url']) : null,
         'rating' => $resData['aggregated_rating'] ?? null,
     ]);
 
@@ -261,9 +261,7 @@ class DatabaseController extends Controller
         return [
             'id' => $game->id,
             'name' => $game->name,
-            'image' => $game->cover_url
-            ? 'https:' . str_replace('t_thumb', 't_cover_big', $game->cover_url)
-            : 'https://placehold.co/600x400',
+            'image' => $game->cover_url ?? 'https://placehold.co/600x400',
             'genre' => $game->genres->pluck('name')->join(', ') ?: 'Unknown',
             'platforms' => $game->platforms->pluck('name')->join(', ') ?: 'Unknown',
             'source' => 'database',
@@ -309,9 +307,7 @@ class DatabaseController extends Controller
             'game' => [
                 'id' => $item->game->id,
                 'name' => $item->game->name,
-                'image' => $item->game->cover_url
-                    ? 'https:' . str_replace('t_thumb', 't_cover_big', $item->game->cover_url)
-                    : 'https://placehold.co/60x80/111/444?text=' . urlencode($item->game->name),
+                'image' => $item->game->cover_url ?? 'https://placehold.co/60x80/111/444?text=' . urlencode($item->game->name),
             ],
             'status' => $item->status,
             'user_score' => $item->user_score,

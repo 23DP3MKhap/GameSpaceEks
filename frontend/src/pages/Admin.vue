@@ -16,9 +16,13 @@ const editGameDialog = ref(false)
 const editingUser = ref({})
 const editingGame = ref({})
 
+const userError = ref('')
+const gameError = ref('')
+
 const confirmDialog = ref(false)
 const confirmAction = ref(null)
 const confirmMessage = ref('')
+const confirmError = ref('')
 
 onMounted(async () => {
     if (!auth.user || auth.user.role !== 'admin') {
@@ -36,24 +40,38 @@ async function loadAll() {
 
 function openEditUser(user) {
     editingUser.value = { ...user }
+    userError.value = ''
     editUserDialog.value = true
 }
 
 async function saveUser() {
-    
-    await axios.put(`/api/admin/users/${editingUser.value.id}`, editingUser.value)
+    userError.value = ''
+    try {
+        await axios.put(`/api/admin/users/${editingUser.value.id}`, editingUser.value)
+    } catch (error) {
+        userError.value = error.response?.status === 403
+            ? error.response.data.message
+            : 'Neizdevās saglabāt. Pārbaudi ievadītos datus.'
+        return
+    }
     editUserDialog.value = false
     await loadAll()
 }
 
 function openEditGame(game) {
     editingGame.value = { ...game }
+    gameError.value = ''
     editGameDialog.value = true
 }
 
 async function saveGame() {
-    
-    await axios.put(`/api/admin/games/${editingGame.value.id}`, editingGame.value)
+    gameError.value = ''
+    try {
+        await axios.put(`/api/admin/games/${editingGame.value.id}`, editingGame.value)
+    } catch {
+        gameError.value = 'Neizdevās saglabāt. Pārbaudi ievadītos datus.'
+        return
+    }
     editGameDialog.value = false
     await loadAll()
 }
@@ -61,34 +79,39 @@ async function saveGame() {
 function confirm(message, action) {
     confirmMessage.value = message
     confirmAction.value = action
+    confirmError.value = ''
     confirmDialog.value = true
 }
 
 async function runConfirm() {
-    await confirmAction.value()
+    confirmError.value = ''
+    try {
+        await confirmAction.value()
+    } catch (error) {
+        confirmError.value = error.response?.status === 403
+            ? error.response.data.message
+            : 'Neizdevās izpildīt darbību.'
+        return
+    }
     confirmDialog.value = false
 }
 
 async function deleteUser(id) {
-    
     await axios.delete(`/api/admin/users/${id}`)
     await loadAll()
 }
 
 async function deleteGame(id) {
-    
     await axios.delete(`/api/admin/games/${id}`)
     await loadAll()
 }
 
 async function deleteReview(id) {
-    
     await axios.delete(`/api/admin/reviews/${id}`)
     await loadAll()
 }
 
 async function deleteUserCollection(userId) {
-    
     await axios.delete(`/api/admin/users/${userId}/collection`)
     await loadAll()
 }
@@ -133,8 +156,8 @@ async function deleteUserCollection(userId) {
                                         </td>
                                         <td class="actions">
                                             <button class="btn-edit" @click="openEditUser(user)">Rediģēt</button>
-                                            <button class="btn-warn" @click="confirm(`Notīrīt kolekciju lietotājam ${user.name}`, function(){deleteUserCollection(user.id)})">Notīrīt Kolekciju</button>
-                                            <button class="btn-delete" @click="confirm(`Dzēst lietotāju ${user.name}`, function(){deleteUser(user.id)})">Dzēst</button>
+                                            <button class="btn-warn" @click="confirm(`Notīrīt kolekciju lietotājam ${user.name}`, () => deleteUserCollection(user.id))">Notīrīt Kolekciju</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst lietotāju ${user.name}`, () => deleteUser(user.id))">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -169,7 +192,7 @@ async function deleteUserCollection(userId) {
                                         <td>{{ game.rating ? game.rating : '-' }}</td>
                                         <td class="actions">
                                             <button class="btn-edit" @click="openEditGame(game)">Rediģēt</button>
-                                            <button class="btn-delete" @click="confirm(`Dzēst spēli ${game.name}?`, function(){deleteGame(game.id)})">Dzēst</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst spēli ${game.name}?`, () => deleteGame(game.id))">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -205,7 +228,7 @@ async function deleteUserCollection(userId) {
                                         <td class="content-cell">{{ review.content }}</td>
                                         <td>{{ review.rating }}/10</td>
                                         <td class="actions">
-                                            <button class="btn-delete" @click="confirm(`Dzēst atsauksmi no ${review.user?.name}?`, function(){deleteReview(review.id)})">Dzēst</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst atsauksmi no ${review.user?.name}?`, () => deleteReview(review.id))">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -244,6 +267,7 @@ async function deleteUserCollection(userId) {
                             <option value="admin">Administrators</option>
                         </select>
                     </div>
+                    <div v-if="userError" class="form-error">{{ userError }}</div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -289,6 +313,7 @@ async function deleteUserCollection(userId) {
                         <label class="edit-label">Apraksts</label>
                         <textarea class="edit-input edit-textarea" v-model="editingGame.description"></textarea>
                     </div>
+                    <div v-if="gameError" class="form-error">{{ gameError }}</div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -305,7 +330,10 @@ async function deleteUserCollection(userId) {
         <v-dialog max-width="400" v-model="confirmDialog">
             <v-card class="dialog">
                 <v-card-title class="v-card-title">Apstiprināt</v-card-title>
-                <v-card-text class="v-card-text">{{ confirmMessage }}</v-card-text>
+                <v-card-text class="v-card-text">
+                    {{ confirmMessage }}
+                    <div v-if="confirmError" class="form-error">{{ confirmError }}</div>
+                </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button" @click="confirmDialog = false">
@@ -555,5 +583,11 @@ async function deleteUserCollection(userId) {
 .edit-textarea {
     resize: none;
     min-height: 80px;
+}
+
+.form-error {
+    font-size: 12px;
+    margin-top: 6px;
+    color: #ff5f5f;
 }
 </style>

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
 
-            $table->string('avatar')->nullable();
+            $table->string('avatar', 2048)->nullable();
             $table->string('bio')->nullable();
             $table->boolean("isPrivate")->default(false);
             $table->enum('role', ['user', 'admin'])->default('user');
