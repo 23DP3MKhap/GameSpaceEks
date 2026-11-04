@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\Http;
+use App\Services\IgdbClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Game;
@@ -16,7 +16,7 @@ class DatabaseController extends Controller
 
     // Create metodes 
 
-    public function addGame(Request $request){
+    public function addGame(Request $request, IgdbClient $igdb){
         $validated = $request->validate([
         'igdb_id' => 'required|integer'
     ]);
@@ -28,70 +28,29 @@ class DatabaseController extends Controller
         return;
     }
 
-    $client = (Http::post("https://id.twitch.tv/oauth2/token", 
-        ["client_id" => config('services.twitch.igdbclientid'), 
-        "client_secret" => config('services.twitch.igdbclientsecret'),
-        "grant_type" => 'client_credentials']))->json();
-        
-    $token = $client['access_token'];
+    $response = $igdb->query('games', "fields name, summary, first_release_date, aggregated_rating, cover.url, involved_companies.developer,
+        involved_companies.publisher, involved_companies.company.name, genres, platforms; where id = $igdbId;");
 
-    $response = (Http::withBody("fields name, summary, first_release_date, aggregated_rating, cover.url, involved_companies.developer,
-        involved_companies.publisher, involved_companies.company.name, genres, platforms; where id = $igdbId;")->withHeaders([
-        "Client-ID" => config('services.twitch.igdbclientid'),
-        "Authorization" => "Bearer "  . $token])->post("https://api.igdb.com/v4/games"));
-
-    if ($response->failed() || empty($response->json())) {
+    if (empty($response)) {
         return;
     }
 
-    $resData = $response->json()[0];
-
-    $developer = null;
-    $publisher = null;
-
-    if (!empty($resData['involved_companies'])) {
-        foreach ($resData['involved_companies'] as $company) {
-            $companyName = $company['company']['name'] ?? null;
-            if (!empty($company['developer']) && $developer === null) {
-                $developer = $companyName;
-            }
-            if (!empty($company['publisher']) && $publisher === null) {
-                $publisher = $companyName;
-            }
-        }
-    }
+    $resData = $response[0];
+    $companies = IgdbClient::companies($resData);
 
     $game = Game::create([
         'id' => $resData['id'],
         'name' => $resData['name'],
         'description' => $resData['summary'] ?? null,
-        'developer' => $dev ?? null,
-        'publisher' => $pub ?? null,
+        'developer' => $companies['developer'],
+        'publisher' => $companies['publisher'],
         'release_date' => !empty($resData['first_release_date']) ? date('Y-m-d', $resData['first_release_date']) : null,
         'cover_url' => !empty($resData['cover']) ? str_replace('t_thumb', 't_cover_big', $resData['cover']['url']) : null,
         'rating' => $resData['aggregated_rating'] ?? null,
     ]);
 
-
-if (!empty($resData['genres']) && is_array($resData['genres'])) {
-    foreach ($resData['genres'] as $genreData) {
-        $genreId = $genreData ?? null;
-
-        if ($genreId) {
-            $game->genres()->attach((int)$genreId);
-        }
-    }
-}
-
-if (!empty($resData['platforms']) && is_array($resData['platforms'])) {
-    foreach ($resData['platforms'] as $platformData) {
-        $platformId = $platformData ?? null;
-
-        if ($platformId) {
-            $game->platforms()->attach((int)$platformId);
-        }
-    }
-}
+    $game->genres()->attach($resData['genres'] ?? []);
+    $game->platforms()->attach($resData['platforms'] ?? []);
     }
 
 

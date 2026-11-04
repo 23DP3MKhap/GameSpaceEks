@@ -26,11 +26,7 @@ Route::middleware('throttle:emailcheck')->post('/emailcheck', [AuthController::c
 Route::middleware('throttle:usernamecheck')->post('/usernamecheck', [AuthController::class, 'usernamecheck']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    try {
-        return $request->user();
-    } catch (error) {
-        return ['message' => 'Not logged in'];
-    }
+    return $request->user();
 });
 
 Route::middleware('auth:sanctum', 'throttle:sendcode')->post('/email/sendcode', [AuthController::class, 'sendVerificationCode']);

@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Services\IgdbClient;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder
     }
 
 
-    public function run(): void
+    public function run(IgdbClient $igdb)
     {
         $this->call([GenreSeeder::class, PlatformSeeder::class]);
 
@@ -57,46 +57,16 @@ class DatabaseSeeder extends Seeder
 
         // Games
 
-        $client = (Http::post("https://id.twitch.tv/oauth2/token", 
-        ["client_id" => config('services.twitch.igdbclientid'), 
-        "client_secret" => config('services.twitch.igdbclientsecret'),
-        "grant_type" => 'client_credentials']))->json();
-        
-        $token = $client['access_token'];
-
-        $response = (Http::withBody("fields name, summary, first_release_date, rating, cover.url,
+        $igdbGames = $igdb->query('games', "fields name, summary, first_release_date, rating, cover.url,
                     involved_companies.company.name, involved_companies.developer, involved_companies.publisher,
                     genres.id, platforms.id;
                     where rating != null & cover != null & first_release_date != null;
                     sort rating desc;
-                    limit 20;")->withHeaders([
-                                "Client-ID" => config('services.twitch.igdbclientid'),
-                                "Authorization" => "Bearer "  . $token])
-        ->post("https://api.igdb.com/v4/games"));
+                    limit 20;");
 
-        if (!$response->successful()) {
-            return;
-        }
- 
-
-        $igdbGames = $response->json();
- 
         foreach ($igdbGames as $game) {
-            $developer  = null;
-            $publisher  = null;
- 
-            if (!empty($game['involved_companies'])) {
-                foreach ($game['involved_companies'] as $company) {
-                    $companyName = $company['company']['name'] ?? null;
-                    if (!empty($company['developer']) && $developer === null) {
-                        $developer = $companyName;
-                    }
-                    if (!empty($company['publisher']) && $publisher === null) {
-                        $publisher = $companyName;
-                    }
-                }
-            }
-       
+            $companies = IgdbClient::companies($game);
+
 
         $coverUrl = null;
                if (!empty($game['cover']['url'])) {
@@ -112,8 +82,8 @@ class DatabaseSeeder extends Seeder
                 ['id' => $game['id']],
                 [
                     'name'         => $game['name'],
-                    'developer'    => $developer,
-                    'publisher'    => $publisher,
+                    'developer'    => $companies['developer'],
+                    'publisher'    => $companies['publisher'],
                     'release_date' => $releaseDate,
                     'description'  => $game['summary'] ?? null,
                     'cover_url'    => $coverUrl,

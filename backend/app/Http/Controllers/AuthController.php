@@ -97,7 +97,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'wrong code'], 422);
         }
 
-        if ($user->verification_code_expires_at === null || $user->verification_code_expires_at->isPast()) {
+        if ($user->verification_code_expires_at->isPast()) {
             return response()->json(['message' => 'code expired'], 422);
         }
 

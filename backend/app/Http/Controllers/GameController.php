@@ -1,47 +1,52 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\Http;
+use App\Services\IgdbClient;
 use Illuminate\Http\Request;
 
 
 
 class GameController extends Controller
 {
-    public function getgames(Request $request){
-        $client = (Http::post("https://id.twitch.tv/oauth2/token", 
-        ["client_id" => config('services.twitch.igdbclientid'), 
-        "client_secret" => config('services.twitch.igdbclientsecret'),
-        "grant_type" => 'client_credentials']))->json();
-        
-        $token = $client['access_token'];
+    public function getgames(Request $request, IgdbClient $igdb){
+        $validated = $request->validate([
+            'search' => 'nullable|string|max:100',
+            'genres' => 'nullable|array',
+            'genres.*' => 'integer',
+            'platforms' => 'nullable|array',
+            'platforms.*' => 'integer',
+            'dbgamesquantity' => 'nullable|integer|min:0|max:50',
+            'offset' => 'nullable|integer|min:0',
+            'dbgamesids' => ['nullable', 'regex:/^\d+(,\d+)*$/'],
+        ]);
 
         $rules = [];
-        $dbgamesquantity = $request->dbgamesquantity;
-        $search = $request->search;
-        $genres = $request->genres;
-        $platforms = $request->platforms;
-        $dbgamesids = $request->dbgamesids;
-        $offset = $request->offset ?? 0;
+        $dbgamesquantity = $validated['dbgamesquantity'] ?? 0;
+        $search = $validated['search'] ?? null;
+        $genres = $validated['genres'] ?? [];
+        $platforms = $validated['platforms'] ?? [];
+        $dbgamesids = $validated['dbgamesids'] ?? null;
+        $offset = $validated['offset'] ?? 0;
 
         $limit = 50 - $dbgamesquantity;
         $igdbOffset = max(0, $offset - $dbgamesquantity);
         $httpBody = "fields id, name, cover.url, genres.name, involved_companies.company.name, involved_companies.developer, involved_companies.publisher; sort total_rating_count desc; limit $limit; offset $igdbOffset;";
-        
+
 
         if ($dbgamesids) {
             $rules[] = "id != ($dbgamesids)";
         }
 
         if ($search) {
+            $search = str_replace(['\\', '"'], ['\\\\', '\\"'], $search);
             $rules[] = "name ~ *\"$search\"*";
         }
 
-        if (!empty($genres) && is_array($genres)) {
+        if (!empty($genres)) {
             $rules[] = "genres = (" . implode(',', $genres) . ")";
         }
 
-        if (!empty($platforms) && is_array($platforms)) {
+        if (!empty($platforms)) {
             $rules[] = "platforms = (" . implode(',', $platforms) . ")";
         }
 
@@ -49,39 +54,20 @@ class GameController extends Controller
             $httpBody .= " where " . implode(' & ', $rules) . ";";
         }
 
-        $gameresponse = (Http::withBody($httpBody)->withHeaders([
-        "Client-ID" => config('services.twitch.igdbclientid'),
-        "Authorization" => "Bearer "  . $token])->post("https://api.igdb.com/v4/games"))->json();
-
-        
+        $gameresponse = $igdb->query('games', $httpBody);
 
         return collect($gameresponse)->map(function ($game){
-            $developer = null;
-            $publisher = null;
-            
-            if (!empty($game['involved_companies'])){
-                foreach ($game['involved_companies'] as $company){
-                    $companyName = $company['company']['name'] ?? null;
-
-                    if (!empty($company['developer']) && $developer === null){
-                        $developer = $companyName;
-                    }
-
-                    if (!empty($company['publisher']) && $publisher === null){
-                        $publisher = $companyName;
-                    }
-                }
-            }
+            $companies = IgdbClient::companies($game);
 
             return [
                 'id'        => $game['id'],
                 'source'    => 'igdb',
-                'name'      => $game['name'] ?? 'Unknown',
+                'name'      => $game['name'],
                 'image'     => !empty($game['cover']['url']) ? 'https:' . str_replace('t_thumb', 't_cover_big', $game['cover']['url']) : 'https://placehold.co/600x400',
                 'genre'     => collect($game['genres'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
                 'platform'  => collect($game['platforms'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
-                'developer' => $developer ?? 'Unknown',
-                'publisher' => $publisher ?? 'Unknown',
+                'developer' => $companies['developer'] ?? 'Unknown',
+                'publisher' => $companies['publisher'] ?? 'Unknown',
             ];
         });
         }

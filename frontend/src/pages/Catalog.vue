@@ -182,39 +182,42 @@
 
         scrollTriggerBlock.value = true
         isLoading.value = true
-        
-        const database_games = await axios.get('/api/database/getgames', {
-            params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, offset: loadingOffset.value}
-        })
 
-        const dbgames = database_games.data
-
-        newGames = [...dbgames]
-
-        if (dbgames.length < 50) {
-            const igdb_games = await axios.get('/api/igdb/games', {
-                params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, dbgamesquantity: dbgames.length,
-                        dbgamesids: dbgames.map(genre => genre.id).join(',') || null, offset: loadingOffset.value
-                }
+        try {
+            const database_games = await axios.get('/api/database/getgames', {
+                params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, offset: loadingOffset.value}
             })
-            const apigames = igdb_games.data
-            newGames = [...dbgames, ...apigames]
-        }
 
-        const existingIds = new Set(games.value.map(game => game.id))
-        const uniqueNew = newGames.filter(function (game){return !existingIds.has(game.id)})
-        games.value = [...games.value, ...uniqueNew]
-        isLoading.value = false     
-        scrollTriggerBlock.value = false
+            const dbgames = database_games.data
 
-        if (games.value.length === 0){
-            catalogEmpty.value = true
-        }
-        else{
-            catalogEmpty.value = false
-        }
+            newGames = [...dbgames]
 
-        loadingOffset.value += 50
+            if (dbgames.length < 50) {
+                const igdb_games = await axios.get('/api/igdb/games', {
+                    params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, dbgamesquantity: dbgames.length,
+                            dbgamesids: dbgames.map(genre => genre.id).join(',') || null, offset: loadingOffset.value
+                    }
+                })
+                const apigames = igdb_games.data
+                newGames = [...dbgames, ...apigames]
+            }
+
+            const existingIds = new Set(games.value.map(game => game.id))
+            const uniqueNew = newGames.filter(function (game){return !existingIds.has(game.id)})
+            games.value = [...games.value, ...uniqueNew]
+
+            if (games.value.length === 0){
+                catalogEmpty.value = true
+            }
+            else{
+                catalogEmpty.value = false
+            }
+
+            loadingOffset.value += 50
+        } finally {
+            isLoading.value = false
+            scrollTriggerBlock.value = false
+        }
     }
 
     async function openGameModal(game) {
