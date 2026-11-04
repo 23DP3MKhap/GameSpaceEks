@@ -6,8 +6,6 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Mail\Message;
 use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller

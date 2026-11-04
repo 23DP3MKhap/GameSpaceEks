@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 use App\Services\IgdbClient;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -89,7 +88,7 @@ class DatabaseController extends Controller
         'notes' => 'nullable|string|max:50',
     ]);
 
-    $collectionItem = Collection::updateOrCreate(
+    Collection::updateOrCreate(
         [
             'user_id' => $request->user()->id, 
             'game_id' => $validated['game_id']

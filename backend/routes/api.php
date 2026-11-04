@@ -6,7 +6,7 @@ use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
-// DATABASE CONNECTION
+// PING
 
 Route::get('/ping', function () {
     return 'pinged';
@@ -71,15 +71,17 @@ Route::middleware('auth:sanctum')->post("/database/deletereview", [DatabaseContr
 
 // ADMIN ROUTES
 
-Route::middleware('auth:sanctum', 'admin')->get("/admin/users", [AdminController::class, 'getUsers']);
-Route::middleware('auth:sanctum', 'admin')->put('/admin/users/{id}', [AdminController::class, 'updateUser']);
-Route::middleware('auth:sanctum', 'admin')->delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/admin/users', [AdminController::class, 'getUsers']);
+    Route::put('/admin/users/{id}', [AdminController::class, 'updateUser']);
+    Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
 
-Route::middleware('auth:sanctum', 'admin')->get('/admin/games', [AdminController::class, 'getGames']);
-Route::middleware('auth:sanctum', 'admin')->put('/admin/games/{id}', [AdminController::class, 'updateGame']);
-Route::middleware('auth:sanctum', 'admin')->delete('/admin/games/{id}', [AdminController::class, 'deleteGame']);
+    Route::get('/admin/games', [AdminController::class, 'getGames']);
+    Route::put('/admin/games/{id}', [AdminController::class, 'updateGame']);
+    Route::delete('/admin/games/{id}', [AdminController::class, 'deleteGame']);
 
-Route::middleware('auth:sanctum', 'admin')->get('/admin/reviews', [AdminController::class, 'getReviews']);
-Route::middleware('auth:sanctum', 'admin')->delete('/admin/reviews/{id}', [AdminController::class, 'deleteReview']);
+    Route::get('/admin/reviews', [AdminController::class, 'getReviews']);
+    Route::delete('/admin/reviews/{id}', [AdminController::class, 'deleteReview']);
 
-Route::middleware('auth:sanctum', 'admin')->delete('/admin/users/{id}/collection', [AdminController::class, 'deleteUserCollection']);
+    Route::delete('/admin/users/{id}/collection', [AdminController::class, 'deleteUserCollection']);
+});
