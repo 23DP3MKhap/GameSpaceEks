@@ -6,9 +6,9 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const users = ref([])
-const games = ref([])
-const reviews = ref([])
+const users = ref(emptyPage())
+const games = ref(emptyPage())
+const reviews = ref(emptyPage())
 
 const editUserDialog = ref(false)
 const editGameDialog = ref(false)
@@ -29,13 +29,31 @@ onMounted(async () => {
         router.push('/')
         return
     }
-    await loadAll()
+    await Promise.all([loadUsers(), loadGames(), loadReviews()])
 })
 
-async function loadAll() {
-    users.value = (await axios.get('/api/admin/users')).data
-    games.value = (await axios.get('/api/admin/games')).data
-    reviews.value = (await axios.get('/api/admin/reviews')).data
+function emptyPage() {
+    return { data: [], total: 0, current_page: 1, last_page: 1 }
+}
+
+async function loadPage(url, table, page) {
+    const { data } = await axios.get(url, { params: { page } })
+    if (page > data.last_page) {
+        return loadPage(url, table, data.last_page)
+    }
+    table.value = data
+}
+
+async function loadUsers(page = users.value.current_page) {
+    await loadPage('/api/admin/users', users, page)
+}
+
+async function loadGames(page = games.value.current_page) {
+    await loadPage('/api/admin/games', games, page)
+}
+
+async function loadReviews(page = reviews.value.current_page) {
+    await loadPage('/api/admin/reviews', reviews, page)
 }
 
 function openEditUser(user) {
@@ -55,7 +73,7 @@ async function saveUser() {
         return
     }
     editUserDialog.value = false
-    await loadAll()
+    await Promise.all([loadUsers(), loadReviews()])
 }
 
 function openEditGame(game) {
@@ -73,7 +91,7 @@ async function saveGame() {
         return
     }
     editGameDialog.value = false
-    await loadAll()
+    await Promise.all([loadGames(), loadReviews()])
 }
 
 function confirm(message, action) {
@@ -98,22 +116,21 @@ async function runConfirm() {
 
 async function deleteUser(id) {
     await axios.delete(`/api/admin/users/${id}`)
-    await loadAll()
+    await Promise.all([loadUsers(), loadReviews()])
 }
 
 async function deleteGame(id) {
     await axios.delete(`/api/admin/games/${id}`)
-    await loadAll()
+    await Promise.all([loadGames(), loadReviews()])
 }
 
 async function deleteReview(id) {
     await axios.delete(`/api/admin/reviews/${id}`)
-    await loadAll()
+    await loadReviews()
 }
 
 async function deleteUserCollection(userId) {
     await axios.delete(`/api/admin/users/${userId}/collection`)
-    await loadAll()
 }
 </script>
 
@@ -126,7 +143,7 @@ async function deleteUserCollection(userId) {
 
                 <v-expansion-panel>
                     <v-expansion-panel-title class="panel-title">
-                        Lietotāji <span class="count">{{ users.length }}</span>
+                        Lietotāji <span class="count">{{ users.total }}</span>
                     </v-expansion-panel-title>
                     <v-expansion-panel-text class="panel-text">
                         <div class="table-wrap">
@@ -141,7 +158,7 @@ async function deleteUserCollection(userId) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="user in users" :key="user.id">
+                                    <tr v-for="user in users.data" :key="user.id">
                                         <td>
                                             <a class="user-link" @click="router.push(`/User/${user.id}/Profile`)">
                                                 {{ user.id }}
@@ -163,12 +180,21 @@ async function deleteUserCollection(userId) {
                                 </tbody>
                             </table>
                         </div>
+                        <v-pagination
+                            v-if="users.last_page > 1"
+                            class="pagination"
+                            density="compact"
+                            :total-visible="7"
+                            :length="users.last_page"
+                            :model-value="users.current_page"
+                            @update:model-value="loadUsers"
+                        ></v-pagination>
                     </v-expansion-panel-text>
                 </v-expansion-panel>
 
                 <v-expansion-panel>
                     <v-expansion-panel-title class="panel-title">
-                        Spēles <span class="count">{{ games.length }}</span>
+                        Spēles <span class="count">{{ games.total }}</span>
                     </v-expansion-panel-title>
                     <v-expansion-panel-text class="panel-text">
                         <div class="table-wrap">
@@ -184,7 +210,7 @@ async function deleteUserCollection(userId) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="game in games" :key="game.id">
+                                    <tr v-for="game in games.data" :key="game.id">
                                         <td>{{ game.id }}</td>
                                         <td>{{ game.name }}</td>
                                         <td>{{ game.developer || '-' }}</td>
@@ -198,12 +224,21 @@ async function deleteUserCollection(userId) {
                                 </tbody>
                             </table>
                         </div>
+                        <v-pagination
+                            v-if="games.last_page > 1"
+                            class="pagination"
+                            density="compact"
+                            :total-visible="7"
+                            :length="games.last_page"
+                            :model-value="games.current_page"
+                            @update:model-value="loadGames"
+                        ></v-pagination>
                     </v-expansion-panel-text>
                 </v-expansion-panel>
 
                 <v-expansion-panel>
                     <v-expansion-panel-title class="panel-title">
-                        Atsauksmes <span class="count">{{ reviews.length }}</span>
+                        Atsauksmes <span class="count">{{ reviews.total }}</span>
                     </v-expansion-panel-title>
                     <v-expansion-panel-text class="panel-text">
                         <div class="table-wrap">
@@ -220,7 +255,7 @@ async function deleteUserCollection(userId) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="review in reviews" :key="review.id">
+                                    <tr v-for="review in reviews.data" :key="review.id">
                                         <td>{{ review.id }}</td>
                                         <td>{{ review.user?.name || '-' }}</td>
                                         <td>{{ review.game?.name || '-' }}</td>
@@ -234,6 +269,15 @@ async function deleteUserCollection(userId) {
                                 </tbody>
                             </table>
                         </div>
+                        <v-pagination
+                            v-if="reviews.last_page > 1"
+                            class="pagination"
+                            density="compact"
+                            :total-visible="7"
+                            :length="reviews.last_page"
+                            :model-value="reviews.current_page"
+                            @update:model-value="loadReviews"
+                        ></v-pagination>
                     </v-expansion-panel-text>
                 </v-expansion-panel>
 
@@ -427,6 +471,22 @@ async function deleteUserCollection(userId) {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.pagination {
+    margin-top: 16px;
+}
+
+.pagination :deep(.v-pagination__item .v-btn),
+.pagination :deep(.v-pagination__prev .v-btn),
+.pagination :deep(.v-pagination__next .v-btn) {
+    color: #888;
+    font-size: 12px;
+}
+
+.pagination :deep(.v-pagination__item--is-active .v-btn) {
+    color: #4a9eff;
+    background: rgba(74, 158, 255, 0.12);
 }
 
 .actions {

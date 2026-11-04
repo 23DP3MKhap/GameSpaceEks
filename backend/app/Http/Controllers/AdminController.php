@@ -10,8 +10,10 @@ use App\Models\Collection;
 
 class AdminController extends Controller
 {
-    public function getUsers(){
-        return User::select('id', 'name', 'email', 'bio', 'avatar', 'role', 'created_at')->get();
+    public function getUsers(Request $request){
+        return User::select('id', 'name', 'email', 'bio', 'avatar', 'role', 'created_at')
+            ->orderBy('id')
+            ->paginate($this->perPage($request));
     }
 
     public function updateUser(Request $request, $id){
@@ -38,8 +40,10 @@ class AdminController extends Controller
         $user->delete();
     }
 
-    public function getGames(){
-        return Game::select('id', 'name', 'developer', 'publisher', 'release_date', 'rating', 'cover_url', 'description')->get();
+    public function getGames(Request $request){
+        return Game::select('id', 'name', 'developer', 'publisher', 'release_date', 'rating', 'cover_url', 'description')
+            ->orderBy('id')
+            ->paginate($this->perPage($request));
     }
 
     public function updateGame(Request $request, $id){
@@ -60,8 +64,10 @@ class AdminController extends Controller
         Game::findOrFail($id)->delete();
     }
 
-    public function getReviews(){
-        return Review::with(['user:id,name', 'game:id,name'])->get();
+    public function getReviews(Request $request){
+        return Review::with(['user:id,name', 'game:id,name'])
+            ->orderBy('id')
+            ->paginate($this->perPage($request));
     }
 
     public function deleteReview($id){
@@ -71,5 +77,9 @@ class AdminController extends Controller
     public function deleteUserCollection($id){
         User::findOrFail($id);
         Collection::where('user_id', $id)->delete();
+    }
+
+    private function perPage(Request $request){
+        return $request->validate(['per_page' => 'sometimes|integer|min:1|max:100'])['per_page'] ?? 25;
     }
 }
