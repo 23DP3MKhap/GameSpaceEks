@@ -20,12 +20,14 @@
     const reviewText = ref("")
     const reviewRating = ref(1)
     const reviewdialog = ref(false)
+    const reviewError = ref('')
     const reviews = ref([])
     const collectionExists = ref(false)
     const collectionStatus = ref('Plānots')
     const collectionScore = ref(5)
     const collectionNotes = ref('')
     const showCollectionForm = ref(false)
+    const collectionError = ref('')
     const loadingOffset = ref(0)
     const scrollTrigger = ref(null)
     const isLoading = ref(false)
@@ -159,15 +161,21 @@
     }
 
     async function postReview(game) {
-        
-        await axios.post("/api/database/addgame", { igdb_id: game.id })
-        await axios.post("/api/database/addreview", {
-            user_id: auth.user.id,
-            game_id: game.id,
-            title: reviewTitle.value,
-            content: reviewText.value,
-            rating: reviewRating.value
-        })
+        reviewError.value = ''
+        try {
+            await axios.post("/api/database/addgame", { igdb_id: game.id })
+            await axios.post("/api/database/addreview", {
+                game_id: game.id,
+                title: reviewTitle.value,
+                content: reviewText.value,
+                rating: reviewRating.value
+            })
+        } catch (error) {
+            reviewError.value = error.response?.status === 422
+                ? 'Aizpildi atsauksmes virsrakstu un tekstu.'
+                : 'Neizdevās publicēt atsauksmi. Mēģini vēlreiz.'
+            return
+        }
         reviewTitle.value = ""
         reviewText.value = ""
         reviewRating.value = 1
@@ -223,6 +231,8 @@
     async function openGameModal(game) {
         selectedGame.value = game
         showCollectionForm.value = false
+        reviewError.value = ''
+        collectionError.value = ''
         collectionStatus.value = 'Plānots'
         collectionScore.value = 5
         collectionNotes.value = ''
@@ -248,14 +258,19 @@
     }
 
     async function addToCollection(gameId) {
-        
-        await axios.post("/api/database/addgame", { igdb_id: gameId })
-        await axios.post("/api/database/addtocollection", {
-            game_id: gameId,
-            status: collectionStatus.value,
-            user_score: collectionScore.value,
-            notes: collectionNotes.value
-        })
+        collectionError.value = ''
+        try {
+            await axios.post("/api/database/addgame", { igdb_id: gameId })
+            await axios.post("/api/database/addtocollection", {
+                game_id: gameId,
+                status: collectionStatus.value,
+                user_score: collectionScore.value,
+                notes: collectionNotes.value
+            })
+        } catch {
+            collectionError.value = 'Neizdevās saglabāt kolekcijā. Mēģini vēlreiz.'
+            return
+        }
         collectionExists.value = true
         showCollectionForm.value = false
     }
@@ -370,6 +385,7 @@
                             <v-btn class="btn-send" block size="small" @click="addToCollection(selectedGame.id)">
                                 {{ collectionExists ? 'Saglabāt Izmaiņas' : 'Pievienot' }}
                             </v-btn>
+                            <div v-if="collectionError" class="form-error">{{ collectionError }}</div>
                         </div>
 
                         <div class="modal-stats" :style="showCollectionForm ? 'margin-top: 12px' : ''">
@@ -456,6 +472,7 @@
                                         </v-btn>
                                     </div>
                                 </div>
+                                <div v-if="reviewError" class="form-error">{{ reviewError }}</div>
                             </div>
                         </div>
                     </div>
@@ -939,6 +956,12 @@
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid #1f1f1f;
+}
+
+.form-error {
+    font-size: 12px;
+    margin-top: 6px;
+    color: #ff5f5f;
 }
 
 .rating-picker {

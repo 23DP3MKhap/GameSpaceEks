@@ -34,7 +34,7 @@ class DatabaseController extends Controller
         involved_companies.publisher, involved_companies.company.name, genres, platforms; where id = $igdbId;");
 
     if (empty($response)) {
-        return;
+        return response()->json(['message' => 'Spēle IGDB netika atrasta'], 404);
     }
 
     $resData = $response[0];
@@ -51,14 +51,14 @@ class DatabaseController extends Controller
         'rating' => $resData['aggregated_rating'] ?? null,
     ]);
 
-    $game->genres()->attach($resData['genres'] ?? []);
-    $game->platforms()->attach($resData['platforms'] ?? []);
+    $game->genres()->attach(Genre::whereIn('id', $resData['genres'] ?? [])->pluck('id'));
+    $game->platforms()->attach(Platform::whereIn('id', $resData['platforms'] ?? [])->pluck('id'));
     }
 
 
     public function addReview(Request $request){
         $validated = $request->validate([
-            'game_id' => 'required|integer',
+            'game_id' => 'required|integer|exists:games,id',
             'title' => 'required|string|max:20',
             'content' => 'required|string|max:500',
             'rating' => 'required|integer|min:1|max:10',
@@ -82,7 +82,7 @@ class DatabaseController extends Controller
 
     public function addToCollection(Request $request){
         $validated = $request->validate([
-        'game_id' => 'required|integer',
+        'game_id' => 'required|integer|exists:games,id',
         'status' => 'required|in:Spēlēju,Pabeigta,Plānots,Pārtraukts',
         'user_score' => 'nullable|integer|min:1|max:10',
         'notes' => 'nullable|string|max:50',
@@ -95,8 +95,8 @@ class DatabaseController extends Controller
         ],
         [
             'status' => $validated['status'],
-            'user_score' => $validated['user_score'],
-            'notes'  => $validated['notes'],
+            'user_score' => $validated['user_score'] ?? null,
+            'notes'  => $validated['notes'] ?? null,
         ]);
     }
 
