@@ -5,6 +5,7 @@ use App\Services\IgdbClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Models\Game;
 use App\Models\Review;
@@ -47,7 +48,7 @@ class DatabaseController extends Controller
         'developer' => $companies['developer'],
         'publisher' => $companies['publisher'],
         'release_date' => !empty($resData['first_release_date']) ? date('Y-m-d', $resData['first_release_date']) : null,
-        'cover_url' => !empty($resData['cover']) ? 'https:' . str_replace('t_thumb', 't_cover_big', $resData['cover']['url']) : null,
+        'cover_url' => Game::coverUrl($resData),
         'rating' => $resData['aggregated_rating'] ?? null,
     ]);
 
@@ -83,7 +84,7 @@ class DatabaseController extends Controller
     public function addToCollection(Request $request){
         $validated = $request->validate([
         'game_id' => 'required|integer|exists:games,id',
-        'status' => 'required|in:Spēlēju,Pabeigta,Plānots,Pārtraukts',
+        'status' => ['required', Rule::in(Collection::STATUSES)],
         'user_score' => 'nullable|integer|min:1|max:10',
         'notes' => 'nullable|string|max:50',
     ]);
@@ -175,20 +176,9 @@ class DatabaseController extends Controller
 {
     $request->validate(['game_id' => 'required|integer']);
 
-    $reviews = Review::join('users', 'reviews.user_id', '=', 'users.id')
-        ->where('reviews.game_id', $request->game_id)
-        ->select(
-            'reviews.id',
-            'reviews.user_id',
-            'reviews.game_id',
-            'reviews.title',
-            'reviews.content',
-            'reviews.rating',
-            'reviews.created_at',
-            'users.name as user_name',
-            'users.avatar as user_avatar'
-        )
-        ->latest('reviews.created_at')
+    $reviews = Review::with('user:id,name,avatar')
+        ->where('game_id', $request->game_id)
+        ->latest()
         ->get()
         ->map(function ($review) {
             return [
@@ -200,9 +190,9 @@ class DatabaseController extends Controller
                 'rating' => $review->rating,
                 'created_at' => $review->created_at->format('Y-m-d'),
                 'user' => [
-                    'id' => $review->user_id,
-                    'name' => $review->user_name,
-                    'avatar' => $review->user_avatar,
+                    'id' => $review->user->id,
+                    'name' => $review->user->name,
+                    'avatar' => $review->user->avatar,
                 ],
             ];
         });
@@ -274,7 +264,7 @@ class DatabaseController extends Controller
     public function getCollection(Request $request){
     $request->validate([
         'user_id' => 'required|integer', 
-        'status'  => 'sometimes|nullable|in:Spēlēju,Pabeigta,Plānots,Pārtraukts'
+        'status'  => ['sometimes', 'nullable', Rule::in(Collection::STATUSES)],
     ]);
 
     $profileUser = User::findOrFail($request->user_id);
@@ -286,13 +276,11 @@ class DatabaseController extends Controller
     }
 
     $baserules = Collection::where('user_id', $request->user_id);
-    $stats = [
-        'Visi' => (clone $baserules)->count(),
-        'Spēlēju' => (clone $baserules)->where('status', 'Spēlēju')->count(),
-        'Pabeigta' => (clone $baserules)->where('status', 'Pabeigta')->count(),
-        'Plānots' => (clone $baserules)->where('status', 'Plānots')->count(),
-        'Pārtraukts' => (clone $baserules)->where('status', 'Pārtraukts')->count(),
-    ];
+    $counts = (clone $baserules)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+    $stats = ['Visi' => $counts->sum()];
+    foreach (Collection::STATUSES as $status) {
+        $stats[$status] = $counts[$status] ?? 0;
+    }
 
     if ($request->status) {
         $baserules->where('status', $request->status);

@@ -60,7 +60,7 @@ class GameController extends Controller
                 'id'        => $game['id'],
                 'source'    => 'igdb',
                 'name'      => $game['name'],
-                'image'     => !empty($game['cover']['url']) ? 'https:' . str_replace('t_thumb', 't_cover_big', $game['cover']['url']) : 'https://placehold.co/600x400',
+                'image'     => Game::coverUrl($game) ?? 'https://placehold.co/600x400',
                 'genre'     => collect($game['genres'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
                 'platforms' => collect($game['platforms'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
                 'developer' => $companies['developer'] ?? 'Unknown',

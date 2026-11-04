@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Collection extends Model
 {
+    public const STATUSES = ['Spēlēju', 'Pabeigta', 'Plānots', 'Pārtraukts'];
+
     protected $fillable = [
         'user_id', 'game_id', 'status', 'user_score', 'notes'
     ];

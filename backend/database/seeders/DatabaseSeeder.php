@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Collection;
+use App\Models\Game;
 use App\Models\User;
 use App\Services\IgdbClient;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -68,11 +70,6 @@ class DatabaseSeeder extends Seeder
             $companies = IgdbClient::companies($game);
 
 
-        $coverUrl = null;
-               if (!empty($game['cover']['url'])) {
-                   $coverUrl = 'https:' . str_replace('t_thumb', 't_cover_big', $game['cover']['url']);
-               }
-
         $releaseDate = null;
             if (!empty($game['first_release_date'])) {
                 $releaseDate = date('Y-m-d', $game['first_release_date']);
@@ -86,7 +83,7 @@ class DatabaseSeeder extends Seeder
                     'publisher'    => $companies['publisher'],
                     'release_date' => $releaseDate,
                     'description'  => $game['summary'] ?? null,
-                    'cover_url'    => $coverUrl,
+                    'cover_url'    => Game::coverUrl($game),
                     'rating'       => $game['rating'] ?? null,
                     'created_at'   => now(),
                     'updated_at'   => now(),
@@ -169,7 +166,7 @@ class DatabaseSeeder extends Seeder
 
         // Collections
 
-        $statuses = ['Spēlēju', 'Pabeigta', 'Plānots', 'Pārtraukts'];
+        $statuses = Collection::STATUSES;
    
 
         foreach ($userIds as $userId) {

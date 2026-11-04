@@ -13,6 +13,14 @@ class Game extends Model
         'release_date', 'description', 'cover_url', 'rating'
     ];
 
+    public static function coverUrl(array $igdbGame): ?string
+    {
+        if (empty($igdbGame['cover']['url'])) {
+            return null;
+        }
+        return 'https:' . str_replace('t_thumb', 't_cover_big', $igdbGame['cover']['url']);
+    }
+
     public function genres(): BelongsToMany
     {
         return $this->belongsToMany(Genre::class, 'game_genre');
