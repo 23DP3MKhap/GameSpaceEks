@@ -412,7 +412,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                             v-model="settingsUsername"
                             label="Lietotājvārds"
                             placeholder="Lietotājvārds"
-                            maxlength="10"
+                            maxlength="20"
                             counter
                             variant="outlined"
                             density="compact"

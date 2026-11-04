@@ -316,7 +316,7 @@ Ja viss noritēja veiksmīgi, jums vajadzētu redzēt vietnes galveno lapu ar uz
 | **1** | `“”` *(tukšs)* | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds ir obligāts. |
 | **2** | `1user` | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus. |
 | **3** | `Admin` | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds jau ir aizņemts. |
-| **4** | `useruesruser` | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārdam jābūt īsākam par 10 rakstzīmēm. |
+| **4** | `useruseruseruseruser1` | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds nedrīkst būt garāks par 20 rakstzīmēm. |
 | **5** | `useruser!` | Lietotājvārda ievades lauks bloķē reģistrācijas pogu, un tiek parādīta kļūda: Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus. |
 | **6** | `user` | Lietotājvārda ievades lauks vairs neaizsedz reģistrācijas pogu. |
 

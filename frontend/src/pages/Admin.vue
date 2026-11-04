@@ -246,19 +246,19 @@ async function deleteUserCollection(userId) {
                 <v-card-text class="v-card-text">
                     <div class="edit-field">
                         <label class="edit-label">Vārds</label>
-                        <input class="edit-input" v-model="editingUser.name">
+                        <input class="edit-input" maxlength="20" v-model="editingUser.name">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">E-pasts</label>
-                        <input class="edit-input" v-model="editingUser.email">
+                        <input class="edit-input" maxlength="255" v-model="editingUser.email">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Biogrāfija</label>
-                        <textarea class="edit-input edit-textarea" v-model="editingUser.bio"></textarea>
+                        <textarea class="edit-input edit-textarea" maxlength="50" v-model="editingUser.bio"></textarea>
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Avatara URL</label>
-                        <input class="edit-input" v-model="editingUser.avatar">
+                        <input class="edit-input" maxlength="2048" v-model="editingUser.avatar">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Loma</label>

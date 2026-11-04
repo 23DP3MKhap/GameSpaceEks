@@ -109,10 +109,10 @@ class DatabaseController extends Controller
     public function updateUser(Request $request){
         $user = $request->user(); 
         $validated = $request->validate([
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'username' => 'sometimes|string|max:10|regex:/^[a-zA-Z][\w]*$/|unique:users,name,' . $user->id,
+            'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
+            'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][\w]*$/|unique:users,name,' . $user->id,
             'bio' => 'sometimes|nullable|string|max:50',
-            'avatar_url' => 'sometimes|nullable|regex:/^https?:\/\/.+/',
+            'avatar_url' => 'sometimes|nullable|max:2048|regex:/^https?:\/\/.+/',
             'password' => 'sometimes|nullable|string|min:8|max:255',
             'is_private' => 'sometimes|boolean',
             'current_password' => 'sometimes|nullable|string',
@@ -329,7 +329,7 @@ class DatabaseController extends Controller
         ->first();
 
     return [
-        'exists' => $collection,
+        'exists' => $collection !== null,
         'status' => $collection?->status,
         'user_score' => $collection?->user_score,
         'notes' => $collection?->notes,

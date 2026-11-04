@@ -17,9 +17,9 @@ class AdminController extends Controller
     public function updateUser(Request $request, $id){
         $user = User::findOrFail($id);
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255|unique:users,name,' . $id,
-            'email' => 'sometimes|email|unique:users,email,' . $id,
-            'bio' => 'sometimes|nullable|string|max:500',
+            'name' => 'sometimes|string|max:20|regex:/^[a-zA-Z][\w]*$/|unique:users,name,' . $id,
+            'email' => 'sometimes|email|max:255|unique:users,email,' . $id,
+            'bio' => 'sometimes|nullable|string|max:50',
             'avatar' => 'sometimes|nullable|url|max:2048',
             'role' => 'sometimes|in:user,admin',
         ]);

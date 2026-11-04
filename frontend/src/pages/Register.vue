@@ -100,8 +100,8 @@ const usernameRules = [
         },
         
         value => {
-            if (value?.length <= 10) return true
-            return 'Lietotājvārdam jābūt īsākam par 10 rakstzīmēm.'
+            if (value?.length <= 20) return true
+            return 'Lietotājvārds nedrīkst būt garāks par 20 rakstzīmēm.'
         },
         async value => {
             if (isRegistering.value) return true
@@ -172,20 +172,20 @@ const usernameRules = [
                         <h1>Reģistrācija</h1>
 
                         <v-col class="register-row" cols="12">
-                            <v-text-field v-model="username" :rules="usernameRules" :counter="10" label="Lietotājvārds" required></v-text-field>
+                            <v-text-field v-model="username" :rules="usernameRules" :counter="20" label="Lietotājvārds" required></v-text-field>
                         </v-col>
 
                         <v-col class="register-row" cols="12">
-                            <v-text-field v-model="email" :rules="emailRules" label="E-pasts" required></v-text-field>
+                            <v-text-field v-model="email" :rules="emailRules" maxlength="255" label="E-pasts" required></v-text-field>
                         </v-col>
 
                         <v-col class="register-row" cols="12">
-                            <v-text-field type="password" v-model="password" :rules="passwordRules" label="Parole" required></v-text-field>
+                            <v-text-field type="password" v-model="password" :rules="passwordRules" maxlength="255" label="Parole" required></v-text-field>
                         </v-col>
 
                         <v-col class="register-row" cols="12">
                             <v-text-field type="password" v-model="passwordConfirmation" :rules="passwordConfirmationRules"
-                             label="Apstiprināt paroli" required></v-text-field>
+                             maxlength="255" label="Apstiprināt paroli" required></v-text-field>
                         </v-col>
 
                         <v-btn type="submit" :disabled="!valid" class="register-button">IZVEIDOT KONTU</v-btn>
