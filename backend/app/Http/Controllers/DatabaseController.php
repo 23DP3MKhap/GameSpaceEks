@@ -224,10 +224,19 @@ class DatabaseController extends Controller
 
     public function getGames(Request $request)
     {
-        $search = $request->search;
-        $genres = $request->genres;
-        $platforms = $request->platforms;
-        $offset = $request->offset ?? 0;
+        $validated = $request->validate([
+            'search' => 'nullable|string|max:100',
+            'genres' => 'nullable|array',
+            'genres.*' => 'integer',
+            'platforms' => 'nullable|array',
+            'platforms.*' => 'integer',
+            'offset' => 'nullable|integer|min:0',
+        ]);
+
+        $search = $validated['search'] ?? null;
+        $genres = $validated['genres'] ?? [];
+        $platforms = $validated['platforms'] ?? [];
+        $offset = $validated['offset'] ?? 0;
 
         $rules = Game::with(['genres', 'platforms']);
 
@@ -235,23 +244,19 @@ class DatabaseController extends Controller
             $rules->where('name', 'like', "%{$search}%");
         }
 
-
-        if (!empty($genres) && is_array($genres)) {
-            $rules->whereHas('genres', 
-            function ($rul) use ($genres) {
+        if (!empty($genres)) {
+            $rules->whereHas('genres', function ($rul) use ($genres) {
                 $rul->whereIn('genre_id', $genres);
             });
         }
 
-        if (!empty($platforms) && is_array($platforms)) {
-        $rules->whereHas('platforms', function ($rul) use ($platforms) {
-            $rul->whereIn('platform_id', $platforms);
-        });
+        if (!empty($platforms)) {
+            $rules->whereHas('platforms', function ($rul) use ($platforms) {
+                $rul->whereIn('platform_id', $platforms);
+            });
         }
 
-       
-
-        $games = $rules->skip($offset)->take(50)->get();
+        $games = $rules->orderBy('id')->skip($offset)->take(50)->get();
         return $games->map(function ($game) {
         return [
             'id' => $game->id,

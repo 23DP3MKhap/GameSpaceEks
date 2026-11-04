@@ -28,7 +28,10 @@
     const collectionNotes = ref('')
     const showCollectionForm = ref(false)
     const collectionError = ref('')
-    const loadingOffset = ref(0)
+    const dbOffset = ref(0)
+    const igdbOffset = ref(0)
+    const dbExhausted = ref(false)
+    const hasMore = ref(true)
     const scrollTrigger = ref(null)
     const isLoading = ref(false)
     const scrollTriggerBlock= ref(true)
@@ -65,6 +68,7 @@
     ]
 
     let timeout = null
+    let lastRequestId = 0
 
     const props = defineProps({ searchValue: String })
 
@@ -94,8 +98,7 @@
 
     watch(() => props.searchValue, () => {
         clearTimeout(timeout)
-        games.value = []
-        loadingOffset.value = 0
+        resetCatalog()
         scrollTriggerBlock.value = true
         timeout = setTimeout(() => {
         gameLoader()
@@ -115,8 +118,7 @@
     })
 
     watch([selectedGenres, selectedPlatforms], () => {
-        games.value = []
-        loadingOffset.value = 0
+        resetCatalog()
         gameLoader()
     });
 
@@ -185,33 +187,51 @@
     }
 
 
+    function resetCatalog() {
+        lastRequestId++
+        games.value = []
+        dbOffset.value = 0
+        igdbOffset.value = 0
+        dbExhausted.value = false
+        hasMore.value = true
+    }
+
     async function gameLoader() {
-        let newGames = []
+        if (!hasMore.value) return
+
+        const requestId = ++lastRequestId
+        const filters = { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value }
+        let dbgames = []
+        let apigames = []
 
         scrollTriggerBlock.value = true
         isLoading.value = true
 
         try {
-            const database_games = await axios.get('/api/database/getgames', {
-                params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, offset: loadingOffset.value}
-            })
-
-            const dbgames = database_games.data
-
-            newGames = [...dbgames]
-
-            if (dbgames.length < 50) {
-                const igdb_games = await axios.get('/api/igdb/games', {
-                    params: { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value, dbgamesquantity: dbgames.length,
-                            dbgamesids: dbgames.map(genre => genre.id).join(',') || null, offset: loadingOffset.value
-                    }
+            if (!dbExhausted.value) {
+                const database_games = await axios.get('/api/database/getgames', {
+                    params: { ...filters, offset: dbOffset.value }
                 })
-                const apigames = igdb_games.data
-                newGames = [...dbgames, ...apigames]
+                dbgames = database_games.data
             }
 
+            const igdbLimit = 50 - dbgames.length
+            if (igdbLimit > 0) {
+                const igdb_games = await axios.get('/api/igdb/games', {
+                    params: { ...filters, limit: igdbLimit, offset: igdbOffset.value }
+                })
+                apigames = igdb_games.data
+            }
+
+            if (requestId !== lastRequestId) return
+
+            dbOffset.value += dbgames.length
+            igdbOffset.value += apigames.length
+            dbExhausted.value = dbgames.length < 50
+            hasMore.value = apigames.length === igdbLimit
+
             const existingIds = new Set(games.value.map(game => game.id))
-            const uniqueNew = newGames.filter(function (game){return !existingIds.has(game.id)})
+            const uniqueNew = [...dbgames, ...apigames].filter(function (game){return !existingIds.has(game.id)})
             games.value = [...games.value, ...uniqueNew]
 
             if (games.value.length === 0){
@@ -220,11 +240,11 @@
             else{
                 catalogEmpty.value = false
             }
-
-            loadingOffset.value += 50
         } finally {
-            isLoading.value = false
-            scrollTriggerBlock.value = false
+            if (requestId === lastRequestId) {
+                isLoading.value = false
+                scrollTriggerBlock.value = false
+            }
         }
     }
 

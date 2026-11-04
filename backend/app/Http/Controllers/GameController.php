@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\Game;
 use App\Services\IgdbClient;
 use Illuminate\Http\Request;
 
@@ -15,26 +16,22 @@ class GameController extends Controller
             'genres.*' => 'integer',
             'platforms' => 'nullable|array',
             'platforms.*' => 'integer',
-            'dbgamesquantity' => 'nullable|integer|min:0|max:50',
+            'limit' => 'nullable|integer|min:1|max:50',
             'offset' => 'nullable|integer|min:0',
-            'dbgamesids' => ['nullable', 'regex:/^\d+(,\d+)*$/'],
         ]);
 
         $rules = [];
-        $dbgamesquantity = $validated['dbgamesquantity'] ?? 0;
         $search = $validated['search'] ?? null;
         $genres = $validated['genres'] ?? [];
         $platforms = $validated['platforms'] ?? [];
-        $dbgamesids = $validated['dbgamesids'] ?? null;
+        $limit = $validated['limit'] ?? 50;
         $offset = $validated['offset'] ?? 0;
 
-        $limit = 50 - $dbgamesquantity;
-        $igdbOffset = max(0, $offset - $dbgamesquantity);
-        $httpBody = "fields id, name, cover.url, genres.name, involved_companies.company.name, involved_companies.developer, involved_companies.publisher; sort total_rating_count desc; limit $limit; offset $igdbOffset;";
+        $httpBody = "fields id, name, cover.url, genres.name, platforms.name, involved_companies.company.name, involved_companies.developer, involved_companies.publisher; sort total_rating_count desc; limit $limit; offset $offset;";
 
-
-        if ($dbgamesids) {
-            $rules[] = "id != ($dbgamesids)";
+        $dbgamesids = Game::pluck('id');
+        if ($dbgamesids->isNotEmpty()) {
+            $rules[] = "id != (" . $dbgamesids->join(',') . ")";
         }
 
         if ($search) {
@@ -65,7 +62,7 @@ class GameController extends Controller
                 'name'      => $game['name'],
                 'image'     => !empty($game['cover']['url']) ? 'https:' . str_replace('t_thumb', 't_cover_big', $game['cover']['url']) : 'https://placehold.co/600x400',
                 'genre'     => collect($game['genres'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
-                'platform'  => collect($game['platforms'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
+                'platforms' => collect($game['platforms'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
                 'developer' => $companies['developer'] ?? 'Unknown',
                 'publisher' => $companies['publisher'] ?? 'Unknown',
             ];
