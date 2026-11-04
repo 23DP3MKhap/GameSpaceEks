@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 use App\Services\IgdbClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use App\Models\Game;
 use App\Models\Review;
 use App\Models\Collection;
@@ -113,27 +115,48 @@ class DatabaseController extends Controller
             'avatar_url' => 'sometimes|nullable|regex:/^https?:\/\/.+/',
             'password' => 'sometimes|nullable|string|min:8|max:255',
             'is_private' => 'sometimes|boolean',
+            'current_password' => 'sometimes|nullable|string',
         ]);
 
-        if (!empty($validated['email']) && $validated['email'] !== $user->email) {
+        $emailChanged = isset($validated['email']) && $validated['email'] !== $user->email;
+        $passwordChanged = !empty($validated['password']);
+
+        if (($emailChanged || $passwordChanged)
+            && !Hash::check($validated['current_password'] ?? '', $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => 'wrong current password',
+            ]);
+        }
+
+        if ($emailChanged) {
             $user->email = $validated['email'];
             $user->email_verified = false; 
             $user->verification_code = null;
             $user->verification_code_expires_at = null;
         }
-        if (!empty($validated['username'])) {
-        $user->name = $validated['username'];
+        if (isset($validated['username'])) {
+            $user->name = $validated['username'];
         }
+        if (array_key_exists('bio', $validated)) {
             $user->bio = $validated['bio'];
-        
+        }
+        if (array_key_exists('avatar_url', $validated)) {
             $user->avatar = $validated['avatar_url'];
-        
-        if (!empty($validated['password'])) {
+        }
+        if (array_key_exists('is_private', $validated)) {
+            $user->isPrivate = $validated['is_private'];
+        }
+        if ($passwordChanged) {
             $user->password = $validated['password'];
         }
-            $user->isPrivate = $validated['is_private'];
 
         $user->save();
+
+        if ($passwordChanged) {
+            $user->tokens()
+                ->where('id', '!=', $user->currentAccessToken()->id)
+                ->delete();
+        }
 
         return $user;
     }
