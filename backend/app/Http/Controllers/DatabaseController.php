@@ -117,7 +117,7 @@ class DatabaseController extends Controller
         if (($emailChanged || $passwordChanged)
             && !Hash::check($validated['current_password'] ?? '', $user->password_hash)) {
             throw ValidationException::withMessages([
-                'current_password' => 'wrong current password',
+                'current_password' => 'Pašreizējā parole nav pareiza',
             ]);
         }
 
@@ -244,11 +244,11 @@ class DatabaseController extends Controller
             'id' => $game->id,
             'title' => $game->title,
             'image' => $game->cover_url ?? 'https://placehold.co/600x400',
-            'genre' => $game->genres->pluck('name')->join(', ') ?: 'Unknown',
-            'platforms' => $game->platforms->pluck('name')->join(', ') ?: 'Unknown',
+            'genre' => $game->genres->pluck('name')->join(', ') ?: 'Nav zināms',
+            'platforms' => $game->platforms->pluck('name')->join(', ') ?: 'Nav zināms',
             'source' => 'database',
-            'developer' => $game->developer ?? "Unknown",
-            'publisher' => $game->publisher ?? 'Unknown',
+            'developer' => $game->developer ?? 'Nav zināms',
+            'publisher' => $game->publisher ?? 'Nav zināms',
         ];
         });
     }

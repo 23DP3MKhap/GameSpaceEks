@@ -9,6 +9,7 @@ const router = useRouter()
 const users = ref(emptyPage())
 const games = ref(emptyPage())
 const reviews = ref(emptyPage())
+const accessDenied = ref(false)
 
 const editUserDialog = ref(false)
 const editGameDialog = ref(false)
@@ -26,7 +27,7 @@ const confirmError = ref('')
 
 onMounted(async () => {
     if (!auth.user || auth.user.role !== 'admin') {
-        router.push('/')
+        accessDenied.value = true
         return
     }
     await Promise.all([loadUsers(), loadGames(), loadReviews()])
@@ -136,7 +137,10 @@ async function deleteUserCollection(userId) {
 
 <template>
     <div class="page">
-        <div class="wrapper">
+        <div v-if="accessDenied" class="wrapper">
+            <h1 class="admin-title">Piekļuve liegta</h1>
+        </div>
+        <div v-else class="wrapper">
             <h1 class="admin-title">Administratora Panelis</h1>
 
             <v-expansion-panels variant="accordion" class="panels">

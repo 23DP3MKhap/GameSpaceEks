@@ -33,7 +33,7 @@ class AuthController extends Controller
         ]);
         
         if (!Auth::attempt($credentials)){
-            return response()->json(['message' => 'wrong credentials'], 401);
+            return response()->json(['message' => 'Nepareizs e-pasts vai parole'], 401);
         }
         
         $user = Auth::user();
@@ -47,14 +47,14 @@ class AuthController extends Controller
     
     public function logout(Request $request){
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'logged out']);
+        return response()->json(['message' => 'Izrakstīšanās veiksmīga']);
     }
 
     public function sendVerificationCode(Request $request){
         $user = $request->user();
 
         if ($user->email_verified) {
-            return response()->json(['message' => 'already verified'], 409);
+            return response()->json(['message' => 'E-pasts jau ir apstiprināts'], 409);
         }
 
         $code = (string) random_int(100000, 999999);
@@ -76,7 +76,7 @@ class AuthController extends Controller
             ])->throw();
         } catch (ConnectionException | RequestException $e) {
             report($e);
-            return response()->json(['message' => 'send failed'], 502);
+            return response()->json(['message' => 'Neizdevās nosūtīt e-pastu. Mēģini vēlreiz vēlāk.'], 502);
         }
 
         $user->update([
@@ -84,7 +84,7 @@ class AuthController extends Controller
             'verification_code_expires_at' => now()->addMinutes(15),
         ]);
 
-        return response()->json(['message' => 'sent']);
+        return response()->json(['message' => 'Kods nosūtīts']);
     }
 
     public function verifyCode(Request $request){
@@ -92,11 +92,11 @@ class AuthController extends Controller
         $user = $request->user();
 
         if ($user->verification_code === null || !hash_equals($user->verification_code, $validated['code'])) {
-            return response()->json(['message' => 'wrong code'], 422);
+            return response()->json(['message' => 'Nepareizs kods. Mēģini vēlreiz.'], 422);
         }
 
         if ($user->verification_code_expires_at->isPast()) {
-            return response()->json(['message' => 'code expired'], 422);
+            return response()->json(['message' => 'Kods vairs nav derīgs.'], 422);
         }
 
         $user->update([

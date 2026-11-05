@@ -61,10 +61,10 @@ class GameController extends Controller
                 'source'    => 'igdb',
                 'title'     => $game['name'],
                 'image'     => Game::coverUrl($game) ?? 'https://placehold.co/600x400',
-                'genre'     => collect($game['genres'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
-                'platforms' => collect($game['platforms'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
-                'developer' => $companies['developer'] ?? 'Unknown',
-                'publisher' => $companies['publisher'] ?? 'Unknown',
+                'genre'     => collect($game['genres'] ?? [])->pluck('name')->join(', ') ?: 'Nav zināms',
+                'platforms' => collect($game['platforms'] ?? [])->pluck('name')->join(', ') ?: 'Nav zināms',
+                'developer' => $companies['developer'] ?? 'Nav zināms',
+                'publisher' => $companies['publisher'] ?? 'Nav zināms',
             ];
         });
         }

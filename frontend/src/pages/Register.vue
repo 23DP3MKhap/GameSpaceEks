@@ -67,9 +67,9 @@ async function verifyCode() {
         dialog.value = true
         router.push("/")
     } catch (error) {
-        verificationError.value = error.response?.data?.message === 'code expired'
-            ? 'Kods vairs nav derīgs.'
-            : 'Nepareizs kods. Mēģini vēlreiz.'
+        verificationError.value = !error.response || error.response.data.errors
+            ? 'Nepareizs kods. Mēģini vēlreiz.'
+            : error.response.data.message
     } finally {
         verificationLoading.value = false
     }
@@ -164,7 +164,7 @@ const usernameRules = [
 
 <template>
     <div class="page">
-        <div class="background"><img alt="Background" src="/backgrounds/register-background.png"></div>
+        <div class="background"><img alt="Fons" src="/backgrounds/register-background.png"></div>
         <div class="page-wrapper">
             <div class="register-form">
                 <v-form v-model="valid" @submit.prevent="register">

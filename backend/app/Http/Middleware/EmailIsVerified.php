@@ -16,7 +16,7 @@ class EmailIsVerified
     public function handle(Request $request, Closure $next): Response
     {
         if (!$request->user()->email_verified) {
-            return response()->json(['message' => 'Email not verified'], 403);
+            return response()->json(['message' => 'Apstiprini savu e-pasta adresi, lai izmantotu šo funkciju'], 403);
         }
 
         return $next($request);

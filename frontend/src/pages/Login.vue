@@ -8,7 +8,8 @@
     const password = ref("")
     const valid = ref(false)
     const dialog = ref(false)
-    const dialogerror = ref(false)  
+    const dialogerror = ref(false)
+    const loginError = ref('')
     async function login(){
     try{
         const response = await axios.post("/api/login", {email: email.value, password: password.value})
@@ -20,8 +21,8 @@
         dialog.value = true
         router.push("/")
     }catch (error) {
+        loginError.value = error.response?.data?.message ?? 'Neizdevās pieteikties. Mēģini vēlreiz.'
         dialogerror.value = true
-        return console.log("Error")
     }}
 </script>
 
@@ -97,7 +98,7 @@
         <v-card class="v-card" color="black">
             <v-card-title class="v-card-title">Pieteikšanās kļūda</v-card-title>
             <v-card-text class="v-card-text">
-                Lūdzu pārbaudi e-pastu un paroli un mēģini vēlreiz.
+                {{ loginError }}
             </v-card-text>
 
           <v-card-actions>

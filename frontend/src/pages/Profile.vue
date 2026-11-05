@@ -194,9 +194,9 @@ async function verifyCode() {
         auth.user.email_verified = true
         verificationDialog.value = false
     } catch (error) {
-        verificationError.value = error.response?.data?.message === 'code expired'
-            ? 'Kods vairs nav derīgs.'
-            : 'Nepareizs kods. Mēģini vēlreiz.'
+        verificationError.value = !error.response || error.response.data.errors
+            ? 'Nepareizs kods. Mēģini vēlreiz.'
+            : error.response.data.message
     } finally {
         verificationLoading.value = false
     }

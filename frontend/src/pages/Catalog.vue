@@ -439,7 +439,7 @@
                             <div class="reviews-list">
                                 <div v-for="review in sortedReviews" :key="review.id" class="review-item">
                                     <div class="review-avatar-wrap">
-                                        <img v-if="review.user?.avatar_url" :src="review.user.avatar_url" class="review-avatar-img" alt="userAvatar" @error="$event.target.src = 'https://placehold.co/150/212121/white?text=U'">
+                                        <img v-if="review.user?.avatar_url" :src="review.user.avatar_url" class="review-avatar-img" alt="Lietotāja attēls" @error="$event.target.src = 'https://placehold.co/150/212121/white?text=U'">
                                         <div v-else class="review-avatar-placeholder">
                                             {{review.user.username[0].toUpperCase()}}
                                         </div>
