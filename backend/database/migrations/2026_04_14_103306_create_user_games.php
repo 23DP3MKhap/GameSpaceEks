@@ -11,16 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('collections', function (Blueprint $table) {
-            $table->id();
+        Schema::create('user_games', function (Blueprint $table) {
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('game_id')->constrained()->onDelete('cascade');
-            $table->enum('status', ['Spēlēju', 'Pabeigta', 'Plānots', 'Pārtraukts'])->default('Plānots');
-            $table->integer('user_score')->nullable(); 
-            $table->text('notes')->nullable();
-            $table->timestamps();
+            $table->enum('status', ['playing', 'completed', 'planned', 'dropped'])->default('planned');
+            $table->integer('rating')->nullable();
+            $table->text('note')->nullable();
+            $table->timestamp('added_at')->useCurrent();
 
-            $table->unique(['user_id', 'game_id']);
+            $table->primary(['user_id', 'game_id']);
         });
     }
 
@@ -29,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('collections');
+        Schema::dropIfExists('user_games');
     }
 };

@@ -13,7 +13,7 @@ const profileAvatar = ref(null)
 const counts = ref({ all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 })
 const collection = ref([])
 const deleteConfirmation = ref(false)
-const activeFilter = ref('Visi')
+const activeFilter = ref('all')
 const sortOrder = ref('desc')
 const settingsPasswordConfirm = ref('')
 const settingsDialog = ref(false)
@@ -41,18 +41,18 @@ const profileIsPrivate = ref(false)
 const profileNotFound = ref(false)
 
 const filters = [
-    { key: 'Visi', label: 'Visi' },
-    { key: 'Spēlēju', label: 'Spēlēju' },
-    { key: 'Pabeigta', label: 'Pabeigta' },
-    { key: 'Plānots', label: 'Plānots' },
-    { key: 'Pārtraukts', label: 'Pārtraukts' },
+    { key: 'all', label: 'Visi' },
+    { key: 'playing', label: 'Spēlēju' },
+    { key: 'completed', label: 'Pabeigta' },
+    { key: 'planned', label: 'Plānots' },
+    { key: 'dropped', label: 'Pārtraukts' },
 ]
 
 const statusMeta = {
-    Spēlēju:   { color: '#38ef7d', label: 'Spēlēju' },
-    Pabeigta: { color: '#4a9eff', label: 'Pabeigta' },
-    Plānots:   { color: '#aaa', label: 'Plānots' },
-    Pārtraukts:   { color: '#ff5f5f', label: 'Pārtraukts' },
+    playing:   { color: '#38ef7d', label: 'Spēlēju' },
+    completed: { color: '#4a9eff', label: 'Pabeigta' },
+    planned:   { color: '#aaa', label: 'Plānots' },
+    dropped:   { color: '#ff5f5f', label: 'Pārtraukts' },
 }
 
 
@@ -161,12 +161,12 @@ async function loadCollection(status = null) {
     catch(error){
         if (error.response?.status === 403) {
             collection.value = []
-            counts.value = { Visi: 0, Spēlēju: 0, Pabeigta: 0, Plānots: 0, Pārtraukts: 0 }
+            counts.value = { all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 }
             collectionStatus.value = 'Profils ir iestatīts kā privāts'
         }
         else{
             collection.value = []
-            counts.value = { Visi: 0, Spēlēju: 0, Pabeigta: 0, Plānots: 0, Pārtraukts: 0 }
+            counts.value = { all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 }
             collectionStatus.value = 'Ielādējot kolekciju, radās kļūda.'
         }
     }
@@ -244,7 +244,7 @@ async function saveSettings() {
 
         auth.user = updatedUser.data
         profileIsPrivate.value = settingsIsPrivate.value
-        profileusername.value = settingsUsername.value || auth.user.name
+        profileusername.value = settingsUsername.value || auth.user.username
         profileBio.value = settingsBio.value
         profileAvatar.value = settingsAvatarUrl.value || null
         settingsDialog.value = false
@@ -277,21 +277,21 @@ onMounted(async () => {
         profileNotFound.value = true
         return
     }
-    profileIsPrivate.value = userData.isPrivate
-    profileusername.value = userData.name
+    profileIsPrivate.value = userData.is_private
+    profileusername.value = userData.username
     profileBio.value = userData.bio
-    profileAvatar.value = userData.avatar
+    profileAvatar.value = userData.avatar_url
     profileRole.value = userData.role
 
     await loadCollection()
 })
 
 watch(activeFilter, (filter) => {
-    loadCollection(filter === 'Visi' ? null : filter)
+    loadCollection(filter === 'all' ? null : filter)
 })
 
 watch(sortOrder, () => {
-    loadCollection(activeFilter.value === 'Visi' ? null : activeFilter.value)
+    loadCollection(activeFilter.value === 'all' ? null : activeFilter.value)
 })
 
 watch(settingsUsername, () => { delete settingsErrors.value.username })
@@ -361,18 +361,18 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                 </div>
 
                 <div class="collection-grid">
-                    <div class="game-entry" v-for="item in collection" :key="item.id">
-                        <img :src="item.game.image" :alt="item.game.name" class="entry-cover">
+                    <div class="game-entry" v-for="item in collection" :key="item.game.id">
+                        <img :src="item.game.image" :alt="item.game.title" class="entry-cover">
                         <div class="entry-info">
-                            <div class="entry-name">{{ item.game.name }}</div>
+                            <div class="entry-name">{{ item.game.title }}</div>
                             <div class="entry-status" :style="{ color: statusMeta[item.status].color }">
                                 <span class="status-dot" :style="{ background: statusMeta[item.status].color }"></span>
                                 {{ statusMeta[item.status].label }}
                             </div>
-                            <div class="entry-notes" v-if="item.notes">{{ item.notes }}</div>
+                            <div class="entry-notes" v-if="item.note">{{ item.note }}</div>
                         </div>
-                        <div class="entry-score" v-if="item.user_score !== null">
-                            <span class="score-num">{{ item.user_score }}</span>
+                        <div class="entry-score" v-if="item.rating !== null">
+                            <span class="score-num">{{ item.rating }}</span>
                             <span class="score-max">/10</span>
                         </div>
                     </div>

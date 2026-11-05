@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Collection;
+use App\Models\UserGame;
 use App\Models\Game;
 use App\Models\User;
 use App\Services\IgdbClient;
@@ -78,7 +78,7 @@ class DatabaseSeeder extends Seeder
         DB::table('games')->updateOrInsert(
                 ['id' => $game['id']],
                 [
-                    'name'         => $game['name'],
+                    'title'        => $game['name'],
                     'developer'    => $companies['developer'],
                     'publisher'    => $companies['publisher'],
                     'release_date' => $releaseDate,
@@ -94,7 +94,7 @@ class DatabaseSeeder extends Seeder
                 foreach ($game['genres'] as $genre) {
                     $exists = DB::table('genres')->where('id', $genre['id'])->exists();
                     if ($exists) {
-                        DB::table('game_genre')->updateOrInsert([
+                        DB::table('game_genres')->updateOrInsert([
                             'game_id'  => $game['id'],
                             'genre_id' => $genre['id'],
                         ]);
@@ -106,7 +106,7 @@ class DatabaseSeeder extends Seeder
                 foreach ($game['platforms'] as $platform) {
                     $exists = DB::table('platforms')->where('id', $platform['id'])->exists();
                     if ($exists) {
-                        DB::table('game_platform')->updateOrInsert([
+                        DB::table('game_platforms')->updateOrInsert([
                             'game_id'     => $game['id'],
                             'platform_id' => $platform['id'],
                         ]);
@@ -121,29 +121,29 @@ class DatabaseSeeder extends Seeder
 
          $users = [
             [
-                'name'     => 'Admin',
+                'username' => 'Admin',
                 'email'    => 'admin@example.com',
-                'password' => 'password',
+                'password_hash' => 'password',
                 'role'     => 'admin',
                 'bio'      => 'Administrators',
-                'avatar'   => null,
-                'isPrivate'=> false,
+                'avatar_url' => null,
+                'is_private' => false,
             ],
-            ['name' => 'Kaspars88',    'email' => 'kaspars@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'Man ļoti patīk lomu spēles', 'avatar' => 'https://i.pinimg.com/736x/47/e2/c1/47e2c13c533c5d1e87c98cf6fdd83ff1.jpg', 'isPrivate' => false],
-            ['name' => 'LaimaGamer',   'email' => 'laima@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'Indie spēles ir labākās lietas', 'avatar' => null, 'isPrivate' => false],
-            ['name' => 'MartinsLV',    'email' => 'martins@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'regulāri piedalos turnīros', 'avatar' => 'https://i.pinimg.com/736x/a9/9d/13/a99d13e02080ac70dd218005e25dc33e.jpg', 'isPrivate' => true],
-            ['name' => 'Zane_plays',   'email' => 'zane@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'es spēlēju tikai Souls spēles', 'avatar' => null, 'isPrivate' => false],
-            ['name' => 'EdgarsK',      'email' => 'edgars@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'Valorant - imo, CS - 10lvl', 'avatar' => null, 'isPrivate' => false],
-            ['name' => 'IevaNeko',     'email' => 'ieva@example.com', 'password' => 'password', 'role' => 'user', 'bio' => '', 'avatar' => null, 'isPrivate' => true],
-            ['name' => 'RaivisPro',    'email' => 'raivis@example.com', 'password' => 'password', 'role' => 'user', 'bio' => '', 'avatar' => null, 'isPrivate' => false],
-            ['name' => 'AnnaPixel',    'email' => 'anna@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'Man patīk zīmēt', 'avatar' => 'https://i.pinimg.com/736x/b6/01/24/b6012426829dff1e2feb2f817f6391b3.jpg', 'isPrivate' => false],
-            ['name' => 'JanisSpeed',   'email' => 'janis@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'Man ļoti patīk pixel art', 'avatar' => null, 'isPrivate' => false],
-            ['name' => 'DianaRPG',     'email' => 'diana@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'profesionāls kļūdu detektīvs', 'avatar' => 'https://i.pinimg.com/736x/d7/d2/23/d7d223976fc5d8e02a0584ff8dcb11d1.jpg', 'isPrivate' => false],
-            ['name' => 'TomsMetal',    'email' => 'toms@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'es spēlēju šausmu spēles', 'avatar' => 'https://i.pinimg.com/736x/0d/4a/2d/0d4a2d3b6add65506932c2429935c074.jpg', 'isPrivate' => true],
-            ['name' => 'SandraQuest',  'email' => 'sandra@example.com', 'password' => 'password', 'role' => 'user', 'bio' => '4000 stundas vizuālo romānu', 'avatar' => null, 'isPrivate' => false],
-            ['name' => 'Kristaps_GG',  'email' => 'kristaps@example.com', 'password' => 'password', 'role' => 'user', 'bio' => 'Es skatos tikai turnīrus', 'avatar' => 'https://i.pinimg.com/736x/21/11/f3/2111f394ebf84290a7f2b14d8525d754.jpg', 'isPrivate' => false],
-            ['name' => 'ValentinaLV',  'email' => 'valentina@example.com', 'password' => 'password', 'role' => 'user', 'bio' => '', 'avatar' => 'https://i.pinimg.com/736x/89/eb/e3/89ebe3f226d72c28b773b7e73f5a2999.jpg', 'isPrivate' => false],
-            ['name' => 'NorbertsX',    'email' => 'norberts@example.com', 'password' => 'password', 'role' => 'user', 'bio' => '', 'avatar' => 'https://i.pinimg.com/736x/25/2d/40/252d40807fced95bacc787c66758502d.jpg', 'isPrivate' => false],
+            ['username' => 'Kaspars88',    'email' => 'kaspars@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Man ļoti patīk lomu spēles', 'avatar_url' => 'https://i.pinimg.com/736x/47/e2/c1/47e2c13c533c5d1e87c98cf6fdd83ff1.jpg', 'is_private' => false],
+            ['username' => 'LaimaGamer',   'email' => 'laima@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Indie spēles ir labākās lietas', 'avatar_url' => null, 'is_private' => false],
+            ['username' => 'MartinsLV',    'email' => 'martins@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'regulāri piedalos turnīros', 'avatar_url' => 'https://i.pinimg.com/736x/a9/9d/13/a99d13e02080ac70dd218005e25dc33e.jpg', 'is_private' => true],
+            ['username' => 'Zane_plays',   'email' => 'zane@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'es spēlēju tikai Souls spēles', 'avatar_url' => null, 'is_private' => false],
+            ['username' => 'EdgarsK',      'email' => 'edgars@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Valorant - imo, CS - 10lvl', 'avatar_url' => null, 'is_private' => false],
+            ['username' => 'IevaNeko',     'email' => 'ieva@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '', 'avatar_url' => null, 'is_private' => true],
+            ['username' => 'RaivisPro',    'email' => 'raivis@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '', 'avatar_url' => null, 'is_private' => false],
+            ['username' => 'AnnaPixel',    'email' => 'anna@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Man patīk zīmēt', 'avatar_url' => 'https://i.pinimg.com/736x/b6/01/24/b6012426829dff1e2feb2f817f6391b3.jpg', 'is_private' => false],
+            ['username' => 'JanisSpeed',   'email' => 'janis@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Man ļoti patīk pixel art', 'avatar_url' => null, 'is_private' => false],
+            ['username' => 'DianaRPG',     'email' => 'diana@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'profesionāls kļūdu detektīvs', 'avatar_url' => 'https://i.pinimg.com/736x/d7/d2/23/d7d223976fc5d8e02a0584ff8dcb11d1.jpg', 'is_private' => false],
+            ['username' => 'TomsMetal',    'email' => 'toms@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'es spēlēju šausmu spēles', 'avatar_url' => 'https://i.pinimg.com/736x/0d/4a/2d/0d4a2d3b6add65506932c2429935c074.jpg', 'is_private' => true],
+            ['username' => 'SandraQuest',  'email' => 'sandra@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '4000 stundas vizuālo romānu', 'avatar_url' => null, 'is_private' => false],
+            ['username' => 'Kristaps_GG',  'email' => 'kristaps@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Es skatos tikai turnīrus', 'avatar_url' => 'https://i.pinimg.com/736x/21/11/f3/2111f394ebf84290a7f2b14d8525d754.jpg', 'is_private' => false],
+            ['username' => 'ValentinaLV',  'email' => 'valentina@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '', 'avatar_url' => 'https://i.pinimg.com/736x/89/eb/e3/89ebe3f226d72c28b773b7e73f5a2999.jpg', 'is_private' => false],
+            ['username' => 'NorbertsX',    'email' => 'norberts@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '', 'avatar_url' => 'https://i.pinimg.com/736x/25/2d/40/252d40807fced95bacc787c66758502d.jpg', 'is_private' => false],
         ];
  
         $userIds = [];
@@ -151,12 +151,12 @@ class DatabaseSeeder extends Seeder
             $user = User::firstOrCreate(
                 ['email' => $userData['email']],
                 [
-                    'name'      => $userData['name'],
-                    'password'  => $userData['password'],
+                    'username'      => $userData['username'],
+                    'password_hash' => $userData['password_hash'],
                     'role'      => $userData['role'],
                     'bio'       => $userData['bio'],
-                    'avatar'    => $userData['avatar'],
-                    'isPrivate' => $userData['isPrivate'],
+                    'avatar_url'    => $userData['avatar_url'],
+                    'is_private'    => $userData['is_private'],
                     'email_verified' => true,
                 ]
             );
@@ -166,21 +166,20 @@ class DatabaseSeeder extends Seeder
 
         // Collections
 
-        $statuses = Collection::STATUSES;
+        $statuses = UserGame::STATUSES;
    
 
         foreach ($userIds as $userId) {
             $userGames = collect($gameIds)->shuffle()->take(rand(3, 7));
             foreach ($userGames as $gameId) {
                 $status = $statuses[rand(0, 3)];
-                DB::table('collections')->updateOrInsert(
+                DB::table('user_games')->updateOrInsert(
                     ['user_id' => $userId, 'game_id' => $gameId],
                     [
                         'status'     => $status,
-                        'user_score' => rand(1, 10),
-                        'notes'      => $this->randomNote($status),
-                        'created_at' => now(),
-                        'updated_at' => now(),
+                        'rating'     => rand(1, 10),
+                        'note'       => $this->randomNote($status),
+                        'added_at'   => now(),
                     ]
                 );
             }

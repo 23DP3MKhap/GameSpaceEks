@@ -59,7 +59,7 @@ class GameController extends Controller
             return [
                 'id'        => $game['id'],
                 'source'    => 'igdb',
-                'name'      => $game['name'],
+                'title'     => $game['name'],
                 'image'     => Game::coverUrl($game) ?? 'https://placehold.co/600x400',
                 'genre'     => collect($game['genres'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',
                 'platforms' => collect($game['platforms'] ?? [])->pluck('name')->join(', ') ?: 'Unknown',

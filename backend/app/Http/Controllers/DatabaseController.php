@@ -8,7 +8,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Models\Game;
 use App\Models\Review;
-use App\Models\Collection;
+use App\Models\UserGame;
 use App\Models\Genre;
 use App\Models\Platform;
 use App\Models\User;
@@ -42,7 +42,7 @@ class DatabaseController extends Controller
 
     $game = Game::create([
         'id' => $resData['id'],
-        'name' => $resData['name'],
+        'title' => $resData['name'],
         'description' => $resData['summary'] ?? null,
         'developer' => $companies['developer'],
         'publisher' => $companies['publisher'],
@@ -83,34 +83,34 @@ class DatabaseController extends Controller
     public function addToCollection(Request $request){
         $validated = $request->validate([
         'game_id' => 'required|integer|exists:games,id',
-        'status' => ['required', Rule::in(Collection::STATUSES)],
-        'user_score' => 'nullable|integer|min:1|max:10',
-        'notes' => 'nullable|string|max:50',
+        'status' => ['required', Rule::in(UserGame::STATUSES)],
+        'rating' => 'nullable|integer|min:1|max:10',
+        'note' => 'nullable|string|max:50',
     ]);
 
-    Collection::updateOrCreate(
+    UserGame::query()->updateOrInsert(
         [
-            'user_id' => $request->user()->id, 
+            'user_id' => $request->user()->id,
             'game_id' => $validated['game_id']
         ],
         [
             'status' => $validated['status'],
-            'user_score' => $validated['user_score'] ?? null,
-            'notes'  => $validated['notes'] ?? null,
+            'rating' => $validated['rating'] ?? null,
+            'note'  => $validated['note'] ?? null,
         ]);
     }
 
     public function removeFromCollection(Request $request){
         $request->validate(['game_id' => 'required|integer']);
         $userId = $request->user()->id;
-        Collection::where('game_id', $request->game_id)->where('user_id', $userId)->delete();
+        UserGame::where('game_id', $request->game_id)->where('user_id', $userId)->delete();
     }
 
     public function updateUser(Request $request){
         $user = $request->user(); 
         $validated = $request->validate([
             'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
-            'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][\w]*$/|unique:users,name,' . $user->id,
+            'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][\w]*$/|unique:users,username,' . $user->id,
             'bio' => 'sometimes|nullable|string|max:50',
             'avatar_url' => 'sometimes|nullable|max:2048|regex:/^https?:\/\/.+/',
             'password' => 'sometimes|nullable|string|min:8|max:255',
@@ -122,7 +122,7 @@ class DatabaseController extends Controller
         $passwordChanged = !empty($validated['password']);
 
         if (($emailChanged || $passwordChanged)
-            && !Hash::check($validated['current_password'] ?? '', $user->password)) {
+            && !Hash::check($validated['current_password'] ?? '', $user->password_hash)) {
             throw ValidationException::withMessages([
                 'current_password' => 'wrong current password',
             ]);
@@ -135,19 +135,19 @@ class DatabaseController extends Controller
             $user->verification_code_expires_at = null;
         }
         if (isset($validated['username'])) {
-            $user->name = $validated['username'];
+            $user->username = $validated['username'];
         }
         if (array_key_exists('bio', $validated)) {
             $user->bio = $validated['bio'];
         }
         if (array_key_exists('avatar_url', $validated)) {
-            $user->avatar = $validated['avatar_url'];
+            $user->avatar_url = $validated['avatar_url'];
         }
         if (array_key_exists('is_private', $validated)) {
-            $user->isPrivate = $validated['is_private'];
+            $user->is_private = $validated['is_private'];
         }
         if ($passwordChanged) {
-            $user->password = $validated['password'];
+            $user->password_hash = $validated['password'];
         }
 
         $user->save();
@@ -175,7 +175,7 @@ class DatabaseController extends Controller
 {
     $request->validate(['game_id' => 'required|integer']);
 
-    $reviews = Review::with('user:id,name,avatar')
+    $reviews = Review::with('user:id,username,avatar_url')
         ->where('game_id', $request->game_id)
         ->latest()
         ->get()
@@ -190,8 +190,8 @@ class DatabaseController extends Controller
                 'created_at' => $review->created_at->format('Y-m-d'),
                 'user' => [
                     'id' => $review->user->id,
-                    'name' => $review->user->name,
-                    'avatar' => $review->user->avatar,
+                    'username' => $review->user->username,
+                    'avatar_url' => $review->user->avatar_url,
                 ],
             ];
         });
@@ -230,7 +230,7 @@ class DatabaseController extends Controller
         $rules = Game::with(['genres', 'platforms']);
 
         if ($search) {
-            $rules->where('name', 'like', "%{$search}%");
+            $rules->where('title', 'like', "%{$search}%");
         }
 
         if (!empty($genres)) {
@@ -249,7 +249,7 @@ class DatabaseController extends Controller
         return $games->map(function ($game) {
         return [
             'id' => $game->id,
-            'name' => $game->name,
+            'title' => $game->title,
             'image' => $game->cover_url ?? 'https://placehold.co/600x400',
             'genre' => $game->genres->pluck('name')->join(', ') ?: 'Unknown',
             'platforms' => $game->platforms->pluck('name')->join(', ') ?: 'Unknown',
@@ -263,21 +263,21 @@ class DatabaseController extends Controller
     public function getCollection(Request $request){
     $request->validate([
         'user_id' => 'required|integer', 
-        'status'  => ['sometimes', 'nullable', Rule::in(Collection::STATUSES)],
+        'status'  => ['sometimes', 'nullable', Rule::in(UserGame::STATUSES)],
     ]);
 
     $profileUser = User::findOrFail($request->user_id);
     $user = auth('sanctum')->user();
     $isOwner = $user && $user->id == $request->user_id;
 
-    if ($profileUser->isPrivate && !$isOwner) {
+    if ($profileUser->is_private && !$isOwner) {
         return response()->json(['message' => 'Profils ir privāts'], 403);
     }
 
-    $baserules = Collection::where('user_id', $request->user_id);
+    $baserules = UserGame::where('user_id', $request->user_id);
     $counts = (clone $baserules)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
-    $stats = ['Visi' => $counts->sum()];
-    foreach (Collection::STATUSES as $status) {
+    $stats = ['all' => $counts->sum()];
+    foreach (UserGame::STATUSES as $status) {
         $stats[$status] = $counts[$status] ?? 0;
     }
 
@@ -285,20 +285,19 @@ class DatabaseController extends Controller
         $baserules->where('status', $request->status);
     }
     if ($request->sort){
-        $baserules->orderBy('user_score', $request->sort);
+        $baserules->orderBy('rating', $request->sort);
     }
 
     $collection = $baserules->with('game')->get()->map(function ($item) {
         return [
-            'id' => $item->id,
             'game' => [
                 'id' => $item->game->id,
-                'name' => $item->game->name,
-                'image' => $item->game->cover_url ?? 'https://placehold.co/60x80/111/444?text=' . urlencode($item->game->name),
+                'title' => $item->game->title,
+                'image' => $item->game->cover_url ?? 'https://placehold.co/60x80/111/444?text=' . urlencode($item->game->title),
             ],
             'status' => $item->status,
-            'user_score' => $item->user_score,
-            'notes' => $item->notes ?? '',
+            'rating' => $item->rating,
+            'note' => $item->note ?? '',
         ];
     });
 
@@ -311,15 +310,15 @@ class DatabaseController extends Controller
     
 
     public function checkCollection(Request $request){
-    $collection = Collection::where('user_id', auth()->id())
+    $collection = UserGame::where('user_id', auth()->id())
         ->where('game_id', $request->game_id)
         ->first();
 
     return [
         'exists' => $collection !== null,
         'status' => $collection?->status,
-        'user_score' => $collection?->user_score,
-        'notes' => $collection?->notes,
+        'rating' => $collection?->rating,
+        'note' => $collection?->note,
     ];
 }
 

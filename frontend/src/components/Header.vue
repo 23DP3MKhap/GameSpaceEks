@@ -26,14 +26,14 @@
 
             if (auth.user.email_verified){
                 items.unshift({
-                  title: `${auth.user.name}`,
+                  title: `${auth.user.username}`,
                   to: `/User/${auth.user.id}/Profile`
                 })
             }
 
             else{
                 items.unshift({
-                  title: `${auth.user.name} (nepārbaudīts)`,
+                  title: `${auth.user.username} (nepārbaudīts)`,
                   to: `/User/${auth.user.id}/Profile`
                 })
             }
@@ -85,7 +85,7 @@
                 <nav>
                 <router-link v-if="auth.user.role === 'admin'" :to = "{path: `/Admin`}" class="router-link"><a>Admins</a></router-link>
                 <router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link">
-                    <a>{{ auth.user.email_verified ? auth.user.name : `${auth.user.name} (nepārbaudīts)` }}</a>
+                    <a>{{ auth.user.email_verified ? auth.user.username : `${auth.user.username} (nepārbaudīts)` }}</a>
                 </router-link>
                 <p>|</p>
                 <a @click.prevent="logout">IZRAKSTĪTIES</a>

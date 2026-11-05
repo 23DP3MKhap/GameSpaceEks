@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('games', function (Blueprint $table) {  
             $table->unsignedBigInteger('id')->primary(); 
-            $table->string('name');
+            $table->string('title');
             $table->string('developer')->nullable();
             $table->string('publisher')->nullable();
             $table->date('release_date')->nullable();

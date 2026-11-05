@@ -45,7 +45,7 @@
           <div v-if="auth.user">
             <v-card class="v-about" variant="outlined">
                 <v-card-title class="about-title">LAIPNI LŪGTS!</v-card-title>
-                <v-card-text class="about-text"><router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link">Sveiks, {{ auth.user.name }}!</router-link></v-card-text>
+                <v-card-text class="about-text"><router-link :to = "{path: `/User/${auth.user.id}/Profile`}" class="router-link">Sveiks, {{ auth.user.username }}!</router-link></v-card-text>
                 <v-card-actions class="card-actions">
                   <router-link to="/Catalog" class="router-link"><v-btn class="card-register">KATALOGS</v-btn></router-link>
                   <span class="separator">|</span>

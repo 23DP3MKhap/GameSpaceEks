@@ -6,12 +6,12 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Game;
 use App\Models\Review;
-use App\Models\Collection;
+use App\Models\UserGame;
 
 class AdminController extends Controller
 {
     public function getUsers(Request $request){
-        return User::select('id', 'name', 'email', 'bio', 'avatar', 'role', 'created_at')
+        return User::select('id', 'username', 'email', 'bio', 'avatar_url', 'role', 'created_at')
             ->orderBy('id')
             ->paginate($this->perPage($request));
     }
@@ -19,10 +19,10 @@ class AdminController extends Controller
     public function updateUser(Request $request, $id){
         $user = User::findOrFail($id);
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:20|regex:/^[a-zA-Z][\w]*$/|unique:users,name,' . $id,
+            'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][\w]*$/|unique:users,username,' . $id,
             'email' => 'sometimes|email|max:255|unique:users,email,' . $id,
             'bio' => 'sometimes|nullable|string|max:50',
-            'avatar' => 'sometimes|nullable|url|max:2048',
+            'avatar_url' => 'sometimes|nullable|url|max:2048',
             'role' => 'sometimes|in:user,admin',
         ]);
         if (($validated['role'] ?? null) === 'user' && $request->user()->id == $id) {
@@ -41,7 +41,7 @@ class AdminController extends Controller
     }
 
     public function getGames(Request $request){
-        return Game::select('id', 'name', 'developer', 'publisher', 'release_date', 'rating', 'cover_url', 'description')
+        return Game::select('id', 'title', 'developer', 'publisher', 'release_date', 'rating', 'cover_url', 'description')
             ->orderBy('id')
             ->paginate($this->perPage($request));
     }
@@ -49,7 +49,7 @@ class AdminController extends Controller
     public function updateGame(Request $request, $id){
         $game = Game::findOrFail($id);
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
+            'title' => 'sometimes|string|max:255',
             'developer' => 'sometimes|nullable|string|max:255',
             'publisher' => 'sometimes|nullable|string|max:255',
             'release_date' => 'sometimes|nullable|date',
@@ -65,7 +65,7 @@ class AdminController extends Controller
     }
 
     public function getReviews(Request $request){
-        return Review::with(['user:id,name', 'game:id,name'])
+        return Review::with(['user:id,username', 'game:id,title'])
             ->orderBy('id')
             ->paginate($this->perPage($request));
     }
@@ -76,7 +76,7 @@ class AdminController extends Controller
 
     public function deleteUserCollection($id){
         User::findOrFail($id);
-        Collection::where('user_id', $id)->delete();
+        UserGame::where('user_id', $id)->delete();
     }
 
     private function perPage(Request $request){

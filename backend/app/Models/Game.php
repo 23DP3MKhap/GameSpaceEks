@@ -9,7 +9,7 @@ class Game extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        'id', 'name', 'developer', 'publisher', 
+        'id', 'title', 'developer', 'publisher',
         'release_date', 'description', 'cover_url', 'rating'
     ];
 
@@ -23,11 +23,11 @@ class Game extends Model
 
     public function genres(): BelongsToMany
     {
-        return $this->belongsToMany(Genre::class, 'game_genre');
+        return $this->belongsToMany(Genre::class, 'game_genres');
     }
 
     public function platforms(): BelongsToMany
     {
-        return $this->belongsToMany(Platform::class, 'game_platform');
+        return $this->belongsToMany(Platform::class, 'game_platforms');
     }
 }

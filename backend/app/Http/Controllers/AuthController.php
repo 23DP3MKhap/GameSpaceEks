@@ -13,14 +13,14 @@ class AuthController extends Controller
     public function register(Request $request){
         $userdata = $request->validate([
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'username' => ['required', 'unique:users,name', 'max:20', 'regex:/^[a-zA-Z][\w]*$/'],
+            'username' => ['required', 'unique:users,username', 'max:20', 'regex:/^[a-zA-Z][\w]*$/'],
             'password' => ['required', 'min:8', 'max:255'],
         ]);
 
         $user = new User();
         $user->email = $userdata['email'];
-        $user->name = $userdata['username'];
-        $user->password = $userdata['password'];
+        $user->username = $userdata['username'];
+        $user->password_hash = $userdata['password'];
         $user->save();
 
     }
@@ -112,13 +112,13 @@ class AuthController extends Controller
     }
 
     public function usernamecheck(Request $request){
-        $exists = User::where('name', $request->username)->exists();
+        $exists = User::where('username', $request->username)->exists();
         return ["exists" => $exists];
     }
 
     public function getuser(Request $request){
         $request->validate(['id' => 'required|integer']);
-        return User::select("name", "avatar", "bio", "isPrivate", "role")->findOrFail($request->id);
+        return User::select("username", "avatar_url", "bio", "is_private", "role")->findOrFail($request->id);
     }
 
 }

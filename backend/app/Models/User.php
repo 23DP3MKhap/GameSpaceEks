@@ -12,18 +12,20 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
 
+    protected $authPasswordName = 'password_hash';
+
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'username',
         'email',
-        'password',
-        'avatar',
+        'password_hash',
+        'avatar_url',
         'bio',
-        'isPrivate',
+        'is_private',
         'verification_code',
         'verification_code_expires_at',
         'email_verified'
@@ -35,7 +37,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        'password',
+        'password_hash',
         'remember_token',
         'verification_code',
         'verification_code_expires_at',
@@ -49,10 +51,10 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'email_verified' => 'boolean',
             'verification_code_expires_at' => 'datetime',
-            'password' => 'hashed',
-            'isPrivate' => 'boolean',
+            'password_hash' => 'hashed',
+            'is_private' => 'boolean',
         ];
     }
 }

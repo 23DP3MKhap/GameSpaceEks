@@ -23,7 +23,7 @@
     const reviewError = ref('')
     const reviews = ref([])
     const collectionExists = ref(false)
-    const collectionStatus = ref('Plānots')
+    const collectionStatus = ref('planned')
     const collectionScore = ref(5)
     const collectionNotes = ref('')
     const showCollectionForm = ref(false)
@@ -61,10 +61,10 @@
     ]
 })
     const statusVariants = [
-        { value: 'Plānots', label: 'Plānots' },
-        { value: 'Spēlēju', label: 'Spēlēju' },
-        { value: 'Pabeigta', label: 'Pabeigta' },
-        { value: 'Pārtraukts', label: 'Pārtraukts' },
+        { value: 'planned', label: 'Plānots' },
+        { value: 'playing', label: 'Spēlēju' },
+        { value: 'completed', label: 'Pabeigta' },
+        { value: 'dropped', label: 'Pārtraukts' },
     ]
 
     let timeout = null
@@ -253,7 +253,7 @@
         showCollectionForm.value = false
         reviewError.value = ''
         collectionError.value = ''
-        collectionStatus.value = 'Plānots'
+        collectionStatus.value = 'planned'
         collectionScore.value = 5
         collectionNotes.value = ''
 
@@ -262,8 +262,8 @@
             if (res.data.exists) {
                 collectionExists.value = true
                 collectionStatus.value = res.data.status
-                collectionScore.value = res.data.user_score
-                collectionNotes.value = res.data.notes || ''
+                collectionScore.value = res.data.rating
+                collectionNotes.value = res.data.note || ''
             }
         }
 
@@ -284,8 +284,8 @@
             await axios.post("/api/database/addtocollection", {
                 game_id: gameId,
                 status: collectionStatus.value,
-                user_score: collectionScore.value,
-                notes: collectionNotes.value
+                rating: collectionScore.value,
+                note: collectionNotes.value
             })
         } catch {
             collectionError.value = 'Neizdevās saglabāt kolekcijā. Mēģini vēlreiz.'
@@ -346,9 +346,9 @@
             <div v-if="catalogEmpty"><p>Nav spēļu jūsu pieprasījumam, lūdzu mēģiniet citu</p></div>
             <section class="games-grid">
                 <div class="game-card" v-for="game in games" :key="game.id" @click="openGameModal(game)">
-                    <img :src="game.image" :alt="game.name" class="game-image">
+                    <img :src="game.image" :alt="game.title" class="game-image">
                     <div class="game-info">
-                        <h2>{{ game.name }}</h2>
+                        <h2>{{ game.title }}</h2>
                         <div class="genre">{{ game.genre }}</div>
                         <div class="meta">Izstrādātājs: {{ game.developer }}</div>
                         <div class="meta">Izdevējs: {{ game.publisher }}</div>
@@ -411,7 +411,7 @@
                         <div class="modal-stats" :style="showCollectionForm ? 'margin-top: 12px' : ''">
                             <div class="stat-item" v-if="collectionExists">
                                 <span class="stat-label">Statuss</span>
-                                <span class="stat-value">{{ collectionStatus }}</span>
+                                <span class="stat-value">{{ statusVariants.find(status => status.value === collectionStatus).label }}</span>
                             </div>
                             <div class="stat-item" v-if="collectionExists">
                                 <span class="stat-label">Jūsu Vērtējums</span>
@@ -430,7 +430,7 @@
 
                     <div class="modal-content-area">
                         <v-card-title class="modal-title">
-                            {{ selectedGame.name }}
+                            {{ selectedGame.title }}
                         </v-card-title>
 
                         <div class="reviews-section">
@@ -439,16 +439,16 @@
                             <div class="reviews-list">
                                 <div v-for="review in sortedReviews" :key="review.id" class="review-item">
                                     <div class="review-avatar-wrap">
-                                        <img v-if="review.user?.avatar" :src="review.user.avatar" class="review-avatar-img" alt="userAvatar" @error="$event.target.src = 'https://placehold.co/150/212121/white?text=U'">
+                                        <img v-if="review.user?.avatar_url" :src="review.user.avatar_url" class="review-avatar-img" alt="userAvatar" @error="$event.target.src = 'https://placehold.co/150/212121/white?text=U'">
                                         <div v-else class="review-avatar-placeholder">
-                                            {{review.user.name[0].toUpperCase()}}
+                                            {{review.user.username[0].toUpperCase()}}
                                         </div>
                                     </div>
                                 
                                     <div class="review-details">
                                         <div class="review-author">
                                             <span class="author-link" @click="router.push(`/User/${review.user?.id}/Profile`)">
-                                            {{ review.user.name }}
+                                            {{ review.user.username }}
                                             <span class="review-you" v-if="review.user?.id === auth.user?.id">jūs</span>
                                             </span>
                                             <span class="review-rating">{{ review.rating }}/10</span>

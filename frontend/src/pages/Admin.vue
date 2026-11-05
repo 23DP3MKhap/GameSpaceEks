@@ -164,7 +164,7 @@ async function deleteUserCollection(userId) {
                                                 {{ user.id }}
                                             </a>
                                         </td>
-                                        <td>{{ user.name }}</td>
+                                        <td>{{ user.username }}</td>
                                         <td>{{ user.email }}</td>
                                         <td>
                                             <span class="role-badge" :class="user.role === 'admin' ? 'role-admin' : 'role-user'">
@@ -173,8 +173,8 @@ async function deleteUserCollection(userId) {
                                         </td>
                                         <td class="actions">
                                             <button class="btn-edit" @click="openEditUser(user)">Rediģēt</button>
-                                            <button class="btn-warn" @click="confirm(`Notīrīt kolekciju lietotājam ${user.name}`, () => deleteUserCollection(user.id))">Notīrīt Kolekciju</button>
-                                            <button class="btn-delete" @click="confirm(`Dzēst lietotāju ${user.name}`, () => deleteUser(user.id))">Dzēst</button>
+                                            <button class="btn-warn" @click="confirm(`Notīrīt kolekciju lietotājam ${user.username}`, () => deleteUserCollection(user.id))">Notīrīt Kolekciju</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst lietotāju ${user.username}`, () => deleteUser(user.id))">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -212,13 +212,13 @@ async function deleteUserCollection(userId) {
                                 <tbody>
                                     <tr v-for="game in games.data" :key="game.id">
                                         <td>{{ game.id }}</td>
-                                        <td>{{ game.name }}</td>
+                                        <td>{{ game.title }}</td>
                                         <td>{{ game.developer || '-' }}</td>
                                         <td>{{ game.publisher || '-' }}</td>
                                         <td>{{ game.rating ? game.rating : '-' }}</td>
                                         <td class="actions">
                                             <button class="btn-edit" @click="openEditGame(game)">Rediģēt</button>
-                                            <button class="btn-delete" @click="confirm(`Dzēst spēli ${game.name}?`, () => deleteGame(game.id))">Dzēst</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst spēli ${game.title}?`, () => deleteGame(game.id))">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -257,13 +257,13 @@ async function deleteUserCollection(userId) {
                                 <tbody>
                                     <tr v-for="review in reviews.data" :key="review.id">
                                         <td>{{ review.id }}</td>
-                                        <td>{{ review.user?.name || '-' }}</td>
-                                        <td>{{ review.game?.name || '-' }}</td>
+                                        <td>{{ review.user?.username || '-' }}</td>
+                                        <td>{{ review.game?.title || '-' }}</td>
                                         <td>{{ review.title }}</td>
                                         <td class="content-cell">{{ review.content }}</td>
                                         <td>{{ review.rating }}/10</td>
                                         <td class="actions">
-                                            <button class="btn-delete" @click="confirm(`Dzēst atsauksmi no ${review.user?.name}?`, () => deleteReview(review.id))">Dzēst</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst atsauksmi no ${review.user?.username}?`, () => deleteReview(review.id))">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -290,7 +290,7 @@ async function deleteUserCollection(userId) {
                 <v-card-text class="v-card-text">
                     <div class="edit-field">
                         <label class="edit-label">Vārds</label>
-                        <input class="edit-input" maxlength="20" v-model="editingUser.name">
+                        <input class="edit-input" maxlength="20" v-model="editingUser.username">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">E-pasts</label>
@@ -302,7 +302,7 @@ async function deleteUserCollection(userId) {
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Avatara URL</label>
-                        <input class="edit-input" maxlength="2048" v-model="editingUser.avatar">
+                        <input class="edit-input" maxlength="2048" v-model="editingUser.avatar_url">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Loma</label>
@@ -331,7 +331,7 @@ async function deleteUserCollection(userId) {
                 <v-card-text class="v-card-text">
                     <div class="edit-field">
                         <label class="edit-label">Nosaukums</label>
-                        <input class="edit-input" v-model="editingGame.name">
+                        <input class="edit-input" v-model="editingGame.title">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Izstrādātājs</label>

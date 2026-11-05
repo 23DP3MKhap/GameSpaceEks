@@ -19,6 +19,8 @@ return new class extends Migration
             $table->text('content');
             $table->integer('rating');
             $table->timestamps();
+
+            $table->unique(['user_id', 'game_id']);
         });
     }
 
