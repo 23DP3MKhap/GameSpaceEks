@@ -112,7 +112,7 @@ const usernameRules = [
             return true
         },
         value => {
-            if (/^[a-zA-Z][\w]*$/.test(value)) return true
+            if (/^[a-zA-Z][a-zA-Z0-9]*$/.test(value)) return true
             
             return 'Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus.'
         }
@@ -176,16 +176,16 @@ const usernameRules = [
                         </v-col>
 
                         <v-col class="register-row" cols="12">
-                            <v-text-field v-model="email" :rules="emailRules" maxlength="255" label="E-pasts" required></v-text-field>
+                            <v-text-field v-model="email" :rules="emailRules" maxlength="50" label="E-pasts" required></v-text-field>
                         </v-col>
 
                         <v-col class="register-row" cols="12">
-                            <v-text-field type="password" v-model="password" :rules="passwordRules" maxlength="255" label="Parole" required></v-text-field>
+                            <v-text-field type="password" v-model="password" :rules="passwordRules" maxlength="250" label="Parole" required></v-text-field>
                         </v-col>
 
                         <v-col class="register-row" cols="12">
                             <v-text-field type="password" v-model="passwordConfirmation" :rules="passwordConfirmationRules"
-                             maxlength="255" label="Apstiprināt paroli" required></v-text-field>
+                             maxlength="250" label="Apstiprināt paroli" required></v-text-field>
                         </v-col>
 
                         <v-btn type="submit" :disabled="!valid" class="register-button">IZVEIDOT KONTU</v-btn>

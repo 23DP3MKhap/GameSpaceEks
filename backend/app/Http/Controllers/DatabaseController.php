@@ -38,16 +38,9 @@ class DatabaseController extends Controller
     }
 
     $resData = $response[0];
-    $companies = IgdbClient::companies($resData);
 
     $game = Game::create([
-        'id' => $resData['id'],
-        'title' => $resData['name'],
-        'description' => $resData['summary'] ?? null,
-        'developer' => $companies['developer'],
-        'publisher' => $companies['publisher'],
-        'release_date' => !empty($resData['first_release_date']) ? date('Y-m-d', $resData['first_release_date']) : null,
-        'cover_url' => Game::coverUrl($resData),
+        ...Game::fromIgdb($resData),
         'rating' => $resData['aggregated_rating'] ?? null,
     ]);
 
@@ -109,11 +102,11 @@ class DatabaseController extends Controller
     public function updateUser(Request $request){
         $user = $request->user(); 
         $validated = $request->validate([
-            'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
-            'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][\w]*$/|unique:users,username,' . $user->id,
-            'bio' => 'sometimes|nullable|string|max:50',
-            'avatar_url' => 'sometimes|nullable|max:2048|regex:/^https?:\/\/.+/',
-            'password' => 'sometimes|nullable|string|min:8|max:255',
+            'email' => 'sometimes|email|max:50|unique:users,email,' . $user->id,
+            'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][a-zA-Z0-9]*$/|unique:users,username,' . $user->id,
+            'bio' => 'sometimes|nullable|string|max:250',
+            'avatar_url' => 'sometimes|nullable|max:255|regex:/^https?:\/\/.+/',
+            'password' => 'sometimes|nullable|string|min:8|max:250',
             'is_private' => 'sometimes|boolean',
             'current_password' => 'sometimes|nullable|string',
         ]);

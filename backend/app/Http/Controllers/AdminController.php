@@ -19,10 +19,10 @@ class AdminController extends Controller
     public function updateUser(Request $request, $id){
         $user = User::findOrFail($id);
         $validated = $request->validate([
-            'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][\w]*$/|unique:users,username,' . $id,
-            'email' => 'sometimes|email|max:255|unique:users,email,' . $id,
-            'bio' => 'sometimes|nullable|string|max:50',
-            'avatar_url' => 'sometimes|nullable|url|max:2048',
+            'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][a-zA-Z0-9]*$/|unique:users,username,' . $id,
+            'email' => 'sometimes|email|max:50|unique:users,email,' . $id,
+            'bio' => 'sometimes|nullable|string|max:250',
+            'avatar_url' => 'sometimes|nullable|url|max:255',
             'role' => 'sometimes|in:user,admin',
         ]);
         if (($validated['role'] ?? null) === 'user' && $request->user()->id == $id) {
@@ -49,13 +49,13 @@ class AdminController extends Controller
     public function updateGame(Request $request, $id){
         $game = Game::findOrFail($id);
         $validated = $request->validate([
-            'title' => 'sometimes|string|max:255',
-            'developer' => 'sometimes|nullable|string|max:255',
-            'publisher' => 'sometimes|nullable|string|max:255',
+            'title' => 'sometimes|string|max:100',
+            'developer' => 'sometimes|nullable|string|max:50',
+            'publisher' => 'sometimes|nullable|string|max:50',
             'release_date' => 'sometimes|nullable|date',
             'rating' => 'sometimes|nullable|numeric|min:0|max:100',
-            'cover_url' => 'sometimes|nullable|url|max:2048',
-            'description' => 'sometimes|nullable|string',
+            'cover_url' => 'sometimes|nullable|url|max:250',
+            'description' => 'sometimes|nullable|string|max:1000',
         ]);
         $game->update($validated);
     }

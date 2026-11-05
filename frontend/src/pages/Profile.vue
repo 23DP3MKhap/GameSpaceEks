@@ -70,8 +70,8 @@ const avatarUrlRules = [
 ]
 
 const bioRules = [
-    value => { if (!value || value.length <= 50) return true
-    return "Biogrāfija nedrīkst būt garāka par 50 simboliem"
+    value => { if (!value || value.length <= 250) return true
+    return "Biogrāfija nedrīkst būt garāka par 250 simboliem"
     }
 ]
 
@@ -83,7 +83,7 @@ const needsCurrentPassword = computed(() => emailChanged.value || !!settingsPass
 
 const usernameRules = [
         value => {
-            if (/^[a-zA-Z][\w]*$/.test(value) || !value) return true
+            if (/^[a-zA-Z][a-zA-Z0-9]*$/.test(value) || !value) return true
 
             return 'Lietotājvārds nevar sākties ar ciparu vai saturēt speciālos simbolus.'
         },
@@ -399,7 +399,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                                 v-model="settingsAvatarUrl"
                                 label="Avatāra URL"
                                 placeholder="https://..."
-                                maxlength="2048"
+                                maxlength="255"
                                 counter
                                 variant="outlined"
                                 density="compact"
@@ -424,7 +424,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                             v-model="settingsEmail"
                             label="E-pasts"
                             placeholder="E-pasta adrese"
-                            maxlength="255"
+                            maxlength="50"
                             variant="outlined"
                             density="compact"
                             :rules="emailRules"
@@ -434,7 +434,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                         <v-textarea
                             v-model="settingsBio"
                             placeholder="Pastāsti kaut ko par sevi..."
-                            maxlength="50"
+                            maxlength="250"
                             counter
                             variant="outlined"
                             density="compact"
@@ -458,7 +458,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                             label="Jaunā parole"
                             placeholder="Atstāj tukšu, lai saglabātu pašreizējo"
                             type="password"
-                            maxlength="255"
+                            maxlength="250"
                             variant="outlined"
                             density="compact"
                             :rules="passwordRules"
@@ -472,7 +472,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                             label="Apstiprināt paroli"
                             placeholder="Atkārtojiet jauno paroli"
                             type="password"
-                            maxlength="255"
+                            maxlength="250"
                             variant="outlined"
                             density="compact"
                             :rules="passwordConfirmationRules"
@@ -484,7 +484,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                             label="Pašreizējā parole"
                             placeholder="Nepieciešama e-pasta vai paroles maiņai"
                             type="password"
-                            maxlength="255"
+                            maxlength="250"
                             variant="outlined"
                             density="compact"
                             :rules="currentPasswordRules"
@@ -778,7 +778,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
     color: #666;
     font-weight: 300;
     line-height: 1.5;
-    overflow: auto
+    overflow-wrap: anywhere;
 }
 
 .btn-settings {

@@ -294,15 +294,15 @@ async function deleteUserCollection(userId) {
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">E-pasts</label>
-                        <input class="edit-input" maxlength="255" v-model="editingUser.email">
+                        <input class="edit-input" maxlength="50" v-model="editingUser.email">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Biogrāfija</label>
-                        <textarea class="edit-input edit-textarea" maxlength="50" v-model="editingUser.bio"></textarea>
+                        <textarea class="edit-input edit-textarea" maxlength="250" v-model="editingUser.bio"></textarea>
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Avatara URL</label>
-                        <input class="edit-input" maxlength="2048" v-model="editingUser.avatar_url">
+                        <input class="edit-input" maxlength="255" v-model="editingUser.avatar_url">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Loma</label>
@@ -331,15 +331,15 @@ async function deleteUserCollection(userId) {
                 <v-card-text class="v-card-text">
                     <div class="edit-field">
                         <label class="edit-label">Nosaukums</label>
-                        <input class="edit-input" v-model="editingGame.title">
+                        <input class="edit-input" maxlength="100" v-model="editingGame.title">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Izstrādātājs</label>
-                        <input class="edit-input" v-model="editingGame.developer">
+                        <input class="edit-input" maxlength="50" v-model="editingGame.developer">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Izdevējs</label>
-                        <input class="edit-input" v-model="editingGame.publisher">
+                        <input class="edit-input" maxlength="50" v-model="editingGame.publisher">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Iznākšanas Datums</label>
@@ -351,11 +351,11 @@ async function deleteUserCollection(userId) {
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Vāka URL</label>
-                        <input class="edit-input" v-model="editingGame.cover_url">
+                        <input class="edit-input" maxlength="250" v-model="editingGame.cover_url">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Apraksts</label>
-                        <textarea class="edit-input edit-textarea" v-model="editingGame.description"></textarea>
+                        <textarea class="edit-input edit-textarea" maxlength="1000" v-model="editingGame.description"></textarea>
                     </div>
                     <div v-if="gameError" class="form-error">{{ gameError }}</div>
                 </v-card-text>

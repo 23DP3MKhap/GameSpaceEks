@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('games', function (Blueprint $table) {  
             $table->unsignedBigInteger('id')->primary(); 
-            $table->string('title');
-            $table->string('developer')->nullable();
-            $table->string('publisher')->nullable();
+            $table->string('title', 100);
+            $table->string('developer', 50)->nullable();
+            $table->string('publisher', 50)->nullable();
             $table->date('release_date')->nullable();
-            $table->longText('description')->nullable();
-            $table->string('cover_url', 2048)->nullable();
+            $table->string('description', 1000)->nullable();
+            $table->string('cover_url', 250)->nullable();
             $table->FLOAT('rating', 10, 2)->nullable();
             $table->timestamps();
 

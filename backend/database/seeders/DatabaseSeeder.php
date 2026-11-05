@@ -67,23 +67,10 @@ class DatabaseSeeder extends Seeder
                     limit 20;");
 
         foreach ($igdbGames as $game) {
-            $companies = IgdbClient::companies($game);
-
-
-        $releaseDate = null;
-            if (!empty($game['first_release_date'])) {
-                $releaseDate = date('Y-m-d', $game['first_release_date']);
-        }
-
         DB::table('games')->updateOrInsert(
                 ['id' => $game['id']],
                 [
-                    'title'        => $game['name'],
-                    'developer'    => $companies['developer'],
-                    'publisher'    => $companies['publisher'],
-                    'release_date' => $releaseDate,
-                    'description'  => $game['summary'] ?? null,
-                    'cover_url'    => Game::coverUrl($game),
+                    ...Game::fromIgdb($game),
                     'rating'       => $game['rating'] ?? null,
                     'created_at'   => now(),
                     'updated_at'   => now(),
@@ -132,7 +119,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'Kaspars88',    'email' => 'kaspars@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Man ļoti patīk lomu spēles', 'avatar_url' => 'https://i.pinimg.com/736x/47/e2/c1/47e2c13c533c5d1e87c98cf6fdd83ff1.jpg', 'is_private' => false],
             ['username' => 'LaimaGamer',   'email' => 'laima@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Indie spēles ir labākās lietas', 'avatar_url' => null, 'is_private' => false],
             ['username' => 'MartinsLV',    'email' => 'martins@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'regulāri piedalos turnīros', 'avatar_url' => 'https://i.pinimg.com/736x/a9/9d/13/a99d13e02080ac70dd218005e25dc33e.jpg', 'is_private' => true],
-            ['username' => 'Zane_plays',   'email' => 'zane@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'es spēlēju tikai Souls spēles', 'avatar_url' => null, 'is_private' => false],
+            ['username' => 'ZanePlays',  'email' => 'zane@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'es spēlēju tikai Souls spēles', 'avatar_url' => null, 'is_private' => false],
             ['username' => 'EdgarsK',      'email' => 'edgars@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Valorant - imo, CS - 10lvl', 'avatar_url' => null, 'is_private' => false],
             ['username' => 'IevaNeko',     'email' => 'ieva@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '', 'avatar_url' => null, 'is_private' => true],
             ['username' => 'RaivisPro',    'email' => 'raivis@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '', 'avatar_url' => null, 'is_private' => false],
@@ -141,7 +128,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'DianaRPG',     'email' => 'diana@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'profesionāls kļūdu detektīvs', 'avatar_url' => 'https://i.pinimg.com/736x/d7/d2/23/d7d223976fc5d8e02a0584ff8dcb11d1.jpg', 'is_private' => false],
             ['username' => 'TomsMetal',    'email' => 'toms@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'es spēlēju šausmu spēles', 'avatar_url' => 'https://i.pinimg.com/736x/0d/4a/2d/0d4a2d3b6add65506932c2429935c074.jpg', 'is_private' => true],
             ['username' => 'SandraQuest',  'email' => 'sandra@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '4000 stundas vizuālo romānu', 'avatar_url' => null, 'is_private' => false],
-            ['username' => 'Kristaps_GG',  'email' => 'kristaps@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Es skatos tikai turnīrus', 'avatar_url' => 'https://i.pinimg.com/736x/21/11/f3/2111f394ebf84290a7f2b14d8525d754.jpg', 'is_private' => false],
+            ['username' => 'KristapsGG', 'email' => 'kristaps@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => 'Es skatos tikai turnīrus', 'avatar_url' => 'https://i.pinimg.com/736x/21/11/f3/2111f394ebf84290a7f2b14d8525d754.jpg', 'is_private' => false],
             ['username' => 'ValentinaLV',  'email' => 'valentina@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '', 'avatar_url' => 'https://i.pinimg.com/736x/89/eb/e3/89ebe3f226d72c28b773b7e73f5a2999.jpg', 'is_private' => false],
             ['username' => 'NorbertsX',    'email' => 'norberts@example.com', 'password_hash' => 'password', 'role' => 'user', 'bio' => '', 'avatar_url' => 'https://i.pinimg.com/736x/25/2d/40/252d40807fced95bacc787c66758502d.jpg', 'is_private' => false],
         ];
