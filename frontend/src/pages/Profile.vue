@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import axios from '../plugins/axios'
 import { useRoute } from 'vue-router'
 import { auth } from '../plugins/userinfo'
@@ -172,14 +172,40 @@ async function loadCollection(status = null) {
     }
 }
 
+const resendCooldown = ref(0)
+let cooldownTimer = null
+
+const resendLabel = computed(() => {
+    if (resendCooldown.value <= 0) return 'Nosūtīt vēlreiz'
+    const minutes = Math.floor(resendCooldown.value / 60)
+    const seconds = String(resendCooldown.value % 60).padStart(2, '0')
+    return `Nosūtīt vēlreiz (${minutes}:${seconds})`
+})
+
+function startCooldown(seconds) {
+    clearInterval(cooldownTimer)
+    resendCooldown.value = seconds
+    cooldownTimer = setInterval(() => {
+        resendCooldown.value--
+        if (resendCooldown.value <= 0) clearInterval(cooldownTimer)
+    }, 1000)
+}
+
+onUnmounted(() => clearInterval(cooldownTimer))
+
 async function sendVerificationCode() {
     resendLoading.value = true
     sendError.value = false
     verificationError.value = ""
     try {
         await axios.post("/api/email/sendcode")
-    } catch {
-        sendError.value = true
+        startCooldown(60)
+    } catch (error) {
+        if (error.response?.status === 429) {
+            startCooldown(error.response.data.retry_after)
+        } else {
+            sendError.value = true
+        }
     } finally {
         resendLoading.value = false
         verificationDialog.value = true
@@ -195,7 +221,7 @@ async function verifyCode() {
         verificationDialog.value = false
     } catch (error) {
         verificationError.value = !error.response || error.response.data.errors
-            ? 'Nepareizs kods. Mēģini vēlreiz.'
+            ? 'Nepareizs vai novecojis kods. Mēģini vēlreiz.'
             : error.response.data.message
     } finally {
         verificationLoading.value = false
@@ -546,8 +572,8 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                     ></v-text-field>
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn :loading="resendLoading" @click="sendVerificationCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
-                        Nosūtīt vēlreiz
+                    <v-btn :loading="resendLoading" :disabled="resendCooldown > 0" @click="sendVerificationCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
+                        {{ resendLabel }}
                     </v-btn>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button" @click="verificationDialog = false">

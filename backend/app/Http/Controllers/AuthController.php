@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Jobs\SendEmail;
+use App\Models\EmailVerification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -55,12 +56,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'E-pasts jau ir apstiprināts'], 409);
         }
 
-        $code = (string) random_int(100000, 999999);
-
-        $user->update([
-            'verification_code' => $code,
-            'verification_code_expires_at' => now()->addMinutes(15),
-        ]);
+        $code = EmailVerification::issue($user, 'registration');
 
         SendEmail::dispatch(
             $user->email,
@@ -80,19 +76,19 @@ class AuthController extends Controller
         $validated = $request->validate(['code' => 'required|string|size:6']);
         $user = $request->user();
 
-        if ($user->verification_code === null || !hash_equals($user->verification_code, $validated['code'])) {
-            return response()->json(['message' => 'Nepareizs kods. Mēģini vēlreiz.'], 422);
+        $verification = $user->emailVerifications()
+            ->where('purpose', 'registration')
+            ->where('code', $validated['code'])
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$verification) {
+            return response()->json(['message' => 'Nepareizs vai novecojis kods. Mēģini vēlreiz.'], 422);
         }
 
-        if ($user->verification_code_expires_at->isPast()) {
-            return response()->json(['message' => 'Kods vairs nav derīgs.'], 422);
-        }
-
-        $user->update([
-            'email_verified' => true,
-            'verification_code' => null,
-            'verification_code_expires_at' => null,
-        ]);
+        $verification->update(['used_at' => now()]);
+        $user->update(['email_verified' => true]);
     }
 
     public function emailcheck(Request $request){

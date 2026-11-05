@@ -123,9 +123,8 @@ class DatabaseController extends Controller
 
         if ($emailChanged) {
             $user->email = $validated['email'];
-            $user->email_verified = false; 
-            $user->verification_code = null;
-            $user->verification_code_expires_at = null;
+            $user->email_verified = false;
+            $user->emailVerifications()->whereNull('used_at')->delete();
         }
         if (isset($validated['username'])) {
             $user->username = $validated['username'];

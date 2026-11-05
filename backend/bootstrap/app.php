@@ -31,7 +31,11 @@ return Application::configure(basePath: dirname(__DIR__))
             $status = $response->getStatusCode();
 
             if ($response instanceof JsonResponse && isset($messages[$status]) && !($status === 500 && config('app.debug'))) {
-                $response->setData(['message' => $messages[$status]]);
+                $data = ['message' => $messages[$status]];
+                if ($status === 429) {
+                    $data['retry_after'] = $response->headers->get('Retry-After');
+                }
+                $response->setData($data);
             }
 
             return $response;

@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import axios from '../plugins/axios'
 import router from '@/router';
 import { auth } from '../plugins/userinfo'
@@ -18,6 +18,26 @@ const verificationLoading = ref(false)
 const resendLoading = ref(false)
 const sendError = ref(false)
 const isRegistering = ref(false)
+const resendCooldown = ref(0)
+let cooldownTimer = null
+
+const resendLabel = computed(() => {
+    if (resendCooldown.value <= 0) return 'Nosūtīt vēlreiz'
+    const minutes = Math.floor(resendCooldown.value / 60)
+    const seconds = String(resendCooldown.value % 60).padStart(2, '0')
+    return `Nosūtīt vēlreiz (${minutes}:${seconds})`
+})
+
+function startCooldown(seconds) {
+    clearInterval(cooldownTimer)
+    resendCooldown.value = seconds
+    cooldownTimer = setInterval(() => {
+        resendCooldown.value--
+        if (resendCooldown.value <= 0) clearInterval(cooldownTimer)
+    }, 1000)
+}
+
+onUnmounted(() => clearInterval(cooldownTimer))
 
 async function register() {
     if (valid.value === true) {
@@ -68,7 +88,7 @@ async function verifyCode() {
         router.push("/")
     } catch (error) {
         verificationError.value = !error.response || error.response.data.errors
-            ? 'Nepareizs kods. Mēģini vēlreiz.'
+            ? 'Nepareizs vai novecojis kods. Mēģini vēlreiz.'
             : error.response.data.message
     } finally {
         verificationLoading.value = false
@@ -81,8 +101,13 @@ async function sendCode() {
     verificationError.value = ""
     try {
         await axios.post("/api/email/sendcode")
-    } catch {
-        sendError.value = true
+        startCooldown(60)
+    } catch (error) {
+        if (error.response?.status === 429) {
+            startCooldown(error.response.data.retry_after)
+        } else {
+            sendError.value = true
+        }
     } finally {
         resendLoading.value = false
     }
@@ -206,8 +231,8 @@ const usernameRules = [
                     </v-text-field>
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn :loading="resendLoading" @click="sendCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
-                        Nosūtīt vēlreiz
+                    <v-btn :loading="resendLoading" :disabled="resendCooldown > 0" @click="sendCode" variant="text" style="color: rgba(255,255,255,0.5); font-size: 12px">
+                        {{ resendLabel }}
                     </v-btn>
                     <v-spacer></v-spacer>
                     <v-btn v-if="sendError" class="v-dialog-button" @click="skipVerification">
