@@ -357,3 +357,7 @@ Tabula e-pasta adrese apstiprināšanas ievades lauka testēšana
 | **2** | `-12314` | Noklikšķinot uz validācijas pogas, serveris atgriež kļūdu 422, un lietotājam tiek parādīta šāda kļūda: Nepareizs kods. Mēģini vēlreiz. |
 | **3** | `passwo` | Noklikšķinot uz validācijas pogas, serveris atgriež kļūdu 422, un lietotājam tiek parādīta šāda kļūda: Nepareizs kods. Mēģini vēlreiz. |
 | **4** | `709829` *(pareizs kods)* | Veiksmīgi. Lietotājs tiek novirzīts uz galveno lapu, un viņa konts ir apstiprināts. |
+
+## TODO
+
+php artisan queue:work description

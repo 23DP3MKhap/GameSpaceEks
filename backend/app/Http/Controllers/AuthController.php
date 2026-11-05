@@ -1,12 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Jobs\SendEmail;
 use App\Models\User;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {   
@@ -59,32 +57,23 @@ class AuthController extends Controller
 
         $code = (string) random_int(100000, 999999);
 
-        try {
-            Http::timeout(10)->withHeaders([
-                'api-key' => config('services.brevo.key'),
-                'Content-Type' => 'application/json',
-            ])->post('https://api.brevo.com/v3/smtp/email', [
-                'sender' => [
-                    'name' => 'GameSpace',
-                    'email' => config('mail.from.address')
-                ],
-                'to' => [
-                    ['email' => $user->email]
-                ],
-                'subject' => 'Verifikācijas kods - GameSpace',
-                'htmlContent' => view('emails.verification', ['code' => $code])->render(),
-            ])->throw();
-        } catch (ConnectionException | RequestException $e) {
-            report($e);
-            return response()->json(['message' => 'Neizdevās nosūtīt e-pastu. Mēģini vēlreiz vēlāk.'], 502);
-        }
-
         $user->update([
             'verification_code' => $code,
             'verification_code_expires_at' => now()->addMinutes(15),
         ]);
 
-        return response()->json(['message' => 'Kods nosūtīts']);
+        SendEmail::dispatch(
+            $user->email,
+            $user->username,
+            'GameSpace | E-pasta adreses apstiprināšana',
+            view('emails.verification', [
+                'username' => $user->username,
+                'reason' => 'Saņēmām pieprasījumu apstiprināt šo e-pasta adresi GameSpace kontam.',
+                'code' => $code,
+            ])->render(),
+        );
+
+        return response()->json(['message' => 'Kods tiks nosūtīts uz e-pastu']);
     }
 
     public function verifyCode(Request $request){

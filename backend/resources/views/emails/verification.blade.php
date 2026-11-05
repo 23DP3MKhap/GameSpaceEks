@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-pasta verifikācija</title>
+    <title>E-pasta adreses apstiprināšana</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -60,6 +60,10 @@
             color: #ffffff;
             margin-bottom: 10px;
         }
+        .validity {
+            font-size: 13px;
+            color: #888;
+        }
         .footer {
             margin-top: 28px;
             font-size: 12px;
@@ -70,19 +74,20 @@
 </head>
 <body>
     <div class="wrapper">
-        <div class="logo">Gamespace</div>
+        <div class="logo">GameSpace</div>
         <div class="card">
-            <div class="title">Apstipriniet e-pastu</div>
+            <div class="title">Sveiks, {{ $username }}!</div>
             <p class="text">
-                Paldies, ka reģistrējāties. Lai pabeigtu konta izveidi,
-                ievadiet zemāk norādīto kodu verifikācijas logā.
+                {{ $reason }}
+                Ievadi zemāk norādīto kodu apstiprinājuma logā.
             </p>
             <div class="divider"></div>
-            <div class="code-label">Verifikācijas kods</div>
+            <div class="code-label">Apstiprinājuma kods</div>
             <div class="code">{{ $code }}</div>
+            <p class="validity">Kods ir derīgs 15 minūtes.</p>
         </div>
         <div class="footer">
-            Ja jūs nereģistrējāties GameSpace, ignorējiet šo ziņojumu.<br>
+            Ja tu šo darbību neveici, vienkārši ignorē šo vēstuli.<br>
             &copy; 2026 GameSpace
         </div>
     </div>
