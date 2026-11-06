@@ -33,6 +33,10 @@ Route::middleware('auth:sanctum', 'throttle:sendcode')->post('/email/sendcode', 
 
 Route::middleware('auth:sanctum', 'throttle:verifycode')->post('/email/verifycode', [AuthController::class, 'verifyCode']);
 
+Route::middleware('auth:sanctum', 'throttle:sendcode')->post('/email/change', [AuthController::class, 'requestEmailChange']);
+
+Route::middleware('auth:sanctum', 'throttle:verifycode')->post('/email/change/confirm', [AuthController::class, 'confirmEmailChange']);
+
 
 // IGDB API
 

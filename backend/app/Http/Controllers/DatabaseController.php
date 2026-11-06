@@ -102,7 +102,6 @@ class DatabaseController extends Controller
     public function updateUser(Request $request){
         $user = $request->user(); 
         $validated = $request->validate([
-            'email' => 'sometimes|email|max:50|unique:users,email,' . $user->id,
             'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][a-zA-Z0-9]*$/|unique:users,username,' . $user->id,
             'bio' => 'sometimes|nullable|string|max:250',
             'avatar_url' => 'sometimes|nullable|max:255|regex:/^https?:\/\/.+/',
@@ -111,21 +110,14 @@ class DatabaseController extends Controller
             'current_password' => 'sometimes|nullable|string',
         ]);
 
-        $emailChanged = isset($validated['email']) && $validated['email'] !== $user->email;
         $passwordChanged = !empty($validated['password']);
 
-        if (($emailChanged || $passwordChanged)
-            && !Hash::check($validated['current_password'] ?? '', $user->password_hash)) {
+        if ($passwordChanged && !Hash::check($validated['current_password'] ?? '', $user->password_hash)) {
             throw ValidationException::withMessages([
                 'current_password' => 'Pašreizējā parole nav pareiza',
             ]);
         }
 
-        if ($emailChanged) {
-            $user->email = $validated['email'];
-            $user->email_verified = false;
-            $user->emailVerifications()->whereNull('used_at')->delete();
-        }
         if (isset($validated['username'])) {
             $user->username = $validated['username'];
         }

@@ -33,4 +33,22 @@ class EmailVerification extends Model
             'expires_at' => now()->addMinutes(15),
         ])->code;
     }
+
+    public static function consume(User $user, string $purpose, string $code): bool
+    {
+        $verification = $user->emailVerifications()
+            ->where('purpose', $purpose)
+            ->where('code', $code)
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$verification) {
+            return false;
+        }
+
+        $verification->update(['used_at' => now()]);
+
+        return true;
+    }
 }

@@ -25,6 +25,8 @@ const verificationDialog = ref(false)
 const verificationCode = ref("")
 const verificationError = ref("")
 const verificationLoading = ref(false)
+const verificationPurpose = ref('registration')
+const emailChangeRequest = ref(null)
 const resendLoading = ref(false)
 const sendError = ref(false)
 const collectionStatus = ref(null)
@@ -193,12 +195,30 @@ function startCooldown(seconds) {
 
 onUnmounted(() => clearInterval(cooldownTimer))
 
+const verificationText = computed(() => {
+    if (sendError.value) return 'Verifikācijas kodu neizdevās nosūtīt. Mēģini vēlreiz.'
+    if (verificationPurpose.value === 'email_change') {
+        return `Uz ${emailChangeRequest.value.email} nosūtīts 6 ciparu kods. Ievadi to, lai apstiprinātu jauno e-pastu.`
+    }
+    return 'Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk.'
+})
+
+function openEmailVerification() {
+    verificationPurpose.value = 'registration'
+    sendVerificationCode()
+}
+
 async function sendVerificationCode() {
     resendLoading.value = true
     sendError.value = false
     verificationError.value = ""
+    verificationCode.value = ""
     try {
-        await axios.post("/api/email/sendcode")
+        if (verificationPurpose.value === 'email_change') {
+            await axios.post("/api/email/change", emailChangeRequest.value)
+        } else {
+            await axios.post("/api/email/sendcode")
+        }
         startCooldown(60)
     } catch (error) {
         if (error.response?.status === 429) {
@@ -216,8 +236,12 @@ async function verifyCode() {
     verificationLoading.value = true
     verificationError.value = ""
     try {
-        await axios.post("/api/email/verifycode", { code: verificationCode.value })
-        auth.user.email_verified = true
+        if (verificationPurpose.value === 'email_change') {
+            auth.user = (await axios.post("/api/email/change/confirm", { code: verificationCode.value })).data
+        } else {
+            await axios.post("/api/email/verifycode", { code: verificationCode.value })
+            auth.user.email_verified = true
+        }
         verificationDialog.value = false
     } catch (error) {
         verificationError.value = !error.response || error.response.data.errors
@@ -256,10 +280,17 @@ async function saveSettings() {
     isSaving.value = true
     settingsErrors.value = {}
     settingsError.value = ''
+    const changingEmail = emailChanged.value
 
     try {
+        if (changingEmail) {
+            await axios.post('/api/email/change', {
+                email: settingsEmail.value,
+                current_password: settingsCurrentPassword.value,
+            })
+        }
+
         const updatedUser = await axios.post('/api/user/update', {
-            email: settingsEmail.value || undefined,
             username: settingsUsername.value || undefined,
             bio: settingsBio.value,
             avatar_url: settingsAvatarUrl.value,
@@ -274,12 +305,27 @@ async function saveSettings() {
         profileBio.value = settingsBio.value
         profileAvatar.value = settingsAvatarUrl.value || null
         settingsDialog.value = false
+
+        if (changingEmail) {
+            verificationPurpose.value = 'email_change'
+            emailChangeRequest.value = {
+                email: settingsEmail.value,
+                current_password: settingsPassword.value || settingsCurrentPassword.value,
+            }
+            verificationCode.value = ""
+            verificationError.value = ""
+            sendError.value = false
+            startCooldown(60)
+            verificationDialog.value = true
+        }
     } catch (error) {
         const fields = Object.keys(error.response?.data?.errors ?? {})
         const known = fields.filter(field => settingsFieldErrors[field])
 
         if (error.response?.status === 422 && known.length) {
             settingsErrors.value = Object.fromEntries(known.map(field => [field, settingsFieldErrors[field]]))
+        } else if (error.response?.status === 429) {
+            settingsError.value = error.response.data.message
         } else {
             settingsError.value = 'Neizdevās saglabāt izmaiņas. Mēģini vēlreiz.'
         }
@@ -352,7 +398,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
                         v-if="auth.user && auth.user.id == route.params.id && !auth.user.email_verified" 
                         class="btn-verify" 
                         :disabled="resendLoading"
-                        @click="sendVerificationCode">
+                        @click="openEmailVerification">
                         {{ resendLoading ? 'Sūta...' : 'Apstiprināt e-pastu' }}
                     </button>
                 </div>
@@ -560,9 +606,7 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
             <v-card class="dialog">
                 <v-card-title class="v-card-title">E-pasta verifikācija</v-card-title>
                 <v-card-text class="v-card-text">
-                    {{ sendError
-                        ? 'Verifikācijas kodu neizdevās nosūtīt. Mēģini vēlreiz.'
-                        : 'Uz tavu e-pastu nosūtīts 6 ciparu kods. Ievadi to zemāk.' }}
+                    {{ verificationText }}
                     <v-text-field
                         v-model="verificationCode"
                         label="Verifikācijas kods"

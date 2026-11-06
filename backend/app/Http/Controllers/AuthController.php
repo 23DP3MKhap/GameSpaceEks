@@ -6,6 +6,9 @@ use App\Models\EmailVerification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {   
@@ -76,19 +79,61 @@ class AuthController extends Controller
         $validated = $request->validate(['code' => 'required|string|size:6']);
         $user = $request->user();
 
-        $verification = $user->emailVerifications()
-            ->where('purpose', 'registration')
-            ->where('code', $validated['code'])
-            ->whereNull('used_at')
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (!$verification) {
+        if (!EmailVerification::consume($user, 'registration', $validated['code'])) {
             return response()->json(['message' => 'Nepareizs vai novecojis kods. Mēģini vēlreiz.'], 422);
         }
 
-        $verification->update(['used_at' => now()]);
         $user->update(['email_verified' => true]);
+    }
+
+    public function requestEmailChange(Request $request){
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:50', 'unique:users,email'],
+            'current_password' => ['required', 'string'],
+        ]);
+        $user = $request->user();
+
+        if (!Hash::check($validated['current_password'], $user->password_hash)) {
+            throw ValidationException::withMessages([
+                'current_password' => 'Pašreizējā parole nav pareiza',
+            ]);
+        }
+
+        Cache::put('email_change:' . $user->id, $validated['email'], now()->addMinutes(15));
+        $code = EmailVerification::issue($user, 'email_change');
+
+        SendEmail::dispatch(
+            $validated['email'],
+            $user->username,
+            'GameSpace | E-pasta adreses maiņa',
+            view('emails.verification', [
+                'username' => $user->username,
+                'reason' => 'Saņēmām pieprasījumu mainīt GameSpace konta e-pasta adresi uz šo adresi.',
+                'code' => $code,
+            ])->render(),
+        );
+
+        return response()->json(['message' => 'Kods tiks nosūtīts uz jauno e-pastu']);
+    }
+
+    public function confirmEmailChange(Request $request){
+        $validated = $request->validate(['code' => 'required|string|size:6']);
+        $user = $request->user();
+        $email = Cache::get('email_change:' . $user->id);
+
+        if (!$email || !EmailVerification::consume($user, 'email_change', $validated['code'])) {
+            return response()->json(['message' => 'Nepareizs vai novecojis kods. Mēģini vēlreiz.'], 422);
+        }
+
+        Cache::forget('email_change:' . $user->id);
+
+        if (User::where('email', $email)->exists()) {
+            return response()->json(['message' => 'E-pasts jau ir reģistrēts'], 422);
+        }
+
+        $user->update(['email' => $email, 'email_verified' => true]);
+
+        return $user;
     }
 
     public function emailcheck(Request $request){
