@@ -13,6 +13,9 @@ const profileAvatar = ref(null)
 const counts = ref({ all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 })
 const collection = ref([])
 const deleteConfirmation = ref(false)
+const deletePassword = ref('')
+const deleteError = ref('')
+const isDeleting = ref(false)
 const activeFilter = ref('all')
 const sortOrder = ref('desc')
 const settingsPasswordConfirm = ref('')
@@ -335,10 +338,19 @@ async function saveSettings() {
 }
 
 async function deleteUser() {
-    
-    await axios.post('/api/database/deleteuser')
-    auth.user = null
-    router.push('/')
+    isDeleting.value = true
+    deleteError.value = ''
+    try {
+        await axios.post('/api/database/deleteuser', { password: deletePassword.value })
+        localStorage.removeItem('token')
+        delete axios.defaults.headers.common['Authorization']
+        auth.user = null
+        router.push('/')
+    } catch (error) {
+        deleteError.value = error.response?.data?.message ?? 'Neizdevās dzēst kontu. Mēģini vēlreiz.'
+    } finally {
+        isDeleting.value = false
+    }
 }
 
 onMounted(async () => {
@@ -370,6 +382,12 @@ watch(settingsUsername, () => { delete settingsErrors.value.username })
 watch(settingsEmail, () => { delete settingsErrors.value.email })
 watch(settingsPassword, () => { delete settingsErrors.value.password })
 watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_password })
+
+watch(deleteConfirmation, (open) => {
+    if (open) return
+    deletePassword.value = ''
+    deleteError.value = ''
+})
 
 
 </script>
@@ -589,13 +607,30 @@ watch(settingsCurrentPassword, () => { delete settingsErrors.value.current_passw
         <v-dialog max-width="400" v-model="deleteConfirmation">
             <v-card class="dialog">
                 <v-card-title class="v-card-title">Dzēst kontu</v-card-title>
-                <v-card-text class="v-card-text">Dzēst savu kontu?</v-card-text>
+                <v-card-text class="v-card-text">
+                    Šī darbība neatgriezeniski dzēsīs kontu, kolekciju un atsauksmes. Ievadi paroli, lai apstiprinātu.
+                    <v-text-field
+                        v-model="deletePassword"
+                        label="Parole"
+                        type="password"
+                        maxlength="250"
+                        variant="outlined"
+                        density="compact"
+                        class="mt-4"
+                        :error-messages="deleteError"
+                    ></v-text-field>
+                </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button" @click="deleteConfirmation = false">
                         <p class="v-btn-text">Atcelt</p>
                     </v-btn>
-                    <v-btn class="v-dialog-button btn-delete-confirm" @click="deleteUser">
+                    <v-btn
+                        class="v-dialog-button btn-delete-confirm"
+                        :disabled="!deletePassword"
+                        :loading="isDeleting"
+                        @click="deleteUser"
+                    >
                         <p class="v-btn-text">Dzēst</p>
                     </v-btn>
                 </v-card-actions>

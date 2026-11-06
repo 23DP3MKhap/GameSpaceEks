@@ -146,9 +146,17 @@ class DatabaseController extends Controller
     }
 
     public function deleteUser(Request $request){
-    $user = $request->user();
-    $user->tokens()->delete();
-    $user->delete();
+        $validated = $request->validate(['password' => 'required|string']);
+        $user = $request->user();
+
+        if (!Hash::check($validated['password'], $user->password_hash)) {
+            throw ValidationException::withMessages([
+                'password' => 'Nepareiza parole',
+            ]);
+        }
+
+        $user->tokens()->delete();
+        $user->delete();
     }
     
 
