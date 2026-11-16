@@ -23,7 +23,8 @@ const settingsDialog = ref(false)
 const settingsUsername = ref('')
 const settingsPassword = ref('')
 const settingsBio = ref('')
-const settingsAvatarUrl = ref('')
+const settingsAvatarFile = ref(null)
+const settingsAvatarRemoved = ref(false)
 const verificationDialog = ref(false)
 const verificationCode = ref("")
 const verificationError = ref("")
@@ -67,12 +68,19 @@ const initials = computed(() => {
     return profileusername.value.slice(0, 2).toUpperCase()
 })
 
-const avatarUrlRules = [
+const avatarError = 'Atļauti JPG, PNG vai WEBP attēli līdz 5 MB'
+
+const avatarRules = [
     value => {
-        if (!value || /^https?:\/\/.+/.test(value)) return true
-        return 'URL ir jāsākas ar http:// vai https://'
+        if (!value || (['image/jpeg', 'image/png', 'image/webp'].includes(value.type) && value.size <= 5 * 1024 * 1024)) return true
+        return avatarError
     }
 ]
+
+const settingsAvatarPreview = computed(() => {
+    if (settingsAvatarFile.value) return URL.createObjectURL(settingsAvatarFile.value)
+    return settingsAvatarRemoved.value ? null : profileAvatar.value
+})
 
 const bioRules = [
     value => { if (!value || value.length <= 250) return true
@@ -265,11 +273,13 @@ function openSettings() {
     settingsCurrentPassword.value = ''
     settingsErrors.value = {}
     settingsError.value = ''
-    settingsAvatarUrl.value = profileAvatar.value || ''
+    settingsAvatarFile.value = null
+    settingsAvatarRemoved.value = false
     settingsDialog.value = true
 }
 
 const settingsFieldErrors = {
+    avatar: avatarError,
     current_password: 'Pašreizējā parole nav pareiza.',
     username: 'Lietotājvārds jau ir aizņemts vai nav derīgs.',
     email: 'E-pasts jau ir reģistrēts vai nav derīgs.',
@@ -286,6 +296,17 @@ async function saveSettings() {
     const changingEmail = emailChanged.value
 
     try {
+        if (settingsAvatarFile.value) {
+            const formData = new FormData()
+            formData.append('avatar', settingsAvatarFile.value)
+            profileAvatar.value = (await axios.post('/api/user/avatar', formData)).data.avatar_url
+            settingsAvatarFile.value = null
+        } else if (settingsAvatarRemoved.value) {
+            await axios.delete('/api/user/avatar')
+            profileAvatar.value = null
+            settingsAvatarRemoved.value = false
+        }
+
         if (changingEmail) {
             await axios.post('/api/email/change', {
                 email: settingsEmail.value,
@@ -296,7 +317,6 @@ async function saveSettings() {
         const updatedUser = await axios.post('/api/user/update', {
             username: settingsUsername.value || undefined,
             bio: settingsBio.value,
-            avatar_url: settingsAvatarUrl.value,
             password: settingsPassword.value || undefined,
             current_password: needsCurrentPassword.value ? settingsCurrentPassword.value : undefined,
             is_private: settingsIsPrivate.value
@@ -306,7 +326,6 @@ async function saveSettings() {
         profileIsPrivate.value = settingsIsPrivate.value
         profileusername.value = settingsUsername.value || auth.user.username
         profileBio.value = settingsBio.value
-        profileAvatar.value = settingsAvatarUrl.value || null
         settingsDialog.value = false
 
         if (changingEmail) {
@@ -378,6 +397,11 @@ watch(sortOrder, () => {
     loadCollection(activeFilter.value === 'all' ? null : activeFilter.value)
 })
 
+watch(settingsAvatarPreview, (url, oldUrl) => {
+    if (oldUrl?.startsWith('blob:')) URL.revokeObjectURL(oldUrl)
+})
+
+watch(settingsAvatarFile, () => { delete settingsErrors.value.avatar })
 watch(settingsUsername, () => { delete settingsErrors.value.username })
 watch(settingsEmail, () => { delete settingsErrors.value.email })
 watch(settingsPassword, () => { delete settingsErrors.value.password })
@@ -482,20 +506,28 @@ watch(deleteConfirmation, (open) => {
                     
                         <div class="settings-avatar-row">
                             <div class="settings-avatar-preview">
-                                <img v-if="settingsAvatarUrl" :src="settingsAvatarUrl" class="avatar-img" @error="$event.target.src = 'https://placehold.co/150/212121/white?text=U'">
+                                <img v-if="settingsAvatarPreview" :src="settingsAvatarPreview" class="avatar-img" alt="Profila attēls">
                                 <div v-else class="avatar-placeholder">{{ initials }}</div>
                             </div>
-                            <v-text-field
-                                v-model="settingsAvatarUrl"
-                                label="Avatāra URL"
-                                placeholder="https://..."
-                                maxlength="255"
-                                counter
-                                variant="outlined"
-                                density="compact"
-                                style="flex: 1;"
-                                :rules="avatarUrlRules"
-                            ></v-text-field>
+                            <div class="settings-avatar-controls">
+                                <v-file-input
+                                    v-model="settingsAvatarFile"
+                                    label="Profila attēls"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    prepend-icon=""
+                                    variant="outlined"
+                                    density="compact"
+                                    :rules="avatarRules"
+                                    :error-messages="settingsErrors.avatar"
+                                ></v-file-input>
+                                <button
+                                    v-if="settingsAvatarPreview"
+                                    type="button"
+                                    class="btn-remove-avatar"
+                                    @click="settingsAvatarFile = null; settingsAvatarRemoved = true">
+                                    Noņemt attēlu
+                                </button>
+                            </div>
                         </div>
                     
                         <v-text-field
@@ -1121,6 +1153,27 @@ watch(deleteConfirmation, (open) => {
     width: 64px;
     height: 64px;
     font-size: 18px;
+}
+
+.settings-avatar-controls {
+    flex: 1;
+    min-width: 0;
+}
+
+.btn-remove-avatar {
+    background: transparent;
+    border: 1px solid rgba(255, 95, 95, 0.25);
+    border-radius: 6px;
+    color: #ff5f5f;
+    font-size: 11px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.btn-remove-avatar:hover {
+    background-color: rgba(255, 95, 95, 0.08);
+    border-color: rgba(255, 95, 95, 0.5);
 }
 
 .settings-field {

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Services\CloudinaryClient;
 use App\Services\IgdbClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -104,7 +105,6 @@ class DatabaseController extends Controller
         $validated = $request->validate([
             'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][a-zA-Z0-9]*$/|unique:users,username,' . $user->id,
             'bio' => 'sometimes|nullable|string|max:250',
-            'avatar_url' => 'sometimes|nullable|max:255|regex:/^https?:\/\/.+/',
             'password' => 'sometimes|nullable|string|min:8|max:250',
             'is_private' => 'sometimes|boolean',
             'current_password' => 'sometimes|nullable|string',
@@ -124,9 +124,6 @@ class DatabaseController extends Controller
         if (array_key_exists('bio', $validated)) {
             $user->bio = $validated['bio'];
         }
-        if (array_key_exists('avatar_url', $validated)) {
-            $user->avatar_url = $validated['avatar_url'];
-        }
         if (array_key_exists('is_private', $validated)) {
             $user->is_private = $validated['is_private'];
         }
@@ -145,7 +142,30 @@ class DatabaseController extends Controller
         return $user;
     }
 
-    public function deleteUser(Request $request){
+    public function updateAvatar(Request $request, CloudinaryClient $cloudinary){
+        $request->validate(
+            ['avatar' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120'],
+            ['avatar' => 'Atļauti JPG, PNG vai WEBP attēli līdz 5 MB']
+        );
+        $user = $request->user();
+
+        $user->avatar_url = $cloudinary->uploadAvatar($user->id, $request->file('avatar'));
+        $user->save();
+
+        return $user;
+    }
+
+    public function deleteAvatar(Request $request, CloudinaryClient $cloudinary){
+        $user = $request->user();
+
+        $cloudinary->deleteAvatar($user->id);
+        $user->avatar_url = null;
+        $user->save();
+
+        return $user;
+    }
+
+    public function deleteUser(Request $request, CloudinaryClient $cloudinary){
         $validated = $request->validate(['password' => 'required|string']);
         $user = $request->user();
 
@@ -155,6 +175,9 @@ class DatabaseController extends Controller
             ]);
         }
 
+        if ($user->avatar_url) {
+            $cloudinary->deleteAvatar($user->id);
+        }
         $user->tokens()->delete();
         $user->delete();
     }

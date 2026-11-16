@@ -75,6 +75,10 @@ Route::middleware('auth:sanctum')->post("/database/removefromcollection", [Datab
 
 Route::middleware('auth:sanctum')->post("/user/update", [DatabaseController::class, 'updateUser']);
 
+Route::middleware('auth:sanctum')->post("/user/avatar", [DatabaseController::class, 'updateAvatar']);
+
+Route::middleware('auth:sanctum')->delete("/user/avatar", [DatabaseController::class, 'deleteAvatar']);
+
 Route::middleware('auth:sanctum')->post("/database/deletereview", [DatabaseController::class, 'deleteReview']);
 
 // ADMIN ROUTES
@@ -94,4 +98,5 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::delete('/admin/reviews/{id}', [AdminController::class, 'deleteReview']);
 
     Route::delete('/admin/users/{id}/collection', [AdminController::class, 'deleteUserCollection']);
+    Route::delete('/admin/users/{id}/avatar', [AdminController::class, 'deleteUserAvatar']);
 });

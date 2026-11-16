@@ -138,6 +138,12 @@ async function deleteReview(id) {
 async function deleteUserCollection(userId) {
     await axios.delete(`/api/admin/users/${userId}/collection`)
 }
+
+async function deleteUserAvatar(user) {
+    await axios.delete(`/api/admin/users/${user.id}/avatar`)
+    user.avatar_url = null
+    await loadUsers()
+}
 </script>
 
 <template>
@@ -317,9 +323,12 @@ async function deleteUserCollection(userId) {
                         <label class="edit-label">Biogrāfija</label>
                         <textarea class="edit-input edit-textarea" maxlength="250" v-model="editingUser.bio"></textarea>
                     </div>
-                    <div class="edit-field">
-                        <label class="edit-label">Avatara URL</label>
-                        <input class="edit-input" maxlength="255" v-model="editingUser.avatar_url">
+                    <div v-if="editingUser.avatar_url" class="edit-field">
+                        <label class="edit-label">Profila attēls</label>
+                        <div class="edit-avatar">
+                            <img :src="editingUser.avatar_url" class="edit-avatar-img" alt="Profila attēls">
+                            <button class="btn-delete" @click="confirm(`Noņemt profila attēlu lietotājam ${editingUser.username}`, () => deleteUserAvatar(editingUser))">Noņemt attēlu</button>
+                        </div>
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Loma</label>
@@ -672,6 +681,19 @@ async function deleteUserCollection(userId) {
 .edit-textarea {
     resize: none;
     min-height: 80px;
+}
+
+.edit-avatar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.edit-avatar-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .form-error {

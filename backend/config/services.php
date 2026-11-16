@@ -23,6 +23,12 @@ return [
         'key' => env('BREVO_API_KEY'),
     ],
 
+    'cloudinary' => [
+        'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+        'key' => env('CLOUDINARY_API_KEY'),
+        'secret' => env('CLOUDINARY_API_SECRET'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

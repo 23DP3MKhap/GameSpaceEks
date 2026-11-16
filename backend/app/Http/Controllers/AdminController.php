@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CloudinaryClient;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Game;
@@ -22,7 +23,6 @@ class AdminController extends Controller
             'username' => 'sometimes|string|max:20|regex:/^[a-zA-Z][a-zA-Z0-9]*$/|unique:users,username,' . $id,
             'email' => 'sometimes|email|max:50|unique:users,email,' . $id,
             'bio' => 'sometimes|nullable|string|max:250',
-            'avatar_url' => 'sometimes|nullable|url|max:255',
             'role' => 'sometimes|in:user,admin',
         ]);
         if (($validated['role'] ?? null) === 'user' && $request->user()->id == $id) {
@@ -31,13 +31,22 @@ class AdminController extends Controller
         $user->forceFill($validated)->save();
     }
 
-    public function deleteUser(Request $request, $id){
+    public function deleteUser(Request $request, CloudinaryClient $cloudinary, $id){
         if ($request->user()->id == $id) {
             return response()->json(['message' => 'Nevar dzēst savu kontu'], 403);
         }
         $user = User::findOrFail($id);
+        if ($user->avatar_url) {
+            $cloudinary->deleteAvatar($user->id);
+        }
         $user->tokens()->delete();
         $user->delete();
+    }
+
+    public function deleteUserAvatar(CloudinaryClient $cloudinary, $id){
+        $user = User::findOrFail($id);
+        $cloudinary->deleteAvatar($user->id);
+        $user->forceFill(['avatar_url' => null])->save();
     }
 
     public function banUser(Request $request, $id){
