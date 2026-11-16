@@ -37,6 +37,10 @@ Route::middleware('auth:sanctum', 'throttle:sendcode')->post('/email/change', [A
 
 Route::middleware('auth:sanctum', 'throttle:verifycode')->post('/email/change/confirm', [AuthController::class, 'confirmEmailChange']);
 
+Route::middleware('throttle:passwordforgot')->post('/password/forgot', [AuthController::class, 'forgotPassword']);
+
+Route::middleware('throttle:passwordreset')->post('/password/reset', [AuthController::class, 'resetPassword']);
+
 
 // IGDB API
 

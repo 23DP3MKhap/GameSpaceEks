@@ -69,6 +69,7 @@
                    
                     <v-col class="login-row" cols="12" >
                       <v-text-field type="password" v-model="password" :rules="passwordRules" label="Parole" required></v-text-field>
+                      <router-link to="/ForgotPassword" class="forgot-link">Aizmirsi paroli?</router-link>
                     </v-col>
 
                     <v-btn :disabled="!valid" type = "submit" class="login-button">PIETEIKTIES</v-btn>
@@ -173,6 +174,18 @@
     }
 
     .login-row{
+        color: white;
+    }
+
+    .forgot-link {
+        display: block;
+        text-align: right;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+    }
+
+    .forgot-link:hover {
         color: white;
     }
 

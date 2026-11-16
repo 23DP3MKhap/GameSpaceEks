@@ -7,11 +7,13 @@ import Profile from "../pages/Profile.vue"
 import Catalog from "../pages/Catalog.vue"
 import Admin from "../pages/Admin.vue"
 import About from "../pages/About.vue"
+import ForgotPassword from "../pages/ForgotPassword.vue"
 
 const routes =[
     {path: "/", component: Home},
     {path: "/Register", component: Register},
     {path: "/Login", component: Login},
+    {path: "/ForgotPassword", component: ForgotPassword},
     {path: "/User/:id/Profile", component: Profile},
     {path: "/Catalog", component: Catalog, name: "catalog", meta: { hideHeader: true } },
     {path: "/Admin", component: Admin},

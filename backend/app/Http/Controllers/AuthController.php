@@ -136,6 +136,46 @@ class AuthController extends Controller
         return $user;
     }
 
+    public function forgotPassword(Request $request){
+        $validated = $request->validate(['email' => ['required', 'email']]);
+        $user = User::where('email', $validated['email'])->first();
+
+        if ($user) {
+            $code = EmailVerification::issue($user, 'password_reset');
+
+            SendEmail::dispatch(
+                $user->email,
+                $user->username,
+                'GameSpace | Paroles atjaunošana',
+                view('emails.verification', [
+                    'username' => $user->username,
+                    'reason' => 'Saņēmām pieprasījumu atjaunot GameSpace konta paroli.',
+                    'code' => $code,
+                ])->render(),
+            );
+        }
+
+        return response()->json(['message' => 'Ja konts ar šo e-pastu eksistē, uz to tiks nosūtīts kods']);
+    }
+
+    public function resetPassword(Request $request){
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string', 'size:6'],
+            'password' => ['required', 'min:8', 'max:250', 'confirmed'],
+        ]);
+        $user = User::where('email', $validated['email'])->first();
+
+        if (!$user || !EmailVerification::consume($user, 'password_reset', $validated['code'])) {
+            return response()->json(['message' => 'Nepareizs vai novecojis kods. Mēģini vēlreiz.'], 422);
+        }
+
+        $user->update(['password_hash' => $validated['password'], 'email_verified' => true]);
+        $user->tokens()->delete();
+
+        return response()->json(['message' => 'Parole veiksmīgi nomainīta']);
+    }
+
     public function emailcheck(Request $request){
         $exists = User::where('email', $request->email)->exists();
         return ["exists" => $exists];
