@@ -39,6 +39,11 @@ class AuthController extends Controller
         }
         
         $user = Auth::user();
+
+        if ($user->is_banned) {
+            return response()->json(['message' => 'Tavs konts ir bloķēts'], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
         
         return response()->json([

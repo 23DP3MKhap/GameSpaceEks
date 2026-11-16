@@ -120,6 +120,11 @@ async function deleteUser(id) {
     await Promise.all([loadUsers(), loadReviews()])
 }
 
+async function setBanned(id, banned) {
+    await axios.post(`/api/admin/users/${id}/${banned ? 'ban' : 'unban'}`)
+    await loadUsers()
+}
+
 async function deleteGame(id) {
     await axios.delete(`/api/admin/games/${id}`)
     await Promise.all([loadGames(), loadReviews()])
@@ -158,6 +163,7 @@ async function deleteUserCollection(userId) {
                                         <th>Vārds</th>
                                         <th>E-pasts</th>
                                         <th>Loma</th>
+                                        <th>Statuss</th>
                                         <th>Darbības</th>
                                     </tr>
                                 </thead>
@@ -171,13 +177,20 @@ async function deleteUserCollection(userId) {
                                         <td>{{ user.username }}</td>
                                         <td>{{ user.email }}</td>
                                         <td>
-                                            <span class="role-badge" :class="user.role === 'admin' ? 'role-admin' : 'role-user'">
+                                            <span class="badge" :class="user.role === 'admin' ? 'role-admin' : 'role-user'">
                                                 {{ user.role }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge" :class="user.is_banned ? 'status-banned' : 'status-active'">
+                                                {{ user.is_banned ? 'Bloķēts' : 'Aktīvs' }}
                                             </span>
                                         </td>
                                         <td class="actions">
                                             <button class="btn-edit" @click="openEditUser(user)">Rediģēt</button>
                                             <button class="btn-warn" @click="confirm(`Notīrīt kolekciju lietotājam ${user.username}`, () => deleteUserCollection(user.id))">Notīrīt Kolekciju</button>
+                                            <button v-if="user.is_banned" class="btn-edit" @click="confirm(`Atbloķēt lietotāju ${user.username}`, () => setBanned(user.id, false))">Atbloķēt</button>
+                                            <button v-else class="btn-warn" @click="confirm(`Bloķēt lietotāju ${user.username}`, () => setBanned(user.id, true))">Bloķēt</button>
                                             <button class="btn-delete" @click="confirm(`Dzēst lietotāju ${user.username}`, () => deleteUser(user.id))">Dzēst</button>
                                         </td>
                                     </tr>
@@ -558,7 +571,7 @@ async function deleteUserCollection(userId) {
     opacity: 1;
 }
 
-.role-badge {
+.badge {
     font-size: 10px;
     padding: 2px 7px;
     border-radius: 4px;
@@ -575,6 +588,18 @@ async function deleteUserCollection(userId) {
     background: rgba(255, 255, 255, 0.05);
     color: #666;
     border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.status-active {
+    background: rgba(80, 200, 120, 0.12);
+    color: #50c878;
+    border: 1px solid rgba(80, 200, 120, 0.2);
+}
+
+.status-banned {
+    background: rgba(255, 85, 85, 0.12);
+    color: #ff5555;
+    border: 1px solid rgba(255, 85, 85, 0.2);
 }
 
 .dialog {

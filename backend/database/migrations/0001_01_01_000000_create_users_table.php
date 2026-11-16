@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('bio', 250)->nullable();
             $table->boolean('is_private')->default(false);
             $table->enum('role', ['user', 'admin'])->default('user');
+            $table->boolean('is_banned')->default(false);
 
             $table->boolean('email_verified')->default(false);
         });

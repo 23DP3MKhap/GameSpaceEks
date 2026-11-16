@@ -6,6 +6,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Sanctum::authenticateAccessTokensUsing(fn ($token, $isValid) => $isValid && !$token->tokenable->is_banned);
+
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(5)->by(strtolower((string) $request->input('email')) . '|' . $request->ip());
         });

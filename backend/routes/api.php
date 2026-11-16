@@ -83,6 +83,8 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/users', [AdminController::class, 'getUsers']);
     Route::put('/admin/users/{id}', [AdminController::class, 'updateUser']);
     Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
+    Route::post('/admin/users/{id}/ban', [AdminController::class, 'banUser']);
+    Route::post('/admin/users/{id}/unban', [AdminController::class, 'unbanUser']);
 
     Route::get('/admin/games', [AdminController::class, 'getGames']);
     Route::put('/admin/games/{id}', [AdminController::class, 'updateGame']);

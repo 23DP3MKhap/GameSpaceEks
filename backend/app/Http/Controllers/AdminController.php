@@ -11,7 +11,7 @@ use App\Models\UserGame;
 class AdminController extends Controller
 {
     public function getUsers(Request $request){
-        return User::select('id', 'username', 'email', 'bio', 'avatar_url', 'role', 'created_at')
+        return User::select('id', 'username', 'email', 'bio', 'avatar_url', 'role', 'is_banned', 'created_at')
             ->orderBy('id')
             ->paginate($this->perPage($request));
     }
@@ -38,6 +38,19 @@ class AdminController extends Controller
         $user = User::findOrFail($id);
         $user->tokens()->delete();
         $user->delete();
+    }
+
+    public function banUser(Request $request, $id){
+        if ($request->user()->id == $id) {
+            return response()->json(['message' => 'Nevar bloķēt savu kontu'], 403);
+        }
+        $user = User::findOrFail($id);
+        $user->forceFill(['is_banned' => true])->save();
+        $user->tokens()->delete();
+    }
+
+    public function unbanUser($id){
+        User::findOrFail($id)->forceFill(['is_banned' => false])->save();
     }
 
     public function getGames(Request $request){

@@ -51,6 +51,7 @@ class User extends Authenticatable
             'email_verified' => 'boolean',
             'password_hash' => 'hashed',
             'is_private' => 'boolean',
+            'is_banned' => 'boolean',
         ];
     }
 
