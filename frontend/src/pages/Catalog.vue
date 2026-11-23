@@ -26,8 +26,14 @@
     const collectionStatus = ref('planned')
     const collectionScore = ref(5)
     const collectionNotes = ref('')
+    const collectionHours = ref(null)
+    const collectionPercent = ref(null)
+    const collectionCompletedAt = ref(null)
     const showCollectionForm = ref(false)
     const collectionError = ref('')
+    const collectionDialog = ref(false)
+    const collectionMessage = ref('')
+    const today = new Date().toISOString().slice(0, 10)
     const dbOffset = ref(0)
     const igdbOffset = ref(0)
     const dbExhausted = ref(false)
@@ -61,10 +67,10 @@
     ]
 })
     const statusVariants = [
-        { value: 'planned', label: 'Plānots' },
-        { value: 'playing', label: 'Spēlēju' },
+        { value: 'playing', label: 'Spēlē' },
         { value: 'completed', label: 'Pabeigta' },
-        { value: 'dropped', label: 'Pārtraukts' },
+        { value: 'planned', label: 'Plānota' },
+        { value: 'dropped', label: 'Pārtraukta' },
     ]
 
     let timeout = null
@@ -130,6 +136,26 @@
 
 
     //functions
+
+    function isEmpty(value) {
+        return value === null || value === ''
+    }
+
+    function formatDate(date) {
+        return date.split('-').reverse().join('.')
+    }
+
+    function toggleCollectionForm() {
+        if (!auth.user) {
+            router.push({ path: '/Login', query: { notice: 'collection' } })
+            return
+        }
+        if (!auth.user.email_verified) {
+            collectionError.value = 'Apstiprini savu e-pasta adresi, lai izmantotu šo funkciju'
+            return
+        }
+        showCollectionForm.value = !showCollectionForm.value
+    }
 
     function toggleAllGenres(el) {
         if (el.target.checked) {
@@ -256,6 +282,9 @@
         collectionStatus.value = 'planned'
         collectionScore.value = 5
         collectionNotes.value = ''
+        collectionHours.value = null
+        collectionPercent.value = null
+        collectionCompletedAt.value = null
 
         if (auth.user) {
             const res = await axios.get('/api/database/checkcollection', { params: { game_id: game.id } })
@@ -264,6 +293,9 @@
                 collectionStatus.value = res.data.status
                 collectionScore.value = res.data.rating
                 collectionNotes.value = res.data.note || ''
+                collectionHours.value = res.data.hours_played
+                collectionPercent.value = res.data.completion_percent
+                collectionCompletedAt.value = res.data.completed_at
             }
         }
 
@@ -285,12 +317,19 @@
                 game_id: gameId,
                 status: collectionStatus.value,
                 rating: collectionScore.value,
-                note: collectionNotes.value
+                note: collectionNotes.value,
+                hours_played: collectionHours.value,
+                completion_percent: collectionPercent.value,
+                completed_at: collectionCompletedAt.value
             })
-        } catch {
-            collectionError.value = 'Neizdevās saglabāt kolekcijā. Mēģini vēlreiz.'
+        } catch (error) {
+            collectionError.value = error.response?.status === 422
+                ? 'Norādīti nederīgi dati'
+                : 'Neizdevās saglabāt kolekcijā. Mēģini vēlreiz.'
             return
         }
+        collectionMessage.value = collectionExists.value ? 'Kolekcijas ieraksts atjaunināts' : 'Spēle pievienota kolekcijai'
+        collectionDialog.value = true
         collectionExists.value = true
         showCollectionForm.value = false
     }
@@ -366,19 +405,17 @@
             <v-card class="game-modal" v-if="selectedGame">
                 <div class="modal-body">
                     <div class="modal-main-info">
-                        <template v-if="auth.user && auth.user.email_verified">
-                            <v-btn v-if="!collectionExists" class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm"> 
-                                Pievienot Kolekcijai
-                            </v-btn>
+                        <v-btn v-if="!collectionExists" class="btn-add-collection" block @click="toggleCollectionForm">
+                            Pievienot Kolekcijai
+                        </v-btn>
 
-                            <template v-if="collectionExists">
-                                <v-btn class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm" style="margin-bottom: 8px">
-                                    Rediģēt Kolekciju
-                                </v-btn>
-                                <v-btn class="btn-remove-collection" block @click="deleteCollection(selectedGame.id)">
-                                    Noņemt
-                                </v-btn>
-                            </template>
+                        <template v-if="collectionExists">
+                            <v-btn class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm" style="margin-bottom: 8px">
+                                Rediģēt Kolekciju
+                            </v-btn>
+                            <v-btn class="btn-remove-collection" block @click="deleteCollection(selectedGame.id)">
+                                Noņemt
+                            </v-btn>
                         </template>
 
                         <div v-if="showCollectionForm" class="collection-form">
@@ -397,16 +434,31 @@
                                     <option v-for="score in 10" :key="score" :value="score">{{ score }}</option>
                                 </select>
                             </div>
-                        
-                            <v-textarea v-model="collectionNotes" label="Piezīmes" maxlength="50" counter variant="outlined" density="compact" 
+
+                            <div class="collection-field">
+                                <label class="collection-label">Nospēlētās stundas</label>
+                                <input type="number" class="custom-select full-width" v-model.number="collectionHours" min="0" max="99999" step="1">
+                            </div>
+
+                            <div class="collection-field">
+                                <label class="collection-label">Pabeigšanas procents</label>
+                                <input type="number" class="custom-select full-width" v-model.number="collectionPercent" min="0" max="100" step="1">
+                            </div>
+
+                            <div class="collection-field">
+                                <label class="collection-label">Pabeigšanas datums</label>
+                                <input type="date" class="custom-select full-width" v-model="collectionCompletedAt" :max="today">
+                            </div>
+
+                            <v-textarea v-model="collectionNotes" label="Piezīmes" maxlength="250" counter variant="outlined" density="compact"
                             rows="3" no-resize color="white">
                             </v-textarea>
-                        
+
                             <v-btn class="btn-send" block size="small" @click="addToCollection(selectedGame.id)">
                                 {{ collectionExists ? 'Saglabāt Izmaiņas' : 'Pievienot' }}
                             </v-btn>
-                            <div v-if="collectionError" class="form-error">{{ collectionError }}</div>
                         </div>
+                        <div v-if="collectionError" class="form-error">{{ collectionError }}</div>
 
                         <div class="modal-stats" :style="showCollectionForm ? 'margin-top: 12px' : ''">
                             <div class="stat-item" v-if="collectionExists">
@@ -416,6 +468,18 @@
                             <div class="stat-item" v-if="collectionExists">
                                 <span class="stat-label">Jūsu Vērtējums</span>
                                 <span class="stat-value">{{ collectionScore }}</span>
+                            </div>
+                            <div class="stat-item" v-if="collectionExists">
+                                <span class="stat-label">Nospēlētās stundas</span>
+                                <span class="stat-value">{{ isEmpty(collectionHours) ? 'Nav' : collectionHours + ' h' }}</span>
+                            </div>
+                            <div class="stat-item" v-if="collectionExists">
+                                <span class="stat-label">Pabeigšanas procents</span>
+                                <span class="stat-value">{{ isEmpty(collectionPercent) ? 'Nav' : collectionPercent + ' %' }}</span>
+                            </div>
+                            <div class="stat-item" v-if="collectionExists">
+                                <span class="stat-label">Pabeigšanas datums</span>
+                                <span class="stat-value">{{ isEmpty(collectionCompletedAt) ? 'Nav' : formatDate(collectionCompletedAt) }}</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Piezīme</span>
@@ -507,6 +571,19 @@
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn class="v-dialog-button" @click="reviewdialog = false">
+                        <span class="v-btn-text">Aizvērt</span>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="collectionDialog" max-width="400">
+            <v-card class="dialog">
+                <v-card-title>Kolekcija</v-card-title>
+                <v-card-text>{{ collectionMessage }}</v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="collectionDialog = false">
                         <span class="v-btn-text">Aizvērt</span>
                     </v-btn>
                 </v-card-actions>
@@ -998,6 +1075,10 @@
     border: 1px solid #333;
     border-radius: 4px;
     padding: 2px 6px;
+}
+
+input[type="date"].custom-select {
+    color-scheme: dark;
 }
 
 .btn-send {

@@ -14,7 +14,8 @@ class UserGame extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        'user_id', 'game_id', 'status', 'rating', 'note'
+        'user_id', 'game_id', 'status', 'rating', 'note',
+        'hours_played', 'completion_percent', 'completed_at'
     ];
 
      public function game()

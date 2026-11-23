@@ -79,7 +79,10 @@ class DatabaseController extends Controller
         'game_id' => 'required|integer|exists:games,id',
         'status' => ['required', Rule::in(UserGame::STATUSES)],
         'rating' => 'nullable|integer|min:1|max:10',
-        'note' => 'nullable|string|max:50',
+        'note' => 'nullable|string|max:250',
+        'hours_played' => 'nullable|integer|min:0|max:99999',
+        'completion_percent' => 'nullable|integer|min:0|max:100',
+        'completed_at' => 'nullable|date_format:Y-m-d|before_or_equal:today',
     ]);
 
     UserGame::query()->updateOrInsert(
@@ -91,6 +94,9 @@ class DatabaseController extends Controller
             'status' => $validated['status'],
             'rating' => $validated['rating'] ?? null,
             'note'  => $validated['note'] ?? null,
+            'hours_played' => $validated['hours_played'] ?? null,
+            'completion_percent' => $validated['completion_percent'] ?? null,
+            'completed_at' => $validated['completed_at'] ?? null,
         ]);
     }
 
@@ -313,6 +319,9 @@ class DatabaseController extends Controller
             'status' => $item->status,
             'rating' => $item->rating,
             'note' => $item->note ?? '',
+            'hours_played' => $item->hours_played,
+            'completion_percent' => $item->completion_percent,
+            'completed_at' => $item->completed_at,
         ];
     });
 
@@ -334,6 +343,9 @@ class DatabaseController extends Controller
         'status' => $collection?->status,
         'rating' => $collection?->rating,
         'note' => $collection?->note,
+        'hours_played' => $collection?->hours_played,
+        'completion_percent' => $collection?->completion_percent,
+        'completed_at' => $collection?->completed_at,
     ];
 }
 

@@ -3,7 +3,9 @@
     import axios from '../plugins/axios'
     import { auth } from '../plugins/userinfo'
     import router from '@/router';
+    import { useRoute } from 'vue-router'
 
+    const route = useRoute()
     const email = ref("")
     const password = ref("")
     const valid = ref(false)
@@ -62,6 +64,7 @@
             <v-form v-model="valid" @submit.prevent="login()">
                 <v-container>
                     <h1>Pieteikties</h1>
+                    <p v-if="route.query.notice === 'collection'" class="login-notice">Lūdzu, piesakies, lai pievienotu spēles kolekcijai</p>
 
                     <v-col class="login-row" cols="12" >
                         <v-text-field v-model="email" :rules="emailRules" label="E-pasts" required></v-text-field>
@@ -175,6 +178,13 @@
 
     .login-row{
         color: white;
+    }
+
+    .login-notice {
+        margin-top: 8px;
+        text-align: center;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.8);
     }
 
     .forgot-link {

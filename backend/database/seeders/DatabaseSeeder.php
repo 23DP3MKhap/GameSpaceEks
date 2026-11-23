@@ -50,6 +50,27 @@ class DatabaseSeeder extends Seeder
         return $options[0];
     }
 
+    private function randomProgress(string $status)
+    {
+        return match ($status) {
+            'completed' => [
+                'hours_played'       => rand(10, 150),
+                'completion_percent' => 100,
+                'completed_at'       => now()->subDays(rand(1, 365))->toDateString(),
+            ],
+            'planned' => [
+                'hours_played'       => null,
+                'completion_percent' => null,
+                'completed_at'       => null,
+            ],
+            default => [
+                'hours_played'       => rand(1, 80),
+                'completion_percent' => rand(5, 90),
+                'completed_at'       => null,
+            ],
+        };
+    }
+
 
     public function run(IgdbClient $igdb)
     {
@@ -164,6 +185,7 @@ class DatabaseSeeder extends Seeder
                         'status'     => $status,
                         'rating'     => rand(1, 10),
                         'note'       => $this->randomNote($status),
+                        ...$this->randomProgress($status),
                         'added_at'   => now(),
                     ]
                 );

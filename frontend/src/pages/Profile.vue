@@ -48,17 +48,25 @@ const profileNotFound = ref(false)
 
 const filters = [
     { key: 'all', label: 'Visi' },
-    { key: 'playing', label: 'Spēlēju' },
+    { key: 'playing', label: 'Spēlē' },
     { key: 'completed', label: 'Pabeigta' },
-    { key: 'planned', label: 'Plānots' },
-    { key: 'dropped', label: 'Pārtraukts' },
+    { key: 'planned', label: 'Plānota' },
+    { key: 'dropped', label: 'Pārtraukta' },
 ]
 
 const statusMeta = {
-    playing:   { color: '#38ef7d', label: 'Spēlēju' },
+    playing:   { color: '#38ef7d', label: 'Spēlē' },
     completed: { color: '#4a9eff', label: 'Pabeigta' },
-    planned:   { color: '#aaa', label: 'Plānots' },
-    dropped:   { color: '#ff5f5f', label: 'Pārtraukts' },
+    planned:   { color: '#aaa', label: 'Plānota' },
+    dropped:   { color: '#ff5f5f', label: 'Pārtraukta' },
+}
+
+function progressText(item) {
+    return [
+        item.hours_played !== null && `${item.hours_played} h`,
+        item.completion_percent !== null && `${item.completion_percent} %`,
+        item.completed_at && item.completed_at.split('-').reverse().join('.'),
+    ].filter(Boolean).join(' · ')
 }
 
 
@@ -483,6 +491,7 @@ watch(deleteConfirmation, (open) => {
                                 <span class="status-dot" :style="{ background: statusMeta[item.status].color }"></span>
                                 {{ statusMeta[item.status].label }}
                             </div>
+                            <div class="entry-progress" v-if="progressText(item)">{{ progressText(item) }}</div>
                             <div class="entry-notes" v-if="item.note">{{ item.note }}</div>
                         </div>
                         <div class="entry-score" v-if="item.rating !== null">
@@ -1076,6 +1085,12 @@ watch(deleteConfirmation, (open) => {
     height: 5px;
     border-radius: 50%;
     flex: 0 0 auto;
+}
+
+.entry-progress {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
 }
 
 .entry-notes {

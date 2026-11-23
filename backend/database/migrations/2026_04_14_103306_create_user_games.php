@@ -16,7 +16,10 @@ return new class extends Migration
             $table->foreignId('game_id')->constrained()->onDelete('cascade');
             $table->enum('status', ['playing', 'completed', 'planned', 'dropped'])->default('planned');
             $table->integer('rating')->nullable();
-            $table->text('note')->nullable();
+            $table->string('note', 250)->nullable();
+            $table->unsignedInteger('hours_played')->nullable();
+            $table->unsignedTinyInteger('completion_percent')->nullable();
+            $table->date('completed_at')->nullable();
             $table->timestamp('added_at')->useCurrent();
 
             $table->primary(['user_id', 'game_id']);
