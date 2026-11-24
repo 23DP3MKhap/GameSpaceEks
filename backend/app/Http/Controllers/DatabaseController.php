@@ -285,9 +285,10 @@ class DatabaseController extends Controller
     }
 
     public function getCollection(Request $request){
-    $request->validate([
-        'user_id' => 'required|integer', 
+    $validated = $request->validate([
+        'user_id' => 'required|integer',
         'status'  => ['sometimes', 'nullable', Rule::in(UserGame::STATUSES)],
+        'sort' => ['sometimes', Rule::in(['rating_desc', 'rating_asc', 'hours_desc', 'added_desc'])],
     ]);
 
     $profileUser = User::findOrFail($request->user_id);
@@ -308,9 +309,13 @@ class DatabaseController extends Controller
     if ($request->status) {
         $baserules->where('status', $request->status);
     }
-    if ($request->sort){
-        $baserules->orderBy('rating', $request->sort);
-    }
+    match ($validated['sort'] ?? 'added_desc') {
+        'rating_desc' => $baserules->orderByDesc('rating'),
+        'rating_asc' => $baserules->orderByRaw('rating IS NULL')->orderBy('rating'),
+        'hours_desc' => $baserules->orderByDesc('hours_played'),
+        'added_desc' => null,
+    };
+    $baserules->orderByDesc('added_at')->orderByDesc('game_id');
 
     $collection = $baserules->with('game')->get()->map(function ($item) {
         return [

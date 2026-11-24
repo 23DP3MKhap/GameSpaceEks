@@ -17,7 +17,11 @@ const deletePassword = ref('')
 const deleteError = ref('')
 const isDeleting = ref(false)
 const activeFilter = ref('all')
-const sortOrder = ref('desc')
+const sortOrder = ref('added_desc')
+const removeDialog = ref(false)
+const removeTarget = ref(null)
+const removeError = ref('')
+const isRemoving = ref(false)
 const settingsPasswordConfirm = ref('')
 const settingsDialog = ref(false)
 const settingsUsername = ref('')
@@ -54,6 +58,13 @@ const filters = [
     { key: 'dropped', label: 'Pārtraukta' },
 ]
 
+const sortOptions = [
+    { value: 'added_desc', label: 'Pievienošanas datums (jaunākās)' },
+    { value: 'rating_desc', label: 'Vērtējums (dilstoši)' },
+    { value: 'rating_asc', label: 'Vērtējums (augoši)' },
+    { value: 'hours_desc', label: 'Nospēlētās stundas (dilstoši)' },
+]
+
 const statusMeta = {
     playing:   { color: '#38ef7d', label: 'Spēlē' },
     completed: { color: '#4a9eff', label: 'Pabeigta' },
@@ -75,6 +86,8 @@ function progressText(item) {
 const initials = computed(() => {
     return profileusername.value.slice(0, 2).toUpperCase()
 })
+
+const isOwner = computed(() => auth.user?.id == route.params.id)
 
 const avatarError = 'Atļauti JPG, PNG vai WEBP attēli līdz 5 MB'
 
@@ -380,6 +393,26 @@ async function deleteUser() {
     }
 }
 
+function confirmRemove(game) {
+    removeTarget.value = game
+    removeError.value = ''
+    removeDialog.value = true
+}
+
+async function removeGame() {
+    isRemoving.value = true
+    removeError.value = ''
+    try {
+        await axios.post('/api/database/removefromcollection', { game_id: removeTarget.value.id })
+        removeDialog.value = false
+        await loadCollection(activeFilter.value === 'all' ? null : activeFilter.value)
+    } catch {
+        removeError.value = 'Neizdevās noņemt spēli. Mēģini vēlreiz.'
+    } finally {
+        isRemoving.value = false
+    }
+}
+
 onMounted(async () => {
     let userData
     try {
@@ -443,9 +476,9 @@ watch(deleteConfirmation, (open) => {
                         {{ profileRole === 'admin' ? 'Admins' : 'Lietotājs' }}
                     </div>
                     <div class="profile-bio">{{ profileBio }}</div>
-                    <button v-if="auth.user && auth.user.id == route.params.id" class="btn-settings" @click="openSettings">Rediģēt profilu</button>
-                    <button 
-                        v-if="auth.user && auth.user.id == route.params.id && !auth.user.email_verified" 
+                    <button v-if="isOwner" class="btn-settings" @click="openSettings">Rediģēt profilu</button>
+                    <button
+                        v-if="isOwner && !auth.user.email_verified"
                         class="btn-verify" 
                         :disabled="resendLoading"
                         @click="openEmailVerification">
@@ -464,9 +497,11 @@ watch(deleteConfirmation, (open) => {
             <div class="collection-section">
                 <div class="section-top">
                     <h2 class="section-title">Kolekcija</h2>
-                        <button class="btn-sort" :class="{ 'active-sort': sortOrder }" @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'">
-                            Vērtējums {{ sortOrder === 'desc' ? '↓' : '↑' }}
-                        </button>
+                    <select class="sort-select" v-model="sortOrder" aria-label="Kārtošana">
+                        <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
 
                     <div class="filter-tabs">
                         <button
@@ -495,6 +530,7 @@ watch(deleteConfirmation, (open) => {
                             <div class="entry-notes" v-if="item.note">{{ item.note }}</div>
                         </div>
                         <v-rating class="entry-score" v-if="item.rating !== null" :model-value="item.rating" readonly size="small"></v-rating>
+                        <button v-if="isOwner" class="btn-remove-entry" @click="confirmRemove(item.game)">Noņemt</button>
                     </div>
 
                     <div v-if="collection.length === 0" class="empty-state">
@@ -675,6 +711,25 @@ watch(deleteConfirmation, (open) => {
             </v-card>
         </v-dialog>
 
+        <v-dialog max-width="400" v-model="removeDialog">
+            <v-card class="dialog">
+                <v-card-title class="v-card-title">Noņemt spēli?</v-card-title>
+                <v-card-text class="v-card-text">
+                    Spēle „{{ removeTarget.title }}“ tiks noņemta no kolekcijas.
+                    <div v-if="removeError" class="field-hint hint-error mt-2">{{ removeError }}</div>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="removeDialog = false">
+                        <p class="v-btn-text">Atcelt</p>
+                    </v-btn>
+                    <v-btn class="v-dialog-button btn-delete-confirm" :loading="isRemoving" @click="removeGame">
+                        <p class="v-btn-text">Noņemt</p>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
         <v-dialog max-width="500" v-model="verificationDialog" persistent>
             <v-card class="dialog">
                 <v-card-title class="v-card-title">E-pasta verifikācija</v-card-title>
@@ -764,25 +819,37 @@ watch(deleteConfirmation, (open) => {
     border-color: rgba(255, 95, 95, 0.6) ;
 }
 
-.btn-sort {
-    background: transparent;
+.sort-select {
+    background: #0a0a0a;
     border: 1px solid #2a2a2a;
     border-radius: 6px;
-    color: #666;
+    color: #ccc;
     font-size: 11px;
-    padding: 4px 12px;
+    padding: 4px 8px;
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
+    outline: none;
+    transition: border-color 0.15s;
 }
 
-.btn-sort:hover {
-    color: #ccc;
+.sort-select:hover,
+.sort-select:focus {
     border-color: #444;
 }
 
-.btn-sort.active-sort {
-    color: #ffffff;
-    border-color: #666;
+.btn-remove-entry {
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    color: #ff5f5f;
+    font-size: 11px;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+
+.btn-remove-entry:hover {
+    opacity: 1;
 }
 
 

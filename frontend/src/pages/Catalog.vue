@@ -33,6 +33,7 @@
     const collectionError = ref('')
     const collectionDialog = ref(false)
     const collectionMessage = ref('')
+    const removeDialog = ref(false)
     const today = new Date().toISOString().slice(0, 10)
     const dbOffset = ref(0)
     const igdbOffset = ref(0)
@@ -312,10 +313,10 @@
     }
 
     async function deleteCollection(gameId) {
-
         const response = await axios.post("/api/database/removefromcollection", { game_id: gameId })
         selectedGame.value.average_rating = response.data.average_rating
         collectionExists.value = false
+        removeDialog.value = false
     }
 
     async function addToCollection(gameId) {
@@ -424,7 +425,7 @@
                             <v-btn class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm" style="margin-bottom: 8px">
                                 Rediģēt Kolekciju
                             </v-btn>
-                            <v-btn class="btn-remove-collection" block @click="deleteCollection(selectedGame.id)">
+                            <v-btn class="btn-remove-collection" block @click="removeDialog = true">
                                 Noņemt
                             </v-btn>
                         </template>
@@ -596,6 +597,22 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <v-dialog v-model="removeDialog" max-width="400">
+            <v-card class="dialog">
+                <v-card-title>Noņemt spēli?</v-card-title>
+                <v-card-text>Spēle „{{ selectedGame.title }}“ tiks noņemta no kolekcijas.</v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="removeDialog = false">
+                        <span class="v-btn-text">Atcelt</span>
+                    </v-btn>
+                    <v-btn class="v-dialog-button btn-remove-confirm" @click="deleteCollection(selectedGame.id)">
+                        <span class="v-btn-text">Noņemt</span>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -728,6 +745,15 @@
     font-weight: 500;
     border-radius: 8px;
     margin-bottom: 12px;
+}
+
+.btn-remove-confirm {
+    border-color: rgba(255, 95, 95, 0.3);
+}
+
+.btn-remove-confirm:hover {
+    background-color: rgba(255, 95, 95, 0.12);
+    border-color: rgba(255, 95, 95, 0.6);
 }
 
 .collection-form {
