@@ -31,7 +31,7 @@ class DatabaseController extends Controller
         return;
     }
 
-    $response = $igdb->query('games', "fields name, summary, first_release_date, aggregated_rating, cover.url, involved_companies.developer,
+    $response = $igdb->query('games', "fields name, summary, first_release_date, cover.url, involved_companies.developer,
         involved_companies.publisher, involved_companies.company.name, genres, platforms; where id = $igdbId;");
 
     if (empty($response)) {
@@ -40,10 +40,7 @@ class DatabaseController extends Controller
 
     $resData = $response[0];
 
-    $game = Game::create([
-        ...Game::fromIgdb($resData),
-        'rating' => $resData['aggregated_rating'] ?? null,
-    ]);
+    $game = Game::create(Game::fromIgdb($resData));
 
     $game->genres()->attach(Genre::whereIn('id', $resData['genres'] ?? [])->pluck('id'));
     $game->platforms()->attach(Platform::whereIn('id', $resData['platforms'] ?? [])->pluck('id'));
@@ -53,9 +50,8 @@ class DatabaseController extends Controller
     public function addReview(Request $request){
         $validated = $request->validate([
             'game_id' => 'required|integer|exists:games,id',
-            'title' => 'required|string|max:20',
-            'content' => 'required|string|max:500',
-            'rating' => 'required|integer|min:1|max:10',
+            'title' => 'required|string|max:50',
+            'content' => 'required|string|min:10|max:500',
         ]);
 
         Review::updateOrCreate(
@@ -63,9 +59,8 @@ class DatabaseController extends Controller
         [
             'title' => $validated['title'],
             'content' => $validated['content'],
-            'rating' => $validated['rating'],
         ]
-        );  
+        );
     }
 
     public function deleteReview(Request $request){
@@ -78,7 +73,7 @@ class DatabaseController extends Controller
         $validated = $request->validate([
         'game_id' => 'required|integer|exists:games,id',
         'status' => ['required', Rule::in(UserGame::STATUSES)],
-        'rating' => 'nullable|integer|min:1|max:10',
+        'rating' => 'nullable|integer|min:1|max:5',
         'note' => 'nullable|string|max:250',
         'hours_played' => 'nullable|integer|min:0|max:99999',
         'completion_percent' => 'nullable|integer|min:0|max:100',
@@ -98,12 +93,20 @@ class DatabaseController extends Controller
             'completion_percent' => $validated['completion_percent'] ?? null,
             'completed_at' => $validated['completed_at'] ?? null,
         ]);
+
+        return $this->averageRating($validated['game_id']);
     }
 
     public function removeFromCollection(Request $request){
-        $request->validate(['game_id' => 'required|integer']);
+        $validated = $request->validate(['game_id' => 'required|integer|exists:games,id']);
         $userId = $request->user()->id;
-        UserGame::where('game_id', $request->game_id)->where('user_id', $userId)->delete();
+        UserGame::where('game_id', $validated['game_id'])->where('user_id', $userId)->delete();
+
+        return $this->averageRating($validated['game_id']);
+    }
+
+    private function averageRating(int $gameId){
+        return ['average_rating' => Game::withAvg('userGames as average_rating', 'rating')->find($gameId)->average_rating];
     }
 
     public function updateUser(Request $request){
@@ -207,7 +210,6 @@ class DatabaseController extends Controller
                 'game_id' => $review->game_id,
                 'title' => $review->title,
                 'content' => $review->content,
-                'rating' => $review->rating,
                 'created_at' => $review->created_at->format('Y-m-d'),
                 'user' => [
                     'id' => $review->user->id,
@@ -248,7 +250,7 @@ class DatabaseController extends Controller
         $platforms = $validated['platforms'] ?? [];
         $offset = $validated['offset'] ?? 0;
 
-        $rules = Game::with(['genres', 'platforms']);
+        $rules = Game::with(['genres', 'platforms'])->withAvg('userGames as average_rating', 'rating');
 
         if ($search) {
             $rules->where('title', 'like', "%{$search}%");
@@ -277,6 +279,7 @@ class DatabaseController extends Controller
             'source' => 'database',
             'developer' => $game->developer ?? 'Nav zināms',
             'publisher' => $game->publisher ?? 'Nav zināms',
+            'average_rating' => $game->average_rating,
         ];
         });
     }

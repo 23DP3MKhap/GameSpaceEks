@@ -10,7 +10,6 @@ class Review extends Model
         'game_id',
         'title',
         'content',
-        'rating',
     ];
 
     public function user() {

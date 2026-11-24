@@ -63,7 +63,7 @@ class AdminController extends Controller
     }
 
     public function getGames(Request $request){
-        return Game::select('id', 'title', 'developer', 'publisher', 'release_date', 'rating', 'cover_url', 'description')
+        return Game::select('id', 'title', 'developer', 'publisher', 'release_date', 'cover_url', 'description')
             ->orderBy('id')
             ->paginate($this->perPage($request));
     }
@@ -75,7 +75,6 @@ class AdminController extends Controller
             'developer' => 'sometimes|nullable|string|max:50',
             'publisher' => 'sometimes|nullable|string|max:50',
             'release_date' => 'sometimes|nullable|date',
-            'rating' => 'sometimes|nullable|numeric|min:0|max:100',
             'cover_url' => 'sometimes|nullable|url|max:250',
             'description' => 'sometimes|nullable|string|max:1000',
         ]);

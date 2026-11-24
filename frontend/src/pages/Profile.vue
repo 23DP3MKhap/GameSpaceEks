@@ -494,10 +494,7 @@ watch(deleteConfirmation, (open) => {
                             <div class="entry-progress" v-if="progressText(item)">{{ progressText(item) }}</div>
                             <div class="entry-notes" v-if="item.note">{{ item.note }}</div>
                         </div>
-                        <div class="entry-score" v-if="item.rating !== null">
-                            <span class="score-num">{{ item.rating }}</span>
-                            <span class="score-max">/10</span>
-                        </div>
+                        <v-rating class="entry-score" v-if="item.rating !== null" :model-value="item.rating" readonly size="small"></v-rating>
                     </div>
 
                     <div v-if="collection.length === 0" class="empty-state">
@@ -1103,18 +1100,6 @@ watch(deleteConfirmation, (open) => {
 
 .entry-score {
     flex: 0 0 auto;
-    text-align: right;
-}
-
-.score-num {
-    font-size: 18px;
-    font-weight: 500;
-    color: #f5f5f5;
-}
-
-.score-max {
-    font-size: 11px;
-    color: #444;
 }
 
 .empty-state {

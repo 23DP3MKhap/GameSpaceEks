@@ -228,7 +228,6 @@ async function deleteUserAvatar(user) {
                                         <th>Nosaukums</th>
                                         <th>Izstrādātājs</th>
                                         <th>Izdevējs</th>
-                                        <th>Vērtējums</th>
                                         <th>Darbības</th>
                                     </tr>
                                 </thead>
@@ -238,7 +237,6 @@ async function deleteUserAvatar(user) {
                                         <td>{{ game.title }}</td>
                                         <td>{{ game.developer || '-' }}</td>
                                         <td>{{ game.publisher || '-' }}</td>
-                                        <td>{{ game.rating ? game.rating : '-' }}</td>
                                         <td class="actions">
                                             <button class="btn-edit" @click="openEditGame(game)">Rediģēt</button>
                                             <button class="btn-delete" @click="confirm(`Dzēst spēli ${game.title}?`, () => deleteGame(game.id))">Dzēst</button>
@@ -273,7 +271,6 @@ async function deleteUserAvatar(user) {
                                         <th>Spēle</th>
                                         <th>Virsraksts</th>
                                         <th>Saturs</th>
-                                        <th>Vērtējums</th>
                                         <th>Darbības</th>
                                     </tr>
                                 </thead>
@@ -284,7 +281,6 @@ async function deleteUserAvatar(user) {
                                         <td>{{ review.game?.title || '-' }}</td>
                                         <td>{{ review.title }}</td>
                                         <td class="content-cell">{{ review.content }}</td>
-                                        <td>{{ review.rating }}/10</td>
                                         <td class="actions">
                                             <button class="btn-delete" @click="confirm(`Dzēst atsauksmi no ${review.user?.username}?`, () => deleteReview(review.id))">Dzēst</button>
                                         </td>
@@ -370,10 +366,6 @@ async function deleteUserAvatar(user) {
                     <div class="edit-field">
                         <label class="edit-label">Iznākšanas Datums</label>
                         <input class="edit-input" type="date" v-model="editingGame.release_date">
-                    </div>
-                    <div class="edit-field">
-                        <label class="edit-label">Vērtējums</label>
-                        <input class="edit-input" type="number" min="0" max="100" v-model="editingGame.rating">
                     </div>
                     <div class="edit-field">
                         <label class="edit-label">Vāka URL</label>

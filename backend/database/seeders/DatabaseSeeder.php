@@ -80,7 +80,7 @@ class DatabaseSeeder extends Seeder
 
         // Games
 
-        $igdbGames = $igdb->query('games', "fields name, summary, first_release_date, rating, cover.url,
+        $igdbGames = $igdb->query('games', "fields name, summary, first_release_date, cover.url,
                     involved_companies.company.name, involved_companies.developer, involved_companies.publisher,
                     genres.id, platforms.id;
                     where rating != null & cover != null & first_release_date != null;
@@ -92,7 +92,6 @@ class DatabaseSeeder extends Seeder
                 ['id' => $game['id']],
                 [
                     ...Game::fromIgdb($game),
-                    'rating'       => $game['rating'] ?? null,
                     'created_at'   => now(),
                     'updated_at'   => now(),
                 ]
@@ -183,7 +182,7 @@ class DatabaseSeeder extends Seeder
                     ['user_id' => $userId, 'game_id' => $gameId],
                     [
                         'status'     => $status,
-                        'rating'     => rand(1, 10),
+                        'rating'     => rand(1, 5),
                         'note'       => $this->randomNote($status),
                         ...$this->randomProgress($status),
                         'added_at'   => now(),
@@ -200,52 +199,42 @@ class DatabaseSeeder extends Seeder
             [
                 'title'   => 'Grafika ir augstākās klases',
                 'content' => 'Es burtiski varu skatīties uz pikseļiem un pat neapzināties, ka tā ir datorspēle.',
-                'rating'  => 9,
             ],
             [
                 'title'   => 'Labi, bet man nepatika',
                 'content' => 'Spēle ir laba gan koncepcijas, gan izpildījuma ziņā, bet man noteikti bija sajūta, ka kaut kā pietrūkst.',
-                'rating'  => 6,
             ],
             [
                 'title'   => 'patiesi šedevrs',
                 'content' => 'Man nav vārdu, lai aprakstītu, cik laba ir šī spēle, es pat nedomāju, ka varu pienācīgi izteikt savas domas, stāstot kādam par šo spēli',
-                'rating'  => 10,
             ],
             [
                 'title'   => 'izstrādātāji ir slinki',
                 'content' => 'Spēle ir laba, bet šķiet neapstrādāta.',
-                'rating'  => 7,
             ],
             [
                 'title'   => 'ļoti jautri spēlēt.',
                 'content' => 'Esmu ar prieku spēlējis šo spēli vairāk nekā 100 stundas, un man joprojām nav garlaicīgi. Droši vien spēlēšu tikpat ilgi',
-                'rating'  => 9,
             ],
             [
                 'title'   => 'Laba ideja, slikts izpildījums',
                 'content' => 'Lieliska ideja un interesanta spēle, bet viss ir ļoti salauzts un darbojas ar kruķiem',
-                'rating'  => 6,
             ],
             [
                 'title'   => 'Multiplayer 10/10',
                 'content' => 'Spēlēt ar draugiem ir prieks, tur ir bezgalīga satura kaudze, bet spēlēt vienatnē ir diezgan garlaicīgi un vienmuļi',
-                'rating'  => 8,
             ],
             [
                 'title'   => 'Sižeta attīstība prasa ilgu laiku',
                 'content' => 'Beigas ir ļoti labas, bet žēl, ka, lai redzētu beigas, spēlē jāpavada vairāk nekā 50 stundas, jo spēles gaita šeit ir ļoti garlaicīga un bieži atkārtojas',
-                'rating'  => 7,
             ],
             [
                 'title'   => 'pasaule ir ļoti labi attīstīta!',
                 'content' => 'Vari iziet pa katrām durvīm, un visur, kur paskaties, ir tik daudz mazu detaļu!',
-                'rating'  => 8,
             ],
             [
                 'title'   => 'izskatās labāk nekā spēlējas',
                 'content' => 'Labāk ir noskatīties šīs spēles sižetu vietnē YouTube, nekā spēlēt šo spēli pašam.',
-                'rating'  => 7,
             ],
         ];
    
@@ -273,7 +262,6 @@ class DatabaseSeeder extends Seeder
                     'game_id'    => $gameId,
                     'title'      => $review['title'],
                     'content'    => $review['content'],
-                    'rating'     => $review['rating'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

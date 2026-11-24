@@ -18,13 +18,13 @@
     const selectedGame = ref(null)
     const reviewTitle = ref("")
     const reviewText = ref("")
-    const reviewRating = ref(1)
     const reviewdialog = ref(false)
     const reviewError = ref('')
+    const reviewErrors = ref({})
     const reviews = ref([])
     const collectionExists = ref(false)
     const collectionStatus = ref('planned')
-    const collectionScore = ref(5)
+    const collectionScore = ref(null)
     const collectionNotes = ref('')
     const collectionHours = ref(null)
     const collectionPercent = ref(null)
@@ -73,6 +73,11 @@
         { value: 'dropped', label: 'Pārtraukta' },
     ]
 
+    const reviewFieldErrors = {
+        title: 'Virsrakstam jābūt no 1 līdz 50 rakstzīmēm.',
+        content: 'Atsauksmes tekstam jābūt no 10 līdz 500 rakstzīmēm.',
+    }
+
     let timeout = null
     let lastRequestId = 0
 
@@ -115,11 +120,9 @@
         if (review) {
             reviewTitle.value = review.title
             reviewText.value = review.content
-            reviewRating.value = review.rating
         } else {
             reviewTitle.value = ''
             reviewText.value = ''
-            reviewRating.value = 1
         }
     })
 
@@ -190,23 +193,27 @@
 
     async function postReview(game) {
         reviewError.value = ''
+        reviewErrors.value = {}
         try {
             await axios.post("/api/database/addgame", { igdb_id: game.id })
             await axios.post("/api/database/addreview", {
                 game_id: game.id,
                 title: reviewTitle.value,
-                content: reviewText.value,
-                rating: reviewRating.value
+                content: reviewText.value
             })
         } catch (error) {
-            reviewError.value = error.response?.status === 422
-                ? 'Aizpildi atsauksmes virsrakstu un tekstu.'
-                : 'Neizdevās publicēt atsauksmi. Mēģini vēlreiz.'
+            const fields = Object.keys(error.response?.data?.errors ?? {})
+            const known = fields.filter(field => reviewFieldErrors[field])
+
+            if (error.response?.status === 422 && known.length) {
+                reviewErrors.value = Object.fromEntries(known.map(field => [field, reviewFieldErrors[field]]))
+            } else {
+                reviewError.value = 'Neizdevās publicēt atsauksmi. Mēģini vēlreiz.'
+            }
             return
         }
         reviewTitle.value = ""
         reviewText.value = ""
-        reviewRating.value = 1
         reviewdialog.value = true
         getReviews(game.id)
         return console.log("Review posted")
@@ -278,9 +285,10 @@
         selectedGame.value = game
         showCollectionForm.value = false
         reviewError.value = ''
+        reviewErrors.value = {}
         collectionError.value = ''
         collectionStatus.value = 'planned'
-        collectionScore.value = 5
+        collectionScore.value = null
         collectionNotes.value = ''
         collectionHours.value = null
         collectionPercent.value = null
@@ -304,8 +312,9 @@
     }
 
     async function deleteCollection(gameId) {
-        
-        await axios.post("/api/database/removefromcollection", { game_id: gameId })
+
+        const response = await axios.post("/api/database/removefromcollection", { game_id: gameId })
+        selectedGame.value.average_rating = response.data.average_rating
         collectionExists.value = false
     }
 
@@ -313,15 +322,16 @@
         collectionError.value = ''
         try {
             await axios.post("/api/database/addgame", { igdb_id: gameId })
-            await axios.post("/api/database/addtocollection", {
+            const response = await axios.post("/api/database/addtocollection", {
                 game_id: gameId,
                 status: collectionStatus.value,
-                rating: collectionScore.value,
+                rating: collectionScore.value || null,
                 note: collectionNotes.value,
                 hours_played: collectionHours.value,
                 completion_percent: collectionPercent.value,
                 completed_at: collectionCompletedAt.value
             })
+            selectedGame.value.average_rating = response.data.average_rating
         } catch (error) {
             collectionError.value = error.response?.status === 422
                 ? 'Norādīti nederīgi dati'
@@ -391,6 +401,7 @@
                         <div class="genre">{{ game.genre }}</div>
                         <div class="meta">Izstrādātājs: {{ game.developer }}</div>
                         <div class="meta">Izdevējs: {{ game.publisher }}</div>
+                        <div class="meta" v-if="game.average_rating">Vidējais vērtējums: {{ game.average_rating.toFixed(1) }} ★</div>
                         <div class="meta">id: {{ game.id }} {{ game.source }}</div>
                     </div>
                 </div>
@@ -430,9 +441,7 @@
                         
                             <div class="collection-field">
                                 <label class="collection-label">Jūsu Vērtējums</label>
-                                <select class="custom-select full-width" v-model="collectionScore">
-                                    <option v-for="score in 10" :key="score" :value="score">{{ score }}</option>
-                                </select>
+                                <v-rating v-model="collectionScore" clearable hover></v-rating>
                             </div>
 
                             <div class="collection-field">
@@ -467,7 +476,8 @@
                             </div>
                             <div class="stat-item" v-if="collectionExists">
                                 <span class="stat-label">Jūsu Vērtējums</span>
-                                <span class="stat-value">{{ collectionScore }}</span>
+                                <v-rating v-if="collectionScore" :model-value="collectionScore" readonly size="x-small"></v-rating>
+                                <span v-else class="stat-value">Nav</span>
                             </div>
                             <div class="stat-item" v-if="collectionExists">
                                 <span class="stat-label">Nospēlētās stundas</span>
@@ -484,6 +494,10 @@
                             <div class="stat-item">
                                 <span class="stat-label">Piezīme</span>
                                 <span class="stat-value">{{ collectionNotes || 'Nav' }}</span>
+                            </div>
+                            <div class="stat-item" v-if="selectedGame.average_rating">
+                                <span class="stat-label">Vidējais vērtējums</span>
+                                <span class="stat-value">{{ selectedGame.average_rating.toFixed(1) }} ★</span>
                             </div>
                             <div class="stat-item" style="flex-direction: column; gap: 4px;">
                                 <span class="stat-label">Žanrs:</span>
@@ -515,7 +529,6 @@
                                             {{ review.user.username }}
                                             <span class="review-you" v-if="review.user?.id === auth.user?.id">jūs</span>
                                             </span>
-                                            <span class="review-rating">{{ review.rating }}/10</span>
                                         </div>
                                         <div class="review-title">{{ review.title }}</div>
                                         <div class="review-text">{{ review.content }}</div>
@@ -534,19 +547,13 @@
                             </div>
                         
                             <div class="review-form" v-if="auth.user && auth.user.email_verified">
-                                <v-text-field v-model="reviewTitle" label="Atsauksmes Virsraksts" maxlength="20" counter variant="outlined" density="compact" 
-                                    color="white">
+                                <v-text-field v-model="reviewTitle" label="Atsauksmes Virsraksts" maxlength="50" counter variant="outlined" density="compact"
+                                    color="white" :error-messages="reviewErrors.title">
                                 </v-text-field>
-                                <v-textarea v-model="reviewText" label="Uzraksti savas domas..." maxlength="500" counter variant="outlined" density="compact" 
-                                    rows="3" no-resize color="white">
+                                <v-textarea v-model="reviewText" label="Uzraksti savas domas..." maxlength="500" counter variant="outlined" density="compact"
+                                    rows="3" no-resize color="white" :error-messages="reviewErrors.content">
                                 </v-textarea>
                                 <div class="form-actions">
-                                    <div class="rating-picker">
-                                        <span>Vērtējums:</span>
-                                        <select class="custom-select" v-model="reviewRating">
-                                            <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
-                                        </select>
-                                    </div>
                                     <div style="display: flex; gap: 8px;">
                                         <v-btn v-if="userReview" class="btn-delete-reviewform" size="small" @click="deleteReview(selectedGame.id)">
                                             Dzēst
@@ -1018,11 +1025,6 @@
     gap: 4px;
 }
 
-.review-rating {
-    color: #38ef7d;
-    margin-left: 8px;
-}
-
 .review-text {
     font-size: 13px;
     color: #aaa;
@@ -1048,7 +1050,7 @@
 
 .form-actions {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-top: 8px;
     padding-top: 8px;
@@ -1059,14 +1061,6 @@
     font-size: 12px;
     margin-top: 6px;
     color: #ff5f5f;
-}
-
-.rating-picker {
-    font-size: 12px;
-    color: #666;
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .custom-select {

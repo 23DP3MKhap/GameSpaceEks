@@ -5,15 +5,23 @@ namespace App\Models;
 use App\Services\IgdbClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 class Game extends Model
-{   
+{
     public $incrementing = false;
 
     protected $fillable = [
         'id', 'title', 'developer', 'publisher',
-        'release_date', 'description', 'cover_url', 'rating'
+        'release_date', 'description', 'cover_url'
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'average_rating' => 'float',
+        ];
+    }
 
     public static function coverUrl(array $igdbGame): ?string
     {
@@ -51,5 +59,10 @@ class Game extends Model
     public function platforms(): BelongsToMany
     {
         return $this->belongsToMany(Platform::class, 'game_platforms');
+    }
+
+    public function userGames(): HasMany
+    {
+        return $this->hasMany(UserGame::class);
     }
 }
