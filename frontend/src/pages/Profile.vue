@@ -519,9 +519,11 @@ watch(deleteConfirmation, (open) => {
 
                 <div class="collection-grid">
                     <div class="game-entry" v-for="item in collection" :key="item.game.id">
-                        <img :src="item.game.image" :alt="item.game.title" class="entry-cover">
+                        <router-link :to="`/Game/${item.game.id}`">
+                            <img :src="item.game.image" :alt="item.game.title" class="entry-cover">
+                        </router-link>
                         <div class="entry-info">
-                            <div class="entry-name">{{ item.game.title }}</div>
+                            <router-link :to="`/Game/${item.game.id}`" class="entry-name">{{ item.game.title }}</router-link>
                             <div class="entry-status" :style="{ color: statusMeta[item.status].color }">
                                 <span class="status-dot" :style="{ background: statusMeta[item.status].color }"></span>
                                 {{ statusMeta[item.status].label }}
@@ -1113,6 +1115,7 @@ watch(deleteConfirmation, (open) => {
 }
 
 .entry-cover {
+    display: block;
     width: 40px;
     height: 54px;
     object-fit: cover;
@@ -1127,13 +1130,20 @@ watch(deleteConfirmation, (open) => {
 }
 
 .entry-name {
+    display: block;
     font-size: 13px;
     font-weight: 400;
     color: #efefef;
+    text-decoration: none;
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: color 0.15s;
+}
+
+.entry-name:hover {
+    color: #4a9eff;
 }
 
 .entry-status {

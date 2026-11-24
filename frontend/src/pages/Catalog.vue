@@ -1,40 +1,16 @@
 <script setup>
     // Imports
 
-    import { ref, onMounted, watch , computed} from 'vue'
+    import { ref, onMounted, watch } from 'vue'
     import axios from '../plugins/axios'
-    import { auth } from '../plugins/userinfo'
-    import { useRouter } from 'vue-router'
 
 
     // variables
-    const router = useRouter()
     const genresList = ref([])
     const platformsList = ref([])
     const selectedGenres = ref([])
     const selectedPlatforms = ref([])
     const games = ref([])
-    const dialog = ref(false)
-    const selectedGame = ref(null)
-    const reviewTitle = ref("")
-    const reviewText = ref("")
-    const reviewdialog = ref(false)
-    const reviewError = ref('')
-    const reviewErrors = ref({})
-    const reviews = ref([])
-    const collectionExists = ref(false)
-    const collectionStatus = ref('planned')
-    const collectionScore = ref(null)
-    const collectionNotes = ref('')
-    const collectionHours = ref(null)
-    const collectionPercent = ref(null)
-    const collectionCompletedAt = ref(null)
-    const showCollectionForm = ref(false)
-    const collectionError = ref('')
-    const collectionDialog = ref(false)
-    const collectionMessage = ref('')
-    const removeDialog = ref(false)
-    const today = new Date().toISOString().slice(0, 10)
     const dbOffset = ref(0)
     const igdbOffset = ref(0)
     const dbExhausted = ref(false)
@@ -44,41 +20,6 @@
     const scrollTriggerBlock= ref(true)
     const catalogEmpty = ref(false)
     
-    const userReview = computed(function() {
-        if (auth.user){
-            const founded = reviews.value.find(function(review){
-                return review.user.id === auth.user.id
-            })
-            
-            if (founded){
-                return founded
-            } else {
-                return null
-            }
-
-        }
-    })
-
-    
-    const sortedReviews = computed(() => {
-    if (!auth.user){return reviews.value}
-    return [
-        ...reviews.value.filter(function(review){return review.user.id === auth.user.id}),
-        ...reviews.value.filter(function(review){return review.user.id !== auth.user.id}),
-    ]
-})
-    const statusVariants = [
-        { value: 'playing', label: 'Spēlē' },
-        { value: 'completed', label: 'Pabeigta' },
-        { value: 'planned', label: 'Plānota' },
-        { value: 'dropped', label: 'Pārtraukta' },
-    ]
-
-    const reviewFieldErrors = {
-        title: 'Virsrakstam jābūt no 1 līdz 50 rakstzīmēm.',
-        content: 'Atsauksmes tekstam jābūt no 10 līdz 500 rakstzīmēm.',
-    }
-
     let timeout = null
     let lastRequestId = 0
 
@@ -117,49 +58,13 @@
         }, 500)
     })
 
-    watch(userReview, (review) => {
-        if (review) {
-            reviewTitle.value = review.title
-            reviewText.value = review.content
-        } else {
-            reviewTitle.value = ''
-            reviewText.value = ''
-        }
-    })
-
     watch([selectedGenres, selectedPlatforms], () => {
         resetCatalog()
         gameLoader()
     });
 
-    watch(dialog, (opened) => {
-        if (!opened) {
-            collectionExists.value = false
-        }
-    })
-
 
     //functions
-
-    function isEmpty(value) {
-        return value === null || value === ''
-    }
-
-    function formatDate(date) {
-        return date.split('-').reverse().join('.')
-    }
-
-    function toggleCollectionForm() {
-        if (!auth.user) {
-            router.push({ path: '/Login', query: { notice: 'collection' } })
-            return
-        }
-        if (!auth.user.email_verified) {
-            collectionError.value = 'Apstiprini savu e-pasta adresi, lai izmantotu šo funkciju'
-            return
-        }
-        showCollectionForm.value = !showCollectionForm.value
-    }
 
     function toggleAllGenres(el) {
         if (el.target.checked) {
@@ -177,11 +82,6 @@
         }
     }
 
-    async function getReviews(gameId) {
-        const response = await axios.get("/api/database/getreviews", { params: { game_id: gameId } })
-        reviews.value = response.data
-    }
-
     async function getGenres() {
         const response = await axios.get('/api/database/getgenres')
         genresList.value = response.data
@@ -191,35 +91,6 @@
         const response = await axios.get('/api/database/getplatforms')
         platformsList.value = response.data
     }
-
-    async function postReview(game) {
-        reviewError.value = ''
-        reviewErrors.value = {}
-        try {
-            await axios.post("/api/database/addgame", { igdb_id: game.id })
-            await axios.post("/api/database/addreview", {
-                game_id: game.id,
-                title: reviewTitle.value,
-                content: reviewText.value
-            })
-        } catch (error) {
-            const fields = Object.keys(error.response?.data?.errors ?? {})
-            const known = fields.filter(field => reviewFieldErrors[field])
-
-            if (error.response?.status === 422 && known.length) {
-                reviewErrors.value = Object.fromEntries(known.map(field => [field, reviewFieldErrors[field]]))
-            } else {
-                reviewError.value = 'Neizdevās publicēt atsauksmi. Mēģini vēlreiz.'
-            }
-            return
-        }
-        reviewTitle.value = ""
-        reviewText.value = ""
-        reviewdialog.value = true
-        getReviews(game.id)
-        return console.log("Review posted")
-    }
-
 
     function resetCatalog() {
         lastRequestId++
@@ -282,75 +153,6 @@
         }
     }
 
-    async function openGameModal(game) {
-        selectedGame.value = game
-        showCollectionForm.value = false
-        reviewError.value = ''
-        reviewErrors.value = {}
-        collectionError.value = ''
-        collectionStatus.value = 'planned'
-        collectionScore.value = null
-        collectionNotes.value = ''
-        collectionHours.value = null
-        collectionPercent.value = null
-        collectionCompletedAt.value = null
-
-        if (auth.user) {
-            const res = await axios.get('/api/database/checkcollection', { params: { game_id: game.id } })
-            if (res.data.exists) {
-                collectionExists.value = true
-                collectionStatus.value = res.data.status
-                collectionScore.value = res.data.rating
-                collectionNotes.value = res.data.note || ''
-                collectionHours.value = res.data.hours_played
-                collectionPercent.value = res.data.completion_percent
-                collectionCompletedAt.value = res.data.completed_at
-            }
-        }
-
-        await getReviews(game.id)
-        dialog.value = true
-    }
-
-    async function deleteCollection(gameId) {
-        const response = await axios.post("/api/database/removefromcollection", { game_id: gameId })
-        selectedGame.value.average_rating = response.data.average_rating
-        collectionExists.value = false
-        removeDialog.value = false
-    }
-
-    async function addToCollection(gameId) {
-        collectionError.value = ''
-        try {
-            await axios.post("/api/database/addgame", { igdb_id: gameId })
-            const response = await axios.post("/api/database/addtocollection", {
-                game_id: gameId,
-                status: collectionStatus.value,
-                rating: collectionScore.value || null,
-                note: collectionNotes.value,
-                hours_played: collectionHours.value,
-                completion_percent: collectionPercent.value,
-                completed_at: collectionCompletedAt.value
-            })
-            selectedGame.value.average_rating = response.data.average_rating
-        } catch (error) {
-            collectionError.value = error.response?.status === 422
-                ? 'Norādīti nederīgi dati'
-                : 'Neizdevās saglabāt kolekcijā. Mēģini vēlreiz.'
-            return
-        }
-        collectionMessage.value = collectionExists.value ? 'Kolekcijas ieraksts atjaunināts' : 'Spēle pievienota kolekcijai'
-        collectionDialog.value = true
-        collectionExists.value = true
-        showCollectionForm.value = false
-    }
-
-
-    async function deleteReview(gameId) {
-        
-        await axios.post("/api/database/deletereview", { game_id: gameId })
-        getReviews(gameId)
-    }
 
 </script>
 
@@ -395,7 +197,7 @@
             <v-progress-linear v-if="isLoading" indeterminate color="white"></v-progress-linear>
             <div v-if="catalogEmpty"><p>Nav spēļu jūsu pieprasījumam, lūdzu mēģiniet citu</p></div>
             <section class="games-grid">
-                <div class="game-card" v-for="game in games" :key="game.id" @click="openGameModal(game)">
+                <router-link class="game-card" v-for="game in games" :key="game.id" :to="`/Game/${game.id}`">
                     <img :src="game.image" :alt="game.title" class="game-image">
                     <div class="game-info">
                         <h2>{{ game.title }}</h2>
@@ -405,253 +207,18 @@
                         <div class="meta" v-if="game.average_rating">Vidējais vērtējums: {{ game.average_rating.toFixed(1) }} ★</div>
                         <div class="meta">id: {{ game.id }} {{ game.source }}</div>
                     </div>
-                </div>
+                </router-link>
             </section>
             <div class="loading-wrap" v-if="isLoading">
                 <v-progress-linear v-if="isLoading" indeterminate color="white"></v-progress-linear>
             </div>
             <div ref="scrollTrigger" class="scroll-trigger"></div>
         </main>
-
-        <v-dialog max-width="850" max-height="80vh" v-model="dialog" transition="dialog-bottom-transition">
-            <v-card class="game-modal" v-if="selectedGame">
-                <div class="modal-body">
-                    <div class="modal-main-info">
-                        <v-btn v-if="!collectionExists" class="btn-add-collection" block @click="toggleCollectionForm">
-                            Pievienot Kolekcijai
-                        </v-btn>
-
-                        <template v-if="collectionExists">
-                            <v-btn class="btn-add-collection" block @click="showCollectionForm = !showCollectionForm" style="margin-bottom: 8px">
-                                Rediģēt Kolekciju
-                            </v-btn>
-                            <v-btn class="btn-remove-collection" block @click="removeDialog = true">
-                                Noņemt
-                            </v-btn>
-                        </template>
-
-                        <div v-if="showCollectionForm" class="collection-form">
-                            <div class="collection-field">
-                                <label class="collection-label">Statuss</label>
-                                <select class="custom-select full-width" v-model="collectionStatus">
-                                    <option v-for="status in statusVariants" :key="status.value" :value="status.value">
-                                        {{ status.label }}
-                                    </option>
-                                </select>
-                            </div>
-                        
-                            <div class="collection-field">
-                                <label class="collection-label">Jūsu Vērtējums</label>
-                                <v-rating v-model="collectionScore" clearable hover></v-rating>
-                            </div>
-
-                            <div class="collection-field">
-                                <label class="collection-label">Nospēlētās stundas</label>
-                                <input type="number" class="custom-select full-width" v-model.number="collectionHours" min="0" max="99999" step="1">
-                            </div>
-
-                            <div class="collection-field">
-                                <label class="collection-label">Pabeigšanas procents</label>
-                                <input type="number" class="custom-select full-width" v-model.number="collectionPercent" min="0" max="100" step="1">
-                            </div>
-
-                            <div class="collection-field">
-                                <label class="collection-label">Pabeigšanas datums</label>
-                                <input type="date" class="custom-select full-width" v-model="collectionCompletedAt" :max="today">
-                            </div>
-
-                            <v-textarea v-model="collectionNotes" label="Piezīmes" maxlength="250" counter variant="outlined" density="compact"
-                            rows="3" no-resize color="white">
-                            </v-textarea>
-
-                            <v-btn class="btn-send" block size="small" @click="addToCollection(selectedGame.id)">
-                                {{ collectionExists ? 'Saglabāt Izmaiņas' : 'Pievienot' }}
-                            </v-btn>
-                        </div>
-                        <div v-if="collectionError" class="form-error">{{ collectionError }}</div>
-
-                        <div class="modal-stats" :style="showCollectionForm ? 'margin-top: 12px' : ''">
-                            <div class="stat-item" v-if="collectionExists">
-                                <span class="stat-label">Statuss</span>
-                                <span class="stat-value">{{ statusVariants.find(status => status.value === collectionStatus).label }}</span>
-                            </div>
-                            <div class="stat-item" v-if="collectionExists">
-                                <span class="stat-label">Jūsu Vērtējums</span>
-                                <v-rating v-if="collectionScore" :model-value="collectionScore" readonly size="x-small"></v-rating>
-                                <span v-else class="stat-value">Nav</span>
-                            </div>
-                            <div class="stat-item" v-if="collectionExists">
-                                <span class="stat-label">Nospēlētās stundas</span>
-                                <span class="stat-value">{{ isEmpty(collectionHours) ? 'Nav' : collectionHours + ' h' }}</span>
-                            </div>
-                            <div class="stat-item" v-if="collectionExists">
-                                <span class="stat-label">Pabeigšanas procents</span>
-                                <span class="stat-value">{{ isEmpty(collectionPercent) ? 'Nav' : collectionPercent + ' %' }}</span>
-                            </div>
-                            <div class="stat-item" v-if="collectionExists">
-                                <span class="stat-label">Pabeigšanas datums</span>
-                                <span class="stat-value">{{ isEmpty(collectionCompletedAt) ? 'Nav' : formatDate(collectionCompletedAt) }}</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Piezīme</span>
-                                <span class="stat-value">{{ collectionNotes || 'Nav' }}</span>
-                            </div>
-                            <div class="stat-item" v-if="selectedGame.average_rating">
-                                <span class="stat-label">Vidējais vērtējums</span>
-                                <span class="stat-value">{{ selectedGame.average_rating.toFixed(1) }} ★</span>
-                            </div>
-                            <div class="stat-item" style="flex-direction: column; gap: 4px;">
-                                <span class="stat-label">Žanrs:</span>
-                                <span class="stat-value">{{ selectedGame.genre }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal-content-area">
-                        <v-card-title class="modal-title">
-                            {{ selectedGame.title }}
-                        </v-card-title>
-
-                        <div class="reviews-section">
-                            <h3 class="section-title">Atsauksmes ({{ reviews.length }})</h3>
-
-                            <div class="reviews-list">
-                                <div v-for="review in sortedReviews" :key="review.id" class="review-item">
-                                    <div class="review-avatar-wrap">
-                                        <img v-if="review.user?.avatar_url" :src="review.user.avatar_url" class="review-avatar-img" alt="Lietotāja attēls" @error="$event.target.src = 'https://placehold.co/150/212121/white?text=U'">
-                                        <div v-else class="review-avatar-placeholder">
-                                            {{review.user.username[0].toUpperCase()}}
-                                        </div>
-                                    </div>
-                                
-                                    <div class="review-details">
-                                        <div class="review-author">
-                                            <span class="author-link" @click="router.push(`/User/${review.user?.id}/Profile`)">
-                                            {{ review.user.username }}
-                                            <span class="review-you" v-if="review.user?.id === auth.user?.id">jūs</span>
-                                            </span>
-                                        </div>
-                                        <div class="review-title">{{ review.title }}</div>
-                                        <div class="review-text">{{ review.content }}</div>
-                                        <div class="review-footer">
-                                            <span class="review-date">{{ review.created_at  }}</span>
-                                            <button v-if="review.user?.id === auth.user?.id" class="btn-delete-review" @click="deleteReview(selectedGame.id)">
-                                                Dzēst
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            
-                                <div v-if="reviews.length === 0" class="no-reviews">
-                                    <p>Vēl nav atsauksmju. Esi pirmais, kas uzraksta!</p>
-                                </div>
-                            </div>
-                        
-                            <div class="review-form" v-if="auth.user && auth.user.email_verified">
-                                <v-text-field v-model="reviewTitle" label="Atsauksmes Virsraksts" maxlength="50" counter variant="outlined" density="compact"
-                                    color="white" :error-messages="reviewErrors.title">
-                                </v-text-field>
-                                <v-textarea v-model="reviewText" label="Uzraksti savas domas..." maxlength="500" counter variant="outlined" density="compact"
-                                    rows="3" no-resize color="white" :error-messages="reviewErrors.content">
-                                </v-textarea>
-                                <div class="form-actions">
-                                    <div style="display: flex; gap: 8px;">
-                                        <v-btn v-if="userReview" class="btn-delete-reviewform" size="small" @click="deleteReview(selectedGame.id)">
-                                            Dzēst
-                                        </v-btn>
-                                        <v-btn class="btn-send" size="small" @click="postReview(selectedGame)">
-                                            {{ userReview ? 'Atjaunināt Atsauksmi' : 'Publicēt Atsauksmi' }}
-                                        </v-btn>
-                                    </div>
-                                </div>
-                                <div v-if="reviewError" class="form-error">{{ reviewError }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </v-card>
-        </v-dialog>
-
-        <v-dialog v-model="reviewdialog" max-width="400">
-            <v-card class="dialog">
-                <v-card-title>Atsauksme publicēta</v-card-title>
-                <v-card-text>Atsauksme veiksmīgi publicēta!</v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn class="v-dialog-button" @click="reviewdialog = false">
-                        <span class="v-btn-text">Aizvērt</span>
-                    </v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
-
-        <v-dialog v-model="collectionDialog" max-width="400">
-            <v-card class="dialog">
-                <v-card-title>Kolekcija</v-card-title>
-                <v-card-text>{{ collectionMessage }}</v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn class="v-dialog-button" @click="collectionDialog = false">
-                        <span class="v-btn-text">Aizvērt</span>
-                    </v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
-
-        <v-dialog v-model="removeDialog" max-width="400">
-            <v-card class="dialog">
-                <v-card-title>Noņemt spēli?</v-card-title>
-                <v-card-text>Spēle „{{ selectedGame.title }}“ tiks noņemta no kolekcijas.</v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn class="v-dialog-button" @click="removeDialog = false">
-                        <span class="v-btn-text">Atcelt</span>
-                    </v-btn>
-                    <v-btn class="v-dialog-button btn-remove-confirm" @click="deleteCollection(selectedGame.id)">
-                        <span class="v-btn-text">Noņemt</span>
-                    </v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
     </div>
 </template>
 
 
 <style scoped>
-
-:deep(.v-field__outline) {
-    --v-field-border-opacity: 0.2;
-}
-
-:deep(.v-field) {
-    color: #eee;
-}
-
-:deep(.v-label) {
-    color: #666;
-}
-
-:deep(.v-counter) {
-    color: #555;
-}
-
-:deep(.v-input) {
-    margin-bottom: 4px;
-}
-
-:deep(.v-input__details) {
-    padding-top: 2px;
-    padding-bottom: 6px;
-}
-
-.author-link {
-    cursor: pointer;
-    transition: color 0.15s;
-}
-
-.author-link:hover {
-    color: #4a9eff;
-}
 
 .loading-wrap {
     display: flex;
@@ -660,129 +227,6 @@
 
 .scroll-trigger {
     height: 1px;
-}
-
-.review-avatar-wrap {
-    flex: 0 0 auto;
-}
-
-.review-avatar-img {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.review-avatar-placeholder {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #222;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 500;
-    color: #666;
-}
-
-.review-you {
-    font-size: 10px;
-    color: #4a9eff;
-    border: 1px solid rgba(74, 158, 255, 0.3);
-    border-radius: 4px;
-    padding: 1px 5px;
-    margin-left: 6px;
-    vertical-align: middle;
-}
-
-.review-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 4px;
-}
-
-.review-date {
-    font-size: 0.8rem;
-    color: gray;
-}
-
-.review-details {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-}
-
-.btn-delete-review {
-    background: transparent;
-    border: none;
-    color: #ff5f5f;
-    font-size: 11px;
-    cursor: pointer;
-    padding: 0;
-    opacity: 0.6;
-    transition: opacity 0.15s;
-}
-
-.btn-delete-review:hover {
-    opacity: 1;
-}
-
-.btn-delete-reviewform {
-    background: transparent;
-    color: #ff5f5f;
-    border: 1px solid rgba(255, 95, 95, 0.3);
-    text-transform: none;
-    font-size: 12px;
-}
-
-.btn-remove-collection {
-    background: transparent;
-    color: #ff5555;
-    border: 1px solid #ff555533;
-    text-transform: none;
-    font-weight: 500;
-    border-radius: 8px;
-    margin-bottom: 12px;
-}
-
-.btn-remove-confirm {
-    border-color: rgba(255, 95, 95, 0.3);
-}
-
-.btn-remove-confirm:hover {
-    background-color: rgba(255, 95, 95, 0.12);
-    border-color: rgba(255, 95, 95, 0.6);
-}
-
-.collection-form {
-    background: #0d0d0d;
-    border: 1px solid #1f1f1f;
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.collection-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.collection-label {
-    font-size: 11px;
-    color: #555;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.full-width {
-    width: 100%;
-    padding: 5px 8px;
 }
 
 .track-row {
@@ -851,263 +295,6 @@
     font-weight: 500;
 }
 
-.v-card-title,
-.v-card-text {
-    color: white;
-}
-
-.v-btn-text {
-    color: white;
-    font-size: 10px;
-}
-
-.dialog,
-.v-dialog-button {
-    background-color: #000;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.v-card {
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.587);
-}
-
-.review-title {
-    font-weight: bold;
-    font-size: 1.1rem;
-    margin: 4px 0;
-    color: #fff;
-    word-break: break-word;
-    overflow-wrap: break-word;
-}
-
-.game-modal {
-    background: #0d0d0d;
-    border: 1px solid #1f1f1f;
-    border-radius: 16px;
-    overflow: hidden;
-    color: #fff;
-    height: 80vh;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-}
-
-.modal-body {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.modal-main-info {
-    flex: 0 0 220px;
-    width: 220px;
-    padding: 20px 16px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    min-height: 0;
-    border-right: 1px solid #1a1a1a;
-    scrollbar-width: thin;
-    scrollbar-color: #333 transparent;
-}
-
-.modal-main-info::-webkit-scrollbar {
-    width: 4px;
-}
-
-.modal-main-info::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.modal-main-info::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 2px;
-}
-
-.btn-add-collection {
-    background: #fff;
-    color: #000;
-    text-transform: none;
-    font-weight: 600;
-    border-radius: 8px;
-    margin-bottom: 12px;
-}
-
-.modal-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.stat-item {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-}
-
-.stat-label {
-    color: #666;
-}
-
-.stat-value {
-    color: #eee;
-    white-space: pre-wrap;
-    word-break: break-word;
-    text-align: right;
-    max-width: 60%;
-}
-
-.modal-content-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.modal-title {
-    font-size: 22px;
-    font-weight: 700;
-    padding: 0 0 16px;
-    line-height: 1.2;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-shrink: 0;
-}
-
-.close-btn {
-    color: #555;
-}
-
-.reviews-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.section-title {
-    font-size: 14px;
-    text-transform: uppercase;
-    color: #444;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
-    flex-shrink: 0;
-}
-
-.reviews-list {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    margin-bottom: 12px;
-    scrollbar-width: thin;
-    scrollbar-color: #333 transparent;
-}
-
-.reviews-list::-webkit-scrollbar {
-    width: 4px;
-}
-
-.reviews-list::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.reviews-list::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 2px;
-}
-
-.review-item {
-    display: flex;
-    gap: 12px;
-    padding: 12px;
-    background: #161616;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    min-width: 0;
-}
-
-.review-avatar {
-    width: 32px;
-    height: 32px;
-    background: #333;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.review-author {
-    font-size: 13px;
-    font-weight: 500;
-    color: #fff;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.review-text {
-    font-size: 13px;
-    color: #aaa;
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow-wrap: break-word;
-}
-
-.no-reviews {
-    color: #555;
-    font-size: 13px;
-    text-align: center;
-    padding: 20px 0;
-}
-
-.review-form {
-    flex-shrink: 0;
-    background: #111;
-    border: 1px solid #1f1f1f;
-    border-radius: 12px;
-    padding: 12px;
-}
-
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #1f1f1f;
-}
-
-.form-error {
-    font-size: 12px;
-    margin-top: 6px;
-    color: #ff5f5f;
-}
-
-.custom-select {
-    background: #1a1a1a;
-    color: #fff;
-    border: 1px solid #333;
-    border-radius: 4px;
-    padding: 2px 6px;
-}
-
-input[type="date"].custom-select {
-    color-scheme: dark;
-}
-
-.btn-send {
-    background: #333;
-    color: #fff;
-    text-transform: none;
-    font-size: 12px;
-}
-
 .page {
     min-height: 100vh;
     background: #0a0a0a;
@@ -1150,6 +337,8 @@ input[type="date"].custom-select {
     overflow: hidden;
     transition: transform 0.18s ease, border-color 0.18s ease;
     cursor: pointer;
+    color: inherit;
+    text-decoration: none;
 }
 
 .game-card:hover {
@@ -1188,44 +377,6 @@ input[type="date"].custom-select {
     font-size: 10px;
     font-weight: 300;
     color: #666;
-}
-
-.v-card {
-    background: #050505;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    color: white;
-    padding: 6px;
-}
-
-.v-card-title {
-    color: white;
-    font-size: 18px;
-    font-weight: 500;
-    padding-bottom: 6px;
-}
-
-.v-card-text {
-    color: #b8b8b8;
-    font-size: 12px;
-    font-weight: 300;
-    line-height: 1.6;
-}
-
-.v-card-text p {
-    margin: 0 0 6px;
-}
-
-.modal-label {
-    color: #fff;
-    font-weight: 400;
-}
-
-.v-dialog-button {
-    background-color: #000;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    min-width: 70px;
 }
 
 @media (max-width: 768px) {
@@ -1287,99 +438,6 @@ input[type="date"].custom-select {
         font-size: 11px;
         padding: 3px 8px;
     }
-
-    .game-modal {
-        height: 92vh;
-        max-height: 92vh;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .modal-body {
-        flex-direction: column;
-        flex: 1;
-        overflow-y: auto;
-        overflow-x: hidden;
-        min-height: 0;
-    }
-
-    .modal-main-info {
-        flex: 0 0 auto;
-        width: 100%;
-        padding: 12px 14px;
-        border-right: none;
-        border-bottom: 1px solid #1a1a1a;
-        overflow: visible;
-        min-height: 0;
-    }
-
-    .btn-add-collection {
-        margin-bottom: 8px;
-    }
-
-    .modal-stats {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .stat-item {
-        flex-direction: column;
-        gap: 2px;
-        min-width: 80px;
-    }
-
-    .stat-value {
-        text-align: left;
-        max-width: 100%;
-    }
-
-    .modal-content-area {
-        flex: 0 0 auto;
-        padding: 14px;
-        overflow: visible;
-        min-height: 0;
-    }
-
-    .reviews-section {
-        flex: 0 0 auto;
-        overflow: visible;
-        min-height: 0;
-    }
-
-    .reviews-list {
-        max-height: 300px;
-        overflow-y: auto;
-    }
-
-    .modal-title {
-        font-size: 18px;
-        padding-bottom: 12px;
-    }
-
-    .review-item {
-        padding: 10px;
-    }
-
-    .review-title {
-        font-size: 1rem;
-    }
-
-    .review-text {
-        font-size: 12px;
-    }
-
-    .form-actions {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-    .form-actions > div:last-child {
-        width: 100%;
-        justify-content: flex-end;
-    }
 }
 
 @media (max-width: 380px) {
@@ -1390,10 +448,6 @@ input[type="date"].custom-select {
 
     .game-image {
         height: 140px;
-    }
-
-    .modal-title {
-        font-size: 16px;
     }
 }
 

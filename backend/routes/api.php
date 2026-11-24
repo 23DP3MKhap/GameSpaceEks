@@ -46,6 +46,8 @@ Route::middleware('throttle:passwordreset')->post('/password/reset', [AuthContro
 
 Route::get("/igdb/games", [GameController::class, 'getgames']);
 
+Route::get("/games/{id}", [GameController::class, 'show'])->whereNumber('id');
+
 // DATABASE
 
 Route::middleware('auth:sanctum', 'verified')->post("/database/addgame", [DatabaseController::class, 'addGame']);

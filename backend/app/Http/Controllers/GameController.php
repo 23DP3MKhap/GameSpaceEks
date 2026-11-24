@@ -69,6 +69,53 @@ class GameController extends Controller
         });
         }
 
+    public function show(int $id, IgdbClient $igdb){
+        $game = Game::with(['genres', 'platforms'])
+            ->withAvg('userGames as average_rating', 'rating')
+            ->withCount('userGames as player_count')
+            ->find($id);
+
+        if ($game) {
+            return [
+                'id' => $game->id,
+                'title' => $game->title,
+                'description' => $game->description,
+                'developer' => $game->developer,
+                'publisher' => $game->publisher,
+                'release_date' => $game->release_date,
+                'image' => $game->cover_url,
+                'genres' => $game->genres->pluck('name'),
+                'platforms' => $game->platforms->pluck('name'),
+                'average_rating' => $game->average_rating,
+                'player_count' => $game->player_count,
+            ];
+        }
+
+        $response = $igdb->query('games', "fields name, summary, first_release_date, cover.url, genres.name, platforms.name,
+            involved_companies.developer, involved_companies.publisher, involved_companies.company.name; where id = $id;");
+
+        if (empty($response)) {
+            return response()->json(['message' => 'Spēle netika atrasta'], 404);
+        }
+
+        $igdbGame = $response[0];
+        $fields = Game::fromIgdb($igdbGame);
+
+        return [
+            'id' => $fields['id'],
+            'title' => $fields['title'],
+            'description' => $fields['description'],
+            'developer' => $fields['developer'],
+            'publisher' => $fields['publisher'],
+            'release_date' => $fields['release_date'],
+            'image' => $fields['cover_url'],
+            'genres' => collect($igdbGame['genres'] ?? [])->pluck('name'),
+            'platforms' => collect($igdbGame['platforms'] ?? [])->pluck('name'),
+            'average_rating' => null,
+            'player_count' => 0,
+        ];
+    }
+
 }
 
 

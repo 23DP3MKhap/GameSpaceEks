@@ -94,7 +94,7 @@ class DatabaseController extends Controller
             'completed_at' => $validated['completed_at'] ?? null,
         ]);
 
-        return $this->averageRating($validated['game_id']);
+        return $this->gameStats($validated['game_id']);
     }
 
     public function removeFromCollection(Request $request){
@@ -102,11 +102,14 @@ class DatabaseController extends Controller
         $userId = $request->user()->id;
         UserGame::where('game_id', $validated['game_id'])->where('user_id', $userId)->delete();
 
-        return $this->averageRating($validated['game_id']);
+        return $this->gameStats($validated['game_id']);
     }
 
-    private function averageRating(int $gameId){
-        return ['average_rating' => Game::withAvg('userGames as average_rating', 'rating')->find($gameId)->average_rating];
+    private function gameStats(int $gameId){
+        return Game::withAvg('userGames as average_rating', 'rating')
+            ->withCount('userGames as player_count')
+            ->find($gameId)
+            ->only(['average_rating', 'player_count']);
     }
 
     public function updateUser(Request $request){
