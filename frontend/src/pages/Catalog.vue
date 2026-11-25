@@ -1,67 +1,67 @@
 <script setup>
     // Imports
 
-    import { ref, onMounted, watch } from 'vue'
+    import { ref, computed, onMounted, watch } from 'vue'
     import axios from '../plugins/axios'
+    import { auth } from '../plugins/userinfo'
 
 
     // variables
+    const PAGE_SIZE = 40
+
     const genresList = ref([])
     const platformsList = ref([])
     const selectedGenres = ref([])
     const selectedPlatforms = ref([])
     const games = ref([])
-    const dbOffset = ref(0)
-    const igdbOffset = ref(0)
-    const dbExhausted = ref(false)
-    const hasMore = ref(true)
-    const scrollTrigger = ref(null)
-    const isLoading = ref(false)
-    const scrollTriggerBlock= ref(true)
-    const catalogEmpty = ref(false)
-    
+    const total = ref(0)
+    const partial = ref(false)
+    const page = ref(1)
+    const isLoading = ref(true)
+    const loadError = ref('')
+
     let timeout = null
     let lastRequestId = 0
 
     const props = defineProps({ searchValue: String })
 
+    const search = computed(() => (props.searchValue ?? '').trim())
+    const pageCount = computed(() => Math.ceil(total.value / PAGE_SIZE))
+
+    const foundText = computed(() => {
+        const count = total.value
+        const single = count % 10 === 1 && count % 100 !== 11
+        return `${single ? 'Atrasta' : 'Atrastas'} ${count.toLocaleString('lv-LV')} ${single ? 'spēle' : 'spēles'}`
+    })
+
 
     // Startup
 
     onMounted(async () => {
-        await getGenres()
-        await getPlatforms()
-        await gameLoader()
-
-        if (scrollTrigger.value){
-
-            const observer = new IntersectionObserver(async (elements) => {
-            if (elements[0].isIntersecting && !scrollTriggerBlock.value) {
-                await gameLoader()
-            }
-            }, { threshold: 0.1 })
-
-            observer.observe(scrollTrigger.value)
-        }  
+        const [genres, platforms] = await Promise.all([
+            axios.get('/api/database/getgenres'),
+            axios.get('/api/database/getplatforms'),
+            loadGames(),
+        ])
+        genresList.value = genres.data
+        platformsList.value = platforms.data
     })
 
-    
+
 
     // watchers
 
-    watch(() => props.searchValue, () => {
+    watch(search, () => {
         clearTimeout(timeout)
-        resetCatalog()
-        scrollTriggerBlock.value = true
-        timeout = setTimeout(() => {
-        gameLoader()
-        }, 500)
+        timeout = setTimeout(resetPage, 500)
     })
 
-    watch([selectedGenres, selectedPlatforms], () => {
-        resetCatalog()
-        gameLoader()
-    });
+    watch([selectedGenres, selectedPlatforms], resetPage)
+
+    watch(page, () => {
+        window.scrollTo({ top: 0 })
+        loadGames()
+    })
 
 
     //functions
@@ -82,73 +82,41 @@
         }
     }
 
-    async function getGenres() {
-        const response = await axios.get('/api/database/getgenres')
-        genresList.value = response.data
+    function resetPage() {
+        if (page.value === 1) {
+            loadGames()
+        } else {
+            page.value = 1
+        }
     }
 
-    async function getPlatforms() {
-        const response = await axios.get('/api/database/getplatforms')
-        platformsList.value = response.data
-    }
-
-    function resetCatalog() {
-        lastRequestId++
-        games.value = []
-        dbOffset.value = 0
-        igdbOffset.value = 0
-        dbExhausted.value = false
-        hasMore.value = true
-    }
-
-    async function gameLoader() {
-        if (!hasMore.value) return
-
+    async function loadGames() {
         const requestId = ++lastRequestId
-        const filters = { search: props.searchValue, genres: selectedGenres.value, platforms: selectedPlatforms.value }
-        let dbgames = []
-        let apigames = []
-
-        scrollTriggerBlock.value = true
         isLoading.value = true
 
         try {
-            if (!dbExhausted.value) {
-                const database_games = await axios.get('/api/database/getgames', {
-                    params: { ...filters, offset: dbOffset.value }
-                })
-                dbgames = database_games.data
-            }
-
-            const igdbLimit = 50 - dbgames.length
-            if (igdbLimit > 0) {
-                const igdb_games = await axios.get('/api/igdb/games', {
-                    params: { ...filters, limit: igdbLimit, offset: igdbOffset.value }
-                })
-                apigames = igdb_games.data
-            }
+            const response = await axios.get('/api/games', {
+                params: {
+                    search: search.value,
+                    genres: selectedGenres.value,
+                    platforms: selectedPlatforms.value,
+                    page: page.value,
+                },
+            })
 
             if (requestId !== lastRequestId) return
 
-            dbOffset.value += dbgames.length
-            igdbOffset.value += apigames.length
-            dbExhausted.value = dbgames.length < 50
-            hasMore.value = apigames.length === igdbLimit
-
-            const existingIds = new Set(games.value.map(game => game.id))
-            const uniqueNew = [...dbgames, ...apigames].filter(function (game){return !existingIds.has(game.id)})
-            games.value = [...games.value, ...uniqueNew]
-
-            if (games.value.length === 0){
-                catalogEmpty.value = true
-            }
-            else{
-                catalogEmpty.value = false
+            games.value = response.data.games
+            total.value = response.data.total
+            partial.value = response.data.partial
+            loadError.value = ''
+        } catch {
+            if (requestId === lastRequestId) {
+                loadError.value = 'Neizdevās ielādēt spēles. Mēģini vēlreiz.'
             }
         } finally {
             if (requestId === lastRequestId) {
                 isLoading.value = false
-                scrollTriggerBlock.value = false
             }
         }
     }
@@ -195,24 +163,29 @@
                 </div>
             </section>
             <v-progress-linear v-if="isLoading" indeterminate color="white"></v-progress-linear>
-            <div v-if="catalogEmpty"><p>Nav spēļu jūsu pieprasījumam, lūdzu mēģiniet citu</p></div>
+            <p v-if="loadError" class="catalog-message">{{ loadError }}</p>
+            <p v-else-if="partial" class="catalog-message">Daļa rezultātu pašlaik nav pieejama, mēģini vēlāk</p>
+            <p v-else-if="!isLoading && total === 0" class="catalog-message">Pēc norādītajiem kritērijiem spēles netika atrastas</p>
+            <p v-if="total > 0" class="found-count">{{ foundText }}</p>
             <section class="games-grid">
-                <router-link class="game-card" v-for="game in games" :key="game.id" :to="`/Game/${game.id}`">
-                    <img :src="game.image" :alt="game.title" class="game-image">
-                    <div class="game-info">
-                        <h2>{{ game.title }}</h2>
-                        <div class="genre">{{ game.genre }}</div>
-                        <div class="meta">Izstrādātājs: {{ game.developer }}</div>
-                        <div class="meta">Izdevējs: {{ game.publisher }}</div>
-                        <div class="meta" v-if="game.average_rating">Vidējais vērtējums: {{ game.average_rating.toFixed(1) }} ★</div>
-                        <div class="meta">id: {{ game.id }} {{ game.source }}</div>
+                <article class="game-card" v-for="game in games" :key="game.id">
+                    <router-link class="game-link" :to="`/Game/${game.id}`">
+                        <img :src="game.image" :alt="game.title" class="game-image">
+                        <div class="game-info">
+                            <h2>{{ game.title }}</h2>
+                            <div class="meta">{{ game.year ?? 'Gads nav zināms' }}</div>
+                            <div class="genre" v-if="game.genres.length">{{ game.genres.join(', ') }}</div>
+                            <div class="rating" v-if="game.average_rating">★ {{ game.average_rating.toFixed(1) }}</div>
+                        </div>
+                    </router-link>
+                    <div class="game-actions" v-if="auth.user">
+                        <v-btn class="btn-add-collection" size="small" block :to="{ path: `/Game/${game.id}`, query: { collection: 1 } }">
+                            Pievienot kolekcijai
+                        </v-btn>
                     </div>
-                </router-link>
+                </article>
             </section>
-            <div class="loading-wrap" v-if="isLoading">
-                <v-progress-linear v-if="isLoading" indeterminate color="white"></v-progress-linear>
-            </div>
-            <div ref="scrollTrigger" class="scroll-trigger"></div>
+            <v-pagination v-if="pageCount > 1" v-model="page" :length="pageCount" :total-visible="7" class="catalog-pagination"></v-pagination>
         </main>
     </div>
 </template>
@@ -220,13 +193,20 @@
 
 <style scoped>
 
-.loading-wrap {
-    display: flex;
-    justify-content: center;
+.catalog-message {
+    font-size: 13px;
+    color: #8f8f8f;
+    margin: 12px 0;
 }
 
-.scroll-trigger {
-    height: 1px;
+.found-count {
+    font-size: 13px;
+    color: #bdbdbd;
+    margin: 12px 0;
+}
+
+.catalog-pagination {
+    margin-top: 24px;
 }
 
 .track-row {
@@ -331,14 +311,37 @@
 }
 
 .game-card {
+    display: flex;
+    flex-direction: column;
     background: #111;
     border: 1px solid #181818;
     border-radius: 12px;
     overflow: hidden;
     transition: transform 0.18s ease, border-color 0.18s ease;
-    cursor: pointer;
+}
+
+.game-link {
+    flex: 1;
     color: inherit;
     text-decoration: none;
+}
+
+.game-actions {
+    padding: 0 10px 12px;
+}
+
+.btn-add-collection {
+    background: #fff;
+    color: #000;
+    text-transform: none;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.rating {
+    font-size: 12px;
+    color: #efefef;
+    margin-top: 4px;
 }
 
 .game-card:hover {

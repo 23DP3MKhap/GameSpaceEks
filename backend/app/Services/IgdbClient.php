@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 class IgdbClient
 {
     private const TOKEN_CACHE_KEY = 'igdb_token';
+    private const SLOT_SECONDS = 0.25;
 
     public function query(string $endpoint, string $body)
     {
@@ -49,6 +50,7 @@ class IgdbClient
     private function send(string $endpoint, string $body)
     {
         $token = $this->token();
+        $this->waitForSlot();
 
         try {
             return Http::withBody($body)->withHeaders([
@@ -57,6 +59,20 @@ class IgdbClient
             ])->post("https://api.igdb.com/v4/$endpoint");
         } catch (ConnectionException $e) {
             throw new IgdbException("Could not connect to IGDB", 0, $e);
+        }
+    }
+
+    private function waitForSlot()
+    {
+        $slot = Cache::lock('igdb_slot_lock', 5)->block(5, function () {
+            $slot = max(microtime(true), Cache::get('igdb_next_slot', 0));
+            Cache::put('igdb_next_slot', $slot + self::SLOT_SECONDS, 60);
+            return $slot;
+        });
+
+        $delay = $slot - microtime(true);
+        if ($delay > 0) {
+            usleep((int) ($delay * 1000000));
         }
     }
 

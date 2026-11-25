@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Exceptions\IgdbException;
 use App\Models\Game;
 use App\Services\IgdbClient;
 use Illuminate\Http\Request;
@@ -9,29 +10,54 @@ use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
-    public function getgames(Request $request, IgdbClient $igdb){
+    private const PAGE_SIZE = 40;
+    private const IGDB_FIELDS = 'fields name, cover.url, first_release_date, genres.name; sort total_rating_count desc;';
+
+    public function catalog(Request $request, IgdbClient $igdb){
         $validated = $request->validate([
             'search' => 'nullable|string|max:100',
             'genres' => 'nullable|array',
             'genres.*' => 'integer',
             'platforms' => 'nullable|array',
             'platforms.*' => 'integer',
-            'limit' => 'nullable|integer|min:1|max:50',
-            'offset' => 'nullable|integer|min:0',
+            'page' => 'nullable|integer|min:1',
         ]);
 
-        $rules = [];
         $search = $validated['search'] ?? null;
         $genres = $validated['genres'] ?? [];
         $platforms = $validated['platforms'] ?? [];
-        $limit = $validated['limit'] ?? 50;
-        $offset = $validated['offset'] ?? 0;
+        $start = (($validated['page'] ?? 1) - 1) * self::PAGE_SIZE;
 
-        $httpBody = "fields id, name, cover.url, genres.name, platforms.name, involved_companies.company.name, involved_companies.developer, involved_companies.publisher; sort total_rating_count desc; limit $limit; offset $offset;";
+        if (!$search && !$genres && !$platforms) {
+            try {
+                return $this->popularGames($igdb, $start);
+            } catch (IgdbException) {
+                [$dbTotal, $dbGames] = $this->databaseGames(Game::query(), $start);
+                return ['games' => $dbGames, 'total' => $dbTotal, 'partial' => true];
+            }
+        }
 
-        $dbgamesids = Game::pluck('id');
-        if ($dbgamesids->isNotEmpty()) {
-            $rules[] = "id != (" . $dbgamesids->join(',') . ")";
+        $query = Game::query();
+
+        if ($search) {
+            $query->where('title', 'like', "%{$search}%");
+        }
+
+        if ($genres) {
+            $query->whereHas('genres', fn ($genre) => $genre->whereIn('genre_id', $genres));
+        }
+
+        if ($platforms) {
+            $query->whereHas('platforms', fn ($platform) => $platform->whereIn('platform_id', $platforms));
+        }
+
+        [$dbTotal, $dbGames] = $this->databaseGames($query, $start);
+
+        $rules = [];
+
+        $dbIds = Game::pluck('id');
+        if ($dbIds->isNotEmpty()) {
+            $rules[] = "id != (" . $dbIds->join(',') . ")";
         }
 
         if ($search) {
@@ -39,35 +65,92 @@ class GameController extends Controller
             $rules[] = "name ~ *\"$search\"*";
         }
 
-        if (!empty($genres)) {
+        if ($genres) {
             $rules[] = "genres = (" . implode(',', $genres) . ")";
         }
 
-        if (!empty($platforms)) {
+        if ($platforms) {
             $rules[] = "platforms = (" . implode(',', $platforms) . ")";
         }
 
-        if (!empty($rules)) {
-            $httpBody .= " where " . implode(' & ', $rules) . ";";
+        $where = "where " . implode(' & ', $rules) . ";";
+        $limit = self::PAGE_SIZE - $dbGames->count();
+        $offset = max(0, $start - $dbTotal);
+
+        $body = "query games/count \"count\" { $where };";
+        if ($limit > 0) {
+            $body .= " query games \"games\" { " . self::IGDB_FIELDS . " $where limit $limit; offset $offset; };";
         }
 
-        $gameresponse = $igdb->query('games', $httpBody);
-
-        return collect($gameresponse)->map(function ($game){
-            $companies = IgdbClient::companies($game);
-
-            return [
-                'id'        => $game['id'],
-                'source'    => 'igdb',
-                'title'     => $game['name'],
-                'image'     => Game::coverUrl($game) ?? 'https://placehold.co/600x400',
-                'genre'     => collect($game['genres'] ?? [])->pluck('name')->join(', ') ?: 'Nav zināms',
-                'platforms' => collect($game['platforms'] ?? [])->pluck('name')->join(', ') ?: 'Nav zināms',
-                'developer' => $companies['developer'] ?? 'Nav zināms',
-                'publisher' => $companies['publisher'] ?? 'Nav zināms',
-            ];
-        });
+        try {
+            $response = collect($igdb->query('multiquery', $body))->keyBy('name');
+        } catch (IgdbException) {
+            return ['games' => $dbGames, 'total' => $dbTotal, 'partial' => true];
         }
+
+        $igdbGames = collect($response['games']['result'] ?? [])->map(fn ($game) => $this->igdbCard($game));
+
+        return [
+            'games' => $dbGames->concat($igdbGames),
+            'total' => $dbTotal + $response['count']['count'],
+            'partial' => false,
+        ];
+    }
+
+    private function databaseGames($query, int $start){
+        return [
+            $query->count(),
+            $query->with('genres')
+                ->withAvg('userGames as average_rating', 'rating')
+                ->orderBy('id')
+                ->skip($start)
+                ->take(self::PAGE_SIZE)
+                ->get()
+                ->map(fn ($game) => $this->databaseCard($game)),
+        ];
+    }
+
+    private function popularGames(IgdbClient $igdb, int $offset){
+        $response = collect($igdb->query('multiquery', "query games/count \"count\" { };"
+            . " query games \"games\" { " . self::IGDB_FIELDS . " limit " . self::PAGE_SIZE . "; offset $offset; };"))->keyBy('name');
+
+        $igdbGames = collect($response['games']['result']);
+        $dbGames = Game::with('genres')
+            ->withAvg('userGames as average_rating', 'rating')
+            ->whereIn('id', $igdbGames->pluck('id'))
+            ->get()
+            ->keyBy('id');
+
+        return [
+            'games' => $igdbGames->map(fn ($game) => isset($dbGames[$game['id']])
+                ? $this->databaseCard($dbGames[$game['id']])
+                : $this->igdbCard($game)),
+            'total' => $response['count']['count'],
+            'partial' => false,
+        ];
+    }
+
+    private function databaseCard(Game $game){
+        return [
+            'id' => $game->id,
+            'title' => $game->title,
+            'image' => $game->cover_url ?? "https://placehold.co/600x400",
+            'year' => $game->release_date ? substr($game->release_date, 0, 4) : null,
+            'genres' => $game->genres->pluck('name')->take(3),
+            'average_rating' => $game->average_rating,
+        ];
+    }
+
+    private function igdbCard(array $game){
+        return [
+            'id' => $game['id'],
+            'title' => $game['name'],
+            'image' => Game::coverUrl($game) ?? "https://placehold.co/600x400",
+            'year' => isset($game['first_release_date']) ? date('Y', $game['first_release_date']) : null,
+            'genres' => collect($game['genres'] ?? [])->pluck('name')->take(3),
+            'average_rating' => null,
+        ];
+    }
 
     public function show(int $id, IgdbClient $igdb){
         $game = Game::with(['genres', 'platforms'])

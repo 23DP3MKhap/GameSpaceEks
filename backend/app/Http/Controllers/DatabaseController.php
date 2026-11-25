@@ -237,56 +237,6 @@ class DatabaseController extends Controller
         return $platforms;
     }
 
-    public function getGames(Request $request)
-    {
-        $validated = $request->validate([
-            'search' => 'nullable|string|max:100',
-            'genres' => 'nullable|array',
-            'genres.*' => 'integer',
-            'platforms' => 'nullable|array',
-            'platforms.*' => 'integer',
-            'offset' => 'nullable|integer|min:0',
-        ]);
-
-        $search = $validated['search'] ?? null;
-        $genres = $validated['genres'] ?? [];
-        $platforms = $validated['platforms'] ?? [];
-        $offset = $validated['offset'] ?? 0;
-
-        $rules = Game::with(['genres', 'platforms'])->withAvg('userGames as average_rating', 'rating');
-
-        if ($search) {
-            $rules->where('title', 'like', "%{$search}%");
-        }
-
-        if (!empty($genres)) {
-            $rules->whereHas('genres', function ($rul) use ($genres) {
-                $rul->whereIn('genre_id', $genres);
-            });
-        }
-
-        if (!empty($platforms)) {
-            $rules->whereHas('platforms', function ($rul) use ($platforms) {
-                $rul->whereIn('platform_id', $platforms);
-            });
-        }
-
-        $games = $rules->orderBy('id')->skip($offset)->take(50)->get();
-        return $games->map(function ($game) {
-        return [
-            'id' => $game->id,
-            'title' => $game->title,
-            'image' => $game->cover_url ?? 'https://placehold.co/600x400',
-            'genre' => $game->genres->pluck('name')->join(', ') ?: 'Nav zināms',
-            'platforms' => $game->platforms->pluck('name')->join(', ') ?: 'Nav zināms',
-            'source' => 'database',
-            'developer' => $game->developer ?? 'Nav zināms',
-            'publisher' => $game->publisher ?? 'Nav zināms',
-            'average_rating' => $game->average_rating,
-        ];
-        });
-    }
-
     public function getCollection(Request $request){
     $validated = $request->validate([
         'user_id' => 'required|integer',

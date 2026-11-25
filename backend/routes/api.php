@@ -44,7 +44,7 @@ Route::middleware('throttle:passwordreset')->post('/password/reset', [AuthContro
 
 // IGDB API
 
-Route::get("/igdb/games", [GameController::class, 'getgames']);
+Route::get("/games", [GameController::class, 'catalog']);
 
 Route::get("/games/{id}", [GameController::class, 'show'])->whereNumber('id');
 
@@ -61,8 +61,6 @@ Route::middleware('auth:sanctum', 'verified')->post("/database/addtocollection",
 Route::get("/database/getgenres", [DatabaseController::class, 'getGenres']);
 
 Route::get("/database/getplatforms", [DatabaseController::class, 'getPlatforms']);
-
-Route::get("/database/getgames", [DatabaseController::class, 'getGames']);
 
 Route::get("/user/collection", [DatabaseController::class, 'getCollection']);
 

@@ -85,6 +85,10 @@
         }
 
         await Promise.all([getReviews(), loadEntry()])
+
+        if (route.query.collection) {
+            toggleCollectionForm()
+        }
     })
 
     function isEmpty(value) {

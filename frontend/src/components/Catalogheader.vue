@@ -90,7 +90,7 @@
 
 
         <div class="header-center">
-            <input :value="searchValue"  @input="searchUpdate" type="text" placeholder="Meklēt spēles..." class="search-input">
+            <input :value="searchValue"  @input="searchUpdate" type="text" maxlength="100" placeholder="Meklēt spēles..." class="search-input">
         </div>
 
             <div v-if="auth.user">
@@ -113,7 +113,7 @@
     </div>
 
    <div class="burger-menu">
-        <input :value="searchValue" @input="searchUpdate" type="text" placeholder="Meklēt spēles..." class="search-input">
+        <input :value="searchValue" @input="searchUpdate" type="text" maxlength="100" placeholder="Meklēt spēles..." class="search-input">
         <v-menu>
         <template v-slot:activator="{ props }">
             <v-btn color="black" v-bind="props">☰</v-btn>
