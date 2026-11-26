@@ -292,7 +292,28 @@ class DatabaseController extends Controller
     ]);
 }
 
-    
+    public function getStatistics(Request $request){
+        $rows = UserGame::where('user_id', $request->user()->id)
+            ->selectRaw('status, count(*) as games, sum(hours_played) as hours, sum(rating) as rating_sum, count(rating) as rated')
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
+        $statistics = [];
+        foreach (UserGame::STATUSES as $status) {
+            $statistics[$status] = $rows[$status]->games ?? 0;
+        }
+        $rated = $rows->sum('rated');
+
+        return [
+            ...$statistics,
+            'total' => $rows->sum('games'),
+            'hours' => $rows->sum('hours'),
+            'average_rating' => $rated ? round($rows->sum('rating_sum') / $rated, 1) : null,
+        ];
+    }
+
+
 
     public function checkCollection(Request $request){
     $collection = UserGame::where('user_id', auth()->id())

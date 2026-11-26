@@ -64,6 +64,8 @@ Route::get("/database/getplatforms", [DatabaseController::class, 'getPlatforms']
 
 Route::get("/user/collection", [DatabaseController::class, 'getCollection']);
 
+Route::middleware('auth:sanctum')->get("/user/statistics", [DatabaseController::class, 'getStatistics']);
+
 Route::get("/getuser", [AuthController::class, 'getuser']);
 
 

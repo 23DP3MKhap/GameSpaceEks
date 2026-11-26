@@ -12,6 +12,8 @@ const profileRole = ref("user")
 const profileAvatar = ref(null)
 const counts = ref({ all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 })
 const collection = ref([])
+const statistics = ref(null)
+const statisticsError = ref('')
 const deleteConfirmation = ref(false)
 const deletePassword = ref('')
 const deleteError = ref('')
@@ -71,6 +73,20 @@ const statusMeta = {
     planned:   { color: '#aaa', label: 'Plānota' },
     dropped:   { color: '#ff5f5f', label: 'Pārtraukta' },
 }
+
+const statisticsCards = computed(() => [
+    ...filters.slice(1).map(f => ({
+        label: f.label,
+        value: statistics.value[f.key],
+        color: statusMeta[f.key].color,
+    })),
+    { label: 'Spēles kolekcijā', value: statistics.value.total },
+    { label: 'Kopā nospēlēts', value: `${statistics.value.hours.toLocaleString('lv-LV')} h` },
+    {
+        label: 'Vidējais vērtējums',
+        value: statistics.value.average_rating === null ? '–' : statistics.value.average_rating.toFixed(1),
+    },
+])
 
 function progressText(item) {
     return [
@@ -203,6 +219,15 @@ async function loadCollection(status = null) {
             counts.value = { all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 }
             collectionStatus.value = 'Ielādējot kolekciju, radās kļūda.'
         }
+    }
+}
+
+async function loadStatistics() {
+    statisticsError.value = ''
+    try {
+        statistics.value = (await axios.get('/api/user/statistics')).data
+    } catch {
+        statisticsError.value = 'Ielādējot statistiku, radās kļūda.'
     }
 }
 
@@ -406,6 +431,7 @@ async function removeGame() {
         await axios.post('/api/database/removefromcollection', { game_id: removeTarget.value.id })
         removeDialog.value = false
         await loadCollection(activeFilter.value === 'all' ? null : activeFilter.value)
+        await loadStatistics()
     } catch {
         removeError.value = 'Neizdevās noņemt spēli. Mēģini vēlreiz.'
     } finally {
@@ -428,6 +454,7 @@ onMounted(async () => {
     profileRole.value = userData.role
 
     await loadCollection()
+    if (isOwner.value) await loadStatistics()
 })
 
 watch(activeFilter, (filter) => {
@@ -486,10 +513,22 @@ watch(deleteConfirmation, (open) => {
                     </button>
                 </div>
 
-                <div class="profile-stats">
+                <div v-if="!isOwner" class="profile-stats">
                     <div class="stat-block" v-for="f in filters.slice(1)" :key="f.key">
                         <span class="stat-num" :style="{ color: statusMeta[f.key].color }">{{ counts[f.key] }}</span>
                         <span class="stat-lbl">{{ f.label }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="isOwner" class="statistics-section">
+                <h2 class="section-title">Statistika</h2>
+                <div v-if="statisticsError" class="empty-state">{{ statisticsError }}</div>
+                <div v-else-if="statistics?.total === 0" class="empty-state">Pievieno spēles kolekcijai, lai redzētu statistiku</div>
+                <div v-else-if="statistics" class="statistics-grid">
+                    <div class="statistics-card" v-for="card in statisticsCards" :key="card.label">
+                        <span class="statistics-value" :style="{ color: card.color }">{{ card.value }}</span>
+                        <span class="stat-lbl">{{ card.label }}</span>
                     </div>
                 </div>
             </div>
@@ -1035,6 +1074,37 @@ watch(deleteConfirmation, (open) => {
     color: #555;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+}
+
+.statistics-section {
+    margin-bottom: 40px;
+}
+
+.statistics-section .section-title {
+    margin-bottom: 20px;
+}
+
+.statistics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+}
+
+.statistics-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    background: #111;
+    border: 1px solid #181818;
+    border-radius: 10px;
+}
+
+.statistics-value {
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1;
+    color: #f5f5f5;
 }
 
 .section-top {
