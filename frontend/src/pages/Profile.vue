@@ -52,6 +52,21 @@ const isSaving = ref(false)
 const profileIsPrivate = ref(false)
 const profileNotFound = ref(false)
 
+const lists = ref([])
+const listsError = ref('')
+const listNotice = ref('')
+const listDialog = ref(false)
+const listForm = ref(null)
+const listTitle = ref('')
+const listDescription = ref('')
+const listIsPublic = ref(true)
+const listError = ref('')
+const isCreatingList = ref(false)
+
+const listTitleRules = [
+    value => !!value?.trim() || 'Nosaukumam jābūt no 1 līdz 100 rakstzīmēm.',
+]
+
 const filters = [
     { key: 'all', label: 'Visi' },
     { key: 'playing', label: 'Spēlē' },
@@ -219,6 +234,49 @@ async function loadCollection(status = null) {
             counts.value = { all: 0, playing: 0, completed: 0, planned: 0, dropped: 0 }
             collectionStatus.value = 'Ielādējot kolekciju, radās kļūda.'
         }
+    }
+}
+
+async function loadLists() {
+    try {
+        lists.value = (await axios.get('/api/user/lists', { params: { user_id: route.params.id } })).data
+    } catch {
+        listsError.value = 'Ielādējot sarakstus, radās kļūda.'
+    }
+}
+
+function openListDialog() {
+    if (!auth.user.email_verified) {
+        listNotice.value = 'Apstiprini savu e-pasta adresi, lai izmantotu šo funkciju'
+        return
+    }
+    listTitle.value = ''
+    listDescription.value = ''
+    listIsPublic.value = true
+    listError.value = ''
+    listDialog.value = true
+}
+
+async function createList() {
+    const { valid } = await listForm.value.validate()
+    if (!valid) return
+
+    isCreatingList.value = true
+    listError.value = ''
+    try {
+        const response = await axios.post('/api/lists', {
+            title: listTitle.value,
+            description: listDescription.value,
+            is_public: listIsPublic.value,
+        })
+        listDialog.value = false
+        router.push(`/List/${response.data.id}`)
+    } catch (error) {
+        listError.value = error.response?.status === 422
+            ? 'Norādīti nederīgi dati'
+            : 'Neizdevās izveidot sarakstu. Mēģini vēlreiz.'
+    } finally {
+        isCreatingList.value = false
     }
 }
 
@@ -454,6 +512,7 @@ onMounted(async () => {
     profileRole.value = userData.role
 
     await loadCollection()
+    if (isOwner.value || !profileIsPrivate.value) await loadLists()
     if (isOwner.value) await loadStatistics()
 })
 
@@ -529,6 +588,28 @@ watch(deleteConfirmation, (open) => {
                     <div class="statistics-card" v-for="card in statisticsCards" :key="card.label">
                         <span class="statistics-value" :style="{ color: card.color }">{{ card.value }}</span>
                         <span class="stat-lbl">{{ card.label }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="isOwner || !profileIsPrivate" class="lists-section">
+                <div class="section-top">
+                    <h2 class="section-title">Saraksti</h2>
+                    <button v-if="isOwner" class="btn-create-list" @click="openListDialog">Izveidot sarakstu</button>
+                </div>
+                <div v-if="listNotice" class="field-hint hint-error list-notice">{{ listNotice }}</div>
+
+                <div class="lists-grid">
+                    <router-link v-for="list in lists" :key="list.id" :to="`/List/${list.id}`" class="list-entry">
+                        <div class="list-entry-top">
+                            <span class="list-entry-title">{{ list.title }}</span>
+                            <span v-if="!list.is_public" class="list-private">Privāts</span>
+                        </div>
+                        <div v-if="list.description" class="list-entry-description">{{ list.description }}</div>
+                    </router-link>
+
+                    <div v-if="lists.length === 0" class="empty-state">
+                        {{ listsError || 'Šeit vēl nav sarakstu.' }}
                     </div>
                 </div>
             </div>
@@ -723,7 +804,7 @@ watch(deleteConfirmation, (open) => {
             <v-card class="dialog">
                 <v-card-title class="v-card-title">Dzēst kontu</v-card-title>
                 <v-card-text class="v-card-text">
-                    Šī darbība neatgriezeniski dzēsīs kontu, kolekciju un atsauksmes. Ievadi paroli, lai apstiprinātu.
+                    Šī darbība neatgriezeniski dzēsīs kontu, kolekciju, sarakstus un atsauksmes. Ievadi paroli, lai apstiprinātu.
                     <v-text-field
                         v-model="deletePassword"
                         label="Parole"
@@ -766,6 +847,53 @@ watch(deleteConfirmation, (open) => {
                     </v-btn>
                     <v-btn class="v-dialog-button btn-delete-confirm" :loading="isRemoving" @click="removeGame">
                         <p class="v-btn-text">Noņemt</p>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <v-dialog max-width="480" v-model="listDialog">
+            <v-card class="dialog">
+                <v-card-title class="v-card-title">Jauns saraksts</v-card-title>
+                <v-card-text class="v-card-text">
+                    <v-form ref="listForm" @submit.prevent="createList">
+                        <v-text-field
+                            v-model="listTitle"
+                            label="Nosaukums"
+                            placeholder="Labākās šausmu spēles"
+                            maxlength="100"
+                            counter
+                            variant="outlined"
+                            density="compact"
+                            :rules="listTitleRules"
+                        ></v-text-field>
+
+                        <v-textarea
+                            v-model="listDescription"
+                            label="Apraksts"
+                            maxlength="500"
+                            counter
+                            variant="outlined"
+                            density="compact"
+                            rows="3"
+                            no-resize
+                        ></v-textarea>
+
+                        <div class="settings-private-row">
+                            <span class="settings-label">Publisks saraksts</span>
+                            <v-switch v-model="listIsPublic" color="white" density="compact" hide-details></v-switch>
+                        </div>
+
+                        <div v-if="listError" class="field-hint hint-error">{{ listError }}</div>
+                    </v-form>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="listDialog = false">
+                        <p class="v-btn-text">Atcelt</p>
+                    </v-btn>
+                    <v-btn class="v-dialog-button btn-save" :loading="isCreatingList" @click="createList">
+                        <p class="v-btn-text">Saglabāt</p>
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -1105,6 +1233,96 @@ watch(deleteConfirmation, (open) => {
     font-weight: 500;
     line-height: 1;
     color: #f5f5f5;
+}
+
+.lists-section {
+    margin-bottom: 40px;
+}
+
+.btn-create-list {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    color: #aaa;
+    font-size: 11px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.btn-create-list:hover {
+    color: #f5f5f5;
+    border-color: #444;
+}
+
+.list-notice {
+    margin: -12px 0 12px;
+}
+
+.lists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 8px;
+}
+
+.lists-grid .empty-state {
+    grid-column: 1 / -1;
+}
+
+.list-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 14px 16px;
+    background: #111;
+    border: 1px solid #181818;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.list-entry:hover {
+    background: #141414;
+    border-color: #2a2a2a;
+}
+
+.list-entry-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.list-entry-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    color: #efefef;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.list-private {
+    flex: 0 0 auto;
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+
+.list-entry-description {
+    font-size: 12px;
+    color: #777;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
 }
 
 .section-top {

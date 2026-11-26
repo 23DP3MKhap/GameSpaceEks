@@ -3,6 +3,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ListController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -82,6 +83,16 @@ Route::middleware('auth:sanctum')->post("/user/avatar", [DatabaseController::cla
 Route::middleware('auth:sanctum')->delete("/user/avatar", [DatabaseController::class, 'deleteAvatar']);
 
 Route::middleware('auth:sanctum')->post("/database/deletereview", [DatabaseController::class, 'deleteReview']);
+
+Route::get('/user/lists', [ListController::class, 'index']);
+
+Route::get('/lists/{list}', [ListController::class, 'show'])->whereNumber('list');
+
+Route::middleware('auth:sanctum', 'verified')->post('/lists', [ListController::class, 'store']);
+
+Route::middleware('auth:sanctum')->put('/lists/{list}', [ListController::class, 'update'])->whereNumber('list');
+
+Route::middleware('auth:sanctum')->delete('/lists/{list}', [ListController::class, 'destroy'])->whereNumber('list');
 
 // ADMIN ROUTES
 

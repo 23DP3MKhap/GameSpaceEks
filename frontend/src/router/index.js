@@ -6,6 +6,7 @@ import Login from "../pages/Login.vue"
 import Profile from "../pages/Profile.vue"
 import Catalog from "../pages/Catalog.vue"
 import Game from "../pages/Game.vue"
+import List from "../pages/List.vue"
 import Admin from "../pages/Admin.vue"
 import About from "../pages/About.vue"
 import ForgotPassword from "../pages/ForgotPassword.vue"
@@ -18,6 +19,7 @@ const routes =[
     {path: "/User/:id/Profile", component: Profile},
     {path: "/Catalog", component: Catalog, name: "catalog", meta: { hideHeader: true } },
     {path: "/Game/:id", component: Game},
+    {path: "/List/:id", component: List},
     {path: "/Admin", component: Admin},
     {path: "/About", component: About}
 ]
