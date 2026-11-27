@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\CloudinaryClient;
+use App\Services\IgdbClient;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Game;
@@ -63,7 +64,7 @@ class AdminController extends Controller
     }
 
     public function getGames(Request $request){
-        return Game::select('id', 'title', 'developer', 'publisher', 'release_date', 'cover_url', 'description')
+        return Game::select('id', 'title', 'developer', 'publisher', 'release_date', 'cover_url', 'description', 'is_hidden')
             ->orderBy('id')
             ->paginate($this->perPage($request));
     }
@@ -79,6 +80,21 @@ class AdminController extends Controller
             'description' => 'sometimes|nullable|string|max:1000',
         ]);
         $game->update($validated);
+    }
+
+    public function hideGame($id){
+        Game::findOrFail($id)->forceFill(['is_hidden' => true])->save();
+    }
+
+    public function showGame($id){
+        Game::findOrFail($id)->forceFill(['is_hidden' => false])->save();
+    }
+
+    public function refreshGame(IgdbClient $igdb, $id){
+        $game = Game::findOrFail($id);
+        if (!Game::importFromIgdb($igdb, $game->id)) {
+            return response()->json(['message' => 'Spēle IGDB netika atrasta'], 404);
+        }
     }
 
     public function deleteGame($id){

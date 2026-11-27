@@ -32,12 +32,12 @@ class GameController extends Controller
             try {
                 return $this->popularGames($igdb, $start);
             } catch (IgdbException) {
-                [$dbTotal, $dbGames] = $this->databaseGames(Game::query(), $start);
+                [$dbTotal, $dbGames] = $this->databaseGames(Game::where('is_hidden', false), $start);
                 return ['games' => $dbGames, 'total' => $dbTotal, 'partial' => true];
             }
         }
 
-        $query = Game::query();
+        $query = Game::where('is_hidden', false);
 
         if ($search) {
             $query->where('title', 'like', "%{$search}%");
@@ -111,8 +111,11 @@ class GameController extends Controller
     }
 
     private function popularGames(IgdbClient $igdb, int $offset){
-        $response = collect($igdb->query('multiquery', "query games/count \"count\" { };"
-            . " query games \"games\" { " . self::IGDB_FIELDS . " limit " . self::PAGE_SIZE . "; offset $offset; };"))->keyBy('name');
+        $hiddenIds = Game::where('is_hidden', true)->pluck('id');
+        $where = $hiddenIds->isNotEmpty() ? "where id != (" . $hiddenIds->join(',') . ");" : '';
+
+        $response = collect($igdb->query('multiquery', "query games/count \"count\" { $where };"
+            . " query games \"games\" { " . self::IGDB_FIELDS . " $where limit " . self::PAGE_SIZE . "; offset $offset; };"))->keyBy('name');
 
         $igdbGames = collect($response['games']['result']);
         $dbGames = Game::with('genres')

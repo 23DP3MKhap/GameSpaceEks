@@ -20,6 +20,7 @@ class Game extends Model
     {
         return [
             'average_rating' => 'float',
+            'is_hidden' => 'boolean',
         ];
     }
 
@@ -44,6 +45,23 @@ class Game extends Model
             'release_date' => !empty($igdbGame['first_release_date']) ? date('Y-m-d', $igdbGame['first_release_date']) : null,
             'cover_url' => self::coverUrl($igdbGame),
         ];
+    }
+
+    public static function importFromIgdb(IgdbClient $igdb, int $id): ?self
+    {
+        $response = $igdb->query('games', "fields name, summary, first_release_date, cover.url, involved_companies.developer,
+            involved_companies.publisher, involved_companies.company.name, genres, platforms; where id = $id;");
+
+        if (empty($response)) {
+            return null;
+        }
+
+        $igdbGame = $response[0];
+        $game = self::updateOrCreate(['id' => $igdbGame['id']], self::fromIgdb($igdbGame));
+        $game->genres()->sync(Genre::whereIn('id', $igdbGame['genres'] ?? [])->pluck('id'));
+        $game->platforms()->sync(Platform::whereIn('id', $igdbGame['platforms'] ?? [])->pluck('id'));
+
+        return $game;
     }
 
     private static function cut(?string $text, int $length): ?string

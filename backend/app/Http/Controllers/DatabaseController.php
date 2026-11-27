@@ -21,29 +21,16 @@ class DatabaseController extends Controller
 
     public function addGame(Request $request, IgdbClient $igdb){
         $validated = $request->validate([
-        'igdb_id' => 'required|integer'
-    ]);
+            'igdb_id' => 'required|integer'
+        ]);
 
-    $igdbId = $validated['igdb_id'];
+        if (Game::find($validated['igdb_id'])) {
+            return;
+        }
 
-    $existingGame = Game::find($igdbId);
-    if ($existingGame) {
-        return;
-    }
-
-    $response = $igdb->query('games', "fields name, summary, first_release_date, cover.url, involved_companies.developer,
-        involved_companies.publisher, involved_companies.company.name, genres, platforms; where id = $igdbId;");
-
-    if (empty($response)) {
-        return response()->json(['message' => 'Spēle IGDB netika atrasta'], 404);
-    }
-
-    $resData = $response[0];
-
-    $game = Game::create(Game::fromIgdb($resData));
-
-    $game->genres()->attach(Genre::whereIn('id', $resData['genres'] ?? [])->pluck('id'));
-    $game->platforms()->attach(Platform::whereIn('id', $resData['platforms'] ?? [])->pluck('id'));
+        if (!Game::importFromIgdb($igdb, $validated['igdb_id'])) {
+            return response()->json(['message' => 'Spēle IGDB netika atrasta'], 404);
+        }
     }
 
 

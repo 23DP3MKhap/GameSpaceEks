@@ -106,6 +106,9 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/games', [AdminController::class, 'getGames']);
     Route::put('/admin/games/{id}', [AdminController::class, 'updateGame']);
     Route::delete('/admin/games/{id}', [AdminController::class, 'deleteGame']);
+    Route::post('/admin/games/{id}/hide', [AdminController::class, 'hideGame']);
+    Route::post('/admin/games/{id}/show', [AdminController::class, 'showGame']);
+    Route::post('/admin/games/{id}/refresh', [AdminController::class, 'refreshGame']);
 
     Route::get('/admin/reviews', [AdminController::class, 'getReviews']);
     Route::delete('/admin/reviews/{id}', [AdminController::class, 'deleteReview']);

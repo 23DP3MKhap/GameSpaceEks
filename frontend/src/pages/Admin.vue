@@ -125,6 +125,16 @@ async function setBanned(id, banned) {
     await loadUsers()
 }
 
+async function setHidden(id, hidden) {
+    await axios.post(`/api/admin/games/${id}/${hidden ? 'hide' : 'show'}`)
+    await loadGames()
+}
+
+async function refreshGame(id) {
+    await axios.post(`/api/admin/games/${id}/refresh`)
+    await Promise.all([loadGames(), loadReviews()])
+}
+
 async function deleteGame(id) {
     await axios.delete(`/api/admin/games/${id}`)
     await Promise.all([loadGames(), loadReviews()])
@@ -228,6 +238,7 @@ async function deleteUserAvatar(user) {
                                         <th>Nosaukums</th>
                                         <th>Izstrādātājs</th>
                                         <th>Izdevējs</th>
+                                        <th>Statuss</th>
                                         <th>Darbības</th>
                                     </tr>
                                 </thead>
@@ -237,9 +248,17 @@ async function deleteUserAvatar(user) {
                                         <td>{{ game.title }}</td>
                                         <td>{{ game.developer || '-' }}</td>
                                         <td>{{ game.publisher || '-' }}</td>
+                                        <td>
+                                            <span class="badge" :class="game.is_hidden ? 'status-banned' : 'status-active'">
+                                                {{ game.is_hidden ? 'Paslēpta' : 'Redzama' }}
+                                            </span>
+                                        </td>
                                         <td class="actions">
                                             <button class="btn-edit" @click="openEditGame(game)">Rediģēt</button>
-                                            <button class="btn-delete" @click="confirm(`Dzēst spēli ${game.title}?`, () => deleteGame(game.id))">Dzēst</button>
+                                            <button class="btn-edit" @click="confirm(`Atjaunināt spēles ${game.title} datus no IGDB? Manuāli veiktās izmaiņas tiks pārrakstītas.`, () => refreshGame(game.id))">Atjaunināt</button>
+                                            <button v-if="game.is_hidden" class="btn-edit" @click="confirm(`Rādīt spēli ${game.title} katalogā?`, () => setHidden(game.id, false))">Rādīt</button>
+                                            <button v-else class="btn-warn" @click="confirm(`Paslēpt spēli ${game.title} no kataloga?`, () => setHidden(game.id, true))">Paslēpt</button>
+                                            <button class="btn-delete" @click="confirm(`Dzēst spēli ${game.title}? Tiks dzēsti arī visi ar to saistītie kolekciju ieraksti, atsauksmes un sarakstu ieraksti.`, () => deleteGame(game.id))">Dzēst</button>
                                         </td>
                                     </tr>
                                 </tbody>
