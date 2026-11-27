@@ -65,6 +65,7 @@
                 <v-container>
                     <h1>Pieteikties</h1>
                     <p v-if="route.query.notice === 'collection'" class="login-notice">Lūdzu, piesakies, lai pievienotu spēles kolekcijai</p>
+                    <p v-else-if="route.query.notice === 'list'" class="login-notice">Lūdzu, piesakies, lai pievienotu spēles sarakstam</p>
 
                     <v-col class="login-row" cols="12" >
                         <v-text-field v-model="email" :rules="emailRules" label="E-pasts" required></v-text-field>

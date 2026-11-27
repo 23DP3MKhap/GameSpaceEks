@@ -94,6 +94,14 @@ Route::middleware('auth:sanctum')->put('/lists/{list}', [ListController::class, 
 
 Route::middleware('auth:sanctum')->delete('/lists/{list}', [ListController::class, 'destroy'])->whereNumber('list');
 
+Route::middleware('auth:sanctum', 'verified')->post('/lists/{list}/games', [ListController::class, 'addGame'])->whereNumber('list');
+
+Route::middleware('auth:sanctum')->put('/lists/{list}/games/{game}', [ListController::class, 'updateGame'])->whereNumber(['list', 'game']);
+
+Route::middleware('auth:sanctum')->delete('/lists/{list}/games/{game}', [ListController::class, 'removeGame'])->whereNumber(['list', 'game']);
+
+Route::middleware('auth:sanctum')->put('/lists/{list}/order', [ListController::class, 'reorder'])->whereNumber('list');
+
 // ADMIN ROUTES
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {

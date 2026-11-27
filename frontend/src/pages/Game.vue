@@ -22,6 +22,12 @@
     const collectionMessage = ref('')
     const collectionDialog = ref(false)
     const removeDialog = ref(false)
+    const lists = ref(null)
+    const listMenu = ref(false)
+    const listError = ref('')
+    const isAddingToList = ref(false)
+    const addedList = ref(null)
+    const listDialog = ref(false)
     const today = new Date().toISOString().slice(0, 10)
 
     const statusVariants = [
@@ -43,6 +49,11 @@
     const reviewFieldErrors = {
         title: 'Virsrakstam jābūt no 1 līdz 50 rakstzīmēm.',
         content: 'Atsauksmes tekstam jābūt no 10 līdz 500 rakstzīmēm.',
+    }
+
+    const listAddErrors = {
+        409: 'Šī spēle jau ir šajā sarakstā',
+        422: 'Sarakstā var būt ne vairāk kā 100 spēles',
     }
 
     const userReview = computed(() => reviews.value.find(review => review.user.id === auth.user?.id) ?? null)
@@ -160,6 +171,49 @@
         removeDialog.value = false
     }
 
+    async function openListMenu() {
+        if (!auth.user) {
+            router.push({ path: '/Login', query: { notice: 'list' } })
+            return
+        }
+        if (!auth.user.email_verified) {
+            listError.value = 'Apstiprini savu e-pasta adresi, lai izmantotu šo funkciju'
+            return
+        }
+
+        listError.value = ''
+        listMenu.value = true
+        if (lists.value) return
+
+        try {
+            const response = await axios.get('/api/user/lists', { params: { user_id: auth.user.id, game_id: game.value.id } })
+            lists.value = response.data
+        } catch {
+            listMenu.value = false
+            listError.value = 'Neizdevās ielādēt sarakstus. Mēģini vēlreiz.'
+        }
+    }
+
+    async function addToList(list) {
+        isAddingToList.value = true
+        listError.value = ''
+
+        try {
+            await axios.post('/api/database/addgame', { igdb_id: game.value.id })
+            await axios.post(`/api/lists/${list.id}/games`, { game_id: game.value.id })
+        } catch (error) {
+            listError.value = listAddErrors[error.response?.status] ?? 'Neizdevās pievienot spēli sarakstam. Mēģini vēlreiz.'
+            return
+        } finally {
+            isAddingToList.value = false
+            listMenu.value = false
+        }
+
+        list.has_game = true
+        addedList.value = list
+        listDialog.value = true
+    }
+
     async function postReview() {
         reviewError.value = ''
         reviewErrors.value = {}
@@ -233,8 +287,28 @@
                             <v-btn v-if="entry" class="btn-remove-collection" @click="removeDialog = true">
                                 Noņemt
                             </v-btn>
+                            <v-btn class="btn-add-list" @click="openListMenu">
+                                Pievienot sarakstam
+                                <v-menu v-model="listMenu" activator="parent" :open-on-click="false" location="bottom start" max-width="320">
+                                    <div class="list-menu">
+                                        <v-progress-linear v-if="!lists" indeterminate color="white"></v-progress-linear>
+                                        <template v-else>
+                                            <button v-for="list in lists" :key="list.id" class="list-option"
+                                                :disabled="list.has_game || isAddingToList" @click="addToList(list)">
+                                                <span class="list-option-title">{{ list.title }}</span>
+                                                <span v-if="list.has_game" class="list-option-state">Jau pievienota</span>
+                                            </button>
+                                            <div v-if="lists.length === 0" class="list-menu-empty">
+                                                Tev vēl nav neviena saraksta.
+                                                <router-link :to="`/User/${auth.user.id}/Profile`" class="list-menu-link">Izveidot sarakstu</router-link>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </v-menu>
+                            </v-btn>
                         </div>
                         <div v-if="collectionError" class="form-error">{{ collectionError }}</div>
+                        <div v-if="listError" class="form-error">{{ listError }}</div>
                     </div>
                 </section>
 
@@ -401,6 +475,22 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <v-dialog v-model="listDialog" max-width="400">
+            <v-card class="dialog">
+                <v-card-title>Saraksts</v-card-title>
+                <v-card-text>Spēle pievienota sarakstam „{{ addedList?.title }}“</v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn class="v-dialog-button" @click="listDialog = false">
+                        <span class="v-btn-text">Aizvērt</span>
+                    </v-btn>
+                    <v-btn class="v-dialog-button" :to="`/List/${addedList?.id}`">
+                        <span class="v-btn-text">Atvērt sarakstu</span>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -551,6 +641,79 @@
     text-transform: none;
     font-weight: 500;
     border-radius: 8px;
+}
+
+.btn-add-list {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-transform: none;
+    font-weight: 500;
+    border-radius: 8px;
+}
+
+.list-menu {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 10px;
+    padding: 6px;
+    min-width: 220px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.list-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #eee;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.list-option:hover:not(:disabled) {
+    background: #1a1a1a;
+}
+
+.list-option:disabled {
+    cursor: default;
+}
+
+.list-option-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.list-option-state {
+    flex: 0 0 auto;
+    font-size: 11px;
+    color: #38ef7d;
+}
+
+.list-menu-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: #aaa;
+}
+
+.list-menu-link {
+    color: #4a9eff;
+    text-decoration: none;
+}
+
+.list-menu-link:hover {
+    text-decoration: underline;
 }
 
 .panel {
